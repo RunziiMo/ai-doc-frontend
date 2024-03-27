@@ -12,11 +12,6 @@ const props = defineProps({
     type: Object,
     required: true,
   },
-  content: {  
-    type: String,  
-    required: true,  
-    default: '#Hello, Vue 3!'  
-  },
   functions: {
     type: Array,
     required: true
@@ -53,9 +48,6 @@ watch(
   },
   {deep: true}
 );
-const output = computed(() => {
-  return marked(props.content);
-});
 const prompt = ref("");
 const firstSplitter = ref(false);
 const loading = ref(false);
@@ -106,7 +98,6 @@ const docChat = async (prompt) => {
 };
 const docAnalyze = async (api) => {
   loading.value = true;
-  console.log(api);
   const formData = new FormData();
   formData.append('doc_id', props.document.doc_id);
   formData.append('api', api);
@@ -141,12 +132,12 @@ const scrollToBottom = () => {
     :dbl-click-splitter="false"
     >
     <pane class="flex justify-center" size="65">
-      <el-scrollbar v-if="content !== ''">
-        <div v-html="output" />
+      <el-scrollbar v-if="document.markdown !== undefined && document.markdown !== ''">
+        <div v-html="marked(document.markdown)" />
       </el-scrollbar>
-      <el-empty v-else description="加载文件失败">
-        <el-button @click="$emit('loadDoc')" type="primary">重新加载</el-button>
+      <el-empty v-else-if="document.markdown !== undefined && document.markdown === ''" description="空白文档">
       </el-empty>
+      <el-skeleton v-else :rows="20" animated />
     </pane>
     <pane v-if="showChatter" size="35" class="flex flex-col relative justify-between">
         <div class="hide-scrobar flex flex-col flex-1 items-start overflow-y-scroll"
@@ -176,7 +167,6 @@ const scrollToBottom = () => {
 .splitpanes__splitter {
   margin-right: 10px;
   margin-left: 10px;
-  left: -10px;
   position: relative;
   background-color: #909399;
 }

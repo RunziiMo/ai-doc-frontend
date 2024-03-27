@@ -59,7 +59,6 @@ onMounted(async () => {
     <el-main>
       <DocumentReader
        :document="document"
-       :content="content"
        :functions="functions"
        :showChatter="showChatter"
        @load-doc="loadDoc"
