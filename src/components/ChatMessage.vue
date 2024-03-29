@@ -2,6 +2,7 @@
 <script setup>
 import { ref, computed } from "vue";
 import axios from 'axios'
+import { marked } from 'marked'
 import { Delete } from '@element-plus/icons-vue'
 
 const props = defineProps({
@@ -55,7 +56,9 @@ const deleteMessage = async (message) => {
         <el-text tag="b" class="pr-3">
             AI Bot:
         </el-text>
-        {{ response }}
+        <el-card>
+            <div v-html="marked(response)" />
+        </el-card>
     </el-text>
 </template>
 
