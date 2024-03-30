@@ -3,7 +3,7 @@
 import { ref, computed } from "vue";
 import axios from 'axios'
 import { marked } from 'marked'
-import { Delete } from '@element-plus/icons-vue'
+import { Delete, UserFilled, Monitor } from '@element-plus/icons-vue'
 
 const props = defineProps({
   message: {
@@ -43,28 +43,37 @@ const deleteMessage = async (message) => {
 </script>
 
 <template>
-    <div v-if="!isDelete" class="query flex items-start justify-between py-3">
-        <el-text class="flex-1 pl-3" :align="'left'">
-            <el-text tag="b" class="pr-3">
-                {{ message.author }}:
-            </el-text>
-            {{ message.content }}
+    <div v-if="!isDelete" class="query flex items-start justify-between">
+        <el-icon>
+            <UserFilled />
+        </el-icon>
+        <el-text class="query flex-1">
+            <p class="px-3 my-0">
+                {{ message.content }}
+            </p>
         </el-text>
-        <el-button v-if="message.show_del" @click="deleteMessage(message)" :icon="Delete" circle/>
+        <el-button v-if="message.show_del" @click="deleteMessage(message)" :icon="Delete" size="small" circle/>
     </div>
-    <el-text v-if="!isDelete" class="answer self-stretch" :type="isError? 'danger' : ''" :align="'left'">
-        <el-text tag="b" class="pr-3">
-            AI Bot:
-        </el-text>
-        <el-card>
-            <div v-html="marked(response)" />
-        </el-card>
+    <el-text v-if="!isDelete" class="author" :align="right">
+        提问者：{{ message.author }}
     </el-text>
+    <div v-if="!isDelete" class="answer my-3">
+        <el-text class="flex items-start justify-between" :type="isError? 'danger' : ''" :align="'left'">
+            <el-icon class="mr-3">
+                <Monitor />
+            </el-icon>
+            <el-card v-html="marked(response)" class="px-3 flex-1" shadow="never"/>
+        </el-text>
+    </div>
 </template>
 
 <style scoped>
 .query,
 .answer {
     align-self: stretch;
+}
+
+.author {
+    align-self: end;
 }
 </style>
