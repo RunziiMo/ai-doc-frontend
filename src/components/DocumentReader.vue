@@ -1,13 +1,19 @@
 <script lang="ts" setup>
-import { ref, computed, watch, watchEffect, nextTick } from "vue";
+import { ref, computed, watch, watchEffect, nextTick } from "vue"
 import { Splitpanes, Pane } from 'splitpanes'
 import { ElScrollbar } from 'element-plus'
-import { Promotion } from '@element-plus/icons-vue';
+import { Promotion } from '@element-plus/icons-vue'
 import { marked } from 'marked'
 import 'splitpanes/dist/splitpanes.css'
 import axios from 'axios'
+import VueOfficeDocx from '@vue-office/docx'
+import '@vue-office/docx/lib/index.css'
 
 const props = defineProps({
+  book: {  
+    type: Object,
+    required: true,
+  },
   document: {  
     type: Object,
     required: true,
@@ -132,12 +138,13 @@ const scrollToBottom = () => {
     :dbl-click-splitter="false"
     >
     <pane class="flex justify-center" size="65">
-      <el-scrollbar v-if="document.markdown !== undefined && document.markdown !== ''">
-        <div v-html="marked(document.markdown)" />
-      </el-scrollbar>
-      <el-empty v-else-if="document.markdown !== undefined && document.markdown === ''" description="空白文档">
-      </el-empty>
-      <el-skeleton v-else :rows="20" animated />
+        <vue-office-docx
+            v-if="book.identify && document.doc_id"
+            :src="`/api/book/${book.identify}/download/${document.doc_id}`"
+        />
+        <el-empty v-else-if="document.markdown !== undefined && document.markdown === ''" description="空白文档">
+        </el-empty>
+        <el-skeleton v-else :rows="20" animated />
     </pane>
     <pane v-if="showChatter" size="35" class="flex flex-col relative justify-between">
         <div class="hide-scrobar flex flex-col flex-1 items-start overflow-y-scroll"

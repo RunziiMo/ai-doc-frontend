@@ -58,10 +58,11 @@ onMounted(async () => {
     </el-header>
     <el-main>
       <DocumentReader
-       :document="document"
-       :functions="functions"
-       :showChatter="showChatter"
-       @load-doc="loadDoc"
+          :book="book"
+          :document="document"
+          :functions="functions"
+          :showChatter="showChatter"
+          @load-doc="loadDoc"
       />
     </el-main>
   </el-container>
