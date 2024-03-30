@@ -120,8 +120,8 @@ const docAnalyze = async (api) => {
   }
   loading.value = false;
 };
-const toast = () => {
-  ElMessage.success("Hello");
+const toast = (message) => {
+    ElMessage.warning(message);
 };
 const scrollToBottom = () => {
   nextTick(() => {
@@ -141,6 +141,7 @@ const scrollToBottom = () => {
         <vue-office-docx
             v-if="book.identify && document.doc_id"
             :src="`/api/book/${book.identify}/download/${document.doc_id}`"
+            @error="toast('加载文档失败')"
         />
         <el-empty v-else-if="document.markdown !== undefined && document.markdown === ''" description="空白文档">
         </el-empty>
