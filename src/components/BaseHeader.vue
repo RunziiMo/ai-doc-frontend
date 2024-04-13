@@ -27,7 +27,7 @@ export default {
     },
     editable() {
       return false;
-      return this.book.role_id === 0 || this.book.role_id === 1 || this.book.role_id === 2;
+      // return this.book.role_id === 0 || this.book.role_id === 1 || this.book.role_id === 2;
     },
     owner() {
       return this.book.role_id === 0 || this.book.role_id === 1;

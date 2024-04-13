@@ -1,6 +1,6 @@
 <script setup>
 import { ElMessage } from 'element-plus'
-import { ref, onMounted } from 'vue'
+import { ref, onMounted, watch, watchEffect } from 'vue'
 import axios from 'axios'
 import {
   Check,
@@ -11,6 +11,7 @@ import {
   Search,
   Star,
 } from '@element-plus/icons-vue'
+import LeftSidebar from './components/LeftSidebar.vue';
 
 const showChatter = ref(true)
 const book = ref({});
@@ -18,8 +19,14 @@ const document = ref({});
 const content = ref("");
 const functions = ref([]);
 
-const loadDoc = async (bookIdentify) => {
-  let response = await axios.get(`/api/${bookIdentify}/content`); 
+const docId = ref(0);
+const bookIdentify = ref("")
+
+const loadDoc = async (bookIdentify, docId) => {
+  if (docId === undefined) {
+    docId = 0;
+  }
+  let response = await axios.get(`/api/${bookIdentify}/content/${docId}`); 
   console.log(bookIdentify);
   console.log(response);
   if (response.data.errcode !== 0) {
@@ -31,14 +38,24 @@ const loadDoc = async (bookIdentify) => {
   }
 };
 
-onMounted(async () => {
-  let bookIdentify = window.location.pathname.split('/').pop();
-  await loadDoc(bookIdentify);
+watchEffect(async () => {
+  // console.log(`docId newValue is ${newValue}`)
+  // console.log(`docId oldValue is ${oldValue}`)
+  console.log("watchEffect:")
+  console.log(`bookIdentify is ${bookIdentify.value}`)
+  console.log(`docId is ${docId.value}`)
+
+  if (bookIdentify.value === "" || docId.value === ""){
+    return
+  }
+  await loadDoc(bookIdentify.value, docId.value);
   let params = {
-    identify: bookIdentify,  
+    identify: bookIdentify.value,  
   };
-  const bookResponse = await axios.get(`/api/book/${bookIdentify}`, { params }); 
+  const bookResponse = await axios.get(`/api/book/${bookIdentify.value}`, { params }); 
+  console.log("bookResponse:");
   console.log(bookResponse);
+
   if (bookResponse.data.errcode !== 0) {
     ElMessage(bookResponse.data.message);
   } else {
@@ -46,24 +63,59 @@ onMounted(async () => {
     functions.value = book.value.aigc_function.split(';');
   }
 })
+
+onMounted(async () => {
+  bookIdentify.value = window.location.pathname.split('/')[2];
+  docId.value = window.location.pathname.split('/')[3];
+  // console.log("onMounted, bookIdentify", bookIdentify)
+  // console.log("onMounted, docId", docId.value)
+  // await loadDoc(bookIdentify, docId.value);
+  // let params = {
+  //   identify: bookIdentify,  
+  // };
+  // const bookResponse = await axios.get(`/api/book/${bookIdentify}`, { params }); 
+  // console.log("bookResponse:");
+  // console.log(bookResponse);
+  // if (bookResponse.data.errcode !== 0) {
+  //   ElMessage(bookResponse.data.message);
+  // } else {
+  //   book.value = bookResponse.data.data;
+  //   functions.value = book.value.aigc_function.split(';');
+  // }
+})
+
+function updateDocId(docIdTmp) {
+  console.log(`updateId docId is:${docIdTmp}`);
+  docId.value = docIdTmp;
+}
+
 </script>
 
 <template>
   <el-container>
-    <el-header>
+    <el-header>      
       <BaseHeader v-model="showChatter"
         :book="book"
         :document="document"
         />
     </el-header>
     <el-main>
-      <DocumentReader
-          :book="book"
-          :document="document"
-          :functions="functions"
-          :showChatter="showChatter"
-          @load-doc="loadDoc"
-      />
+      <div class="app-body">
+        <div class="sidebar">
+          <LeftSidebar
+              :documents="book.document_trees"
+              :book="book"
+              @update-doc-id="updateDocId"
+          />
+        </div>
+        <DocumentReader
+            :book="book"
+            :document="document"
+            :functions="functions"
+            :showChatter="showChatter"
+            @load-doc="loadDoc"
+        />
+      </div>
     </el-main>
   </el-container>
 </template>
@@ -89,5 +141,15 @@ html, body {
   height: calc(100vh - var(--ep-menu-item-height) - 3px);
   padding-top: 0;
   padding-bottom: 0;
+}
+
+.app-body {  
+  display: flex;
+}
+.sidebar {
+  width: 300px; /* 侧边栏宽度 */  
+  background-color: #f9f9f9; /* 侧边栏背景色 */  
+  border-right: 1px solid #eee; /* 可选的右侧边框 */  
+  padding: 10px; /* 内边距 */  
 }
 </style>

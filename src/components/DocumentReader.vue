@@ -137,7 +137,7 @@ const scrollToBottom = () => {
     :first-splitter="false"
     :dbl-click-splitter="false"
     >
-    <pane class="flex justify-center" size="65">
+    <pane class="flex justify-center scroll-content" size="65">
         <vue-office-docx
             v-if="book.identify && document.doc_id"
             :src="`/api/book/${book.identify}/download/${document.doc_id}`"
@@ -147,6 +147,7 @@ const scrollToBottom = () => {
         </el-empty>
         <el-skeleton v-else :rows="20" animated />
     </pane>
+
     <pane v-if="showChatter" size="35" class="flex flex-col relative justify-between">
         <div class="hide-scrobar flex flex-col flex-1 items-start overflow-y-scroll"
           ref="scrollContainer"
@@ -168,6 +169,7 @@ const scrollToBottom = () => {
           </div>
         </div>
     </pane>
+
   </splitpanes>
 </template>
 
@@ -190,4 +192,20 @@ const scrollToBottom = () => {
 .splitpanes__splitter:hover:before {opacity: 1;}
 .splitpanes--vertical > .splitpanes__splitter:before {left: -10px;right: -10px;height: 100%;}
 .splitpanes--horizontal > .splitpanes__splitter:before {top: -10px;bottom: -10px;width: 100%;}
+
+.scroll-content {
+  flex-grow: 1;  
+  overflow-y: auto;
+  padding: 10px;
+}
+.right-sidebar {
+  width: 200px;  
+  background-color: #f9f9f9;  
+  border-left: 1px solid #eee;  
+  padding: 10px;  
+  overflow: hidden;
+}
+.no-scroll {
+  overflow: hidden;
+}
 </style>
