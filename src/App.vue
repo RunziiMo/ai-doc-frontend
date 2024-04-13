@@ -32,19 +32,19 @@ const loadDoc = async (bookIdentify) => {
 };
 
 onMounted(async () => {
-  let bookIdentify = window.location.pathname.split('/').pop();
-  await loadDoc(bookIdentify);
-  let params = {
-    identify: bookIdentify,  
-  };
-  const bookResponse = await axios.get(`/api/book/${bookIdentify}`, { params }); 
-  console.log(bookResponse);
-  if (bookResponse.data.errcode !== 0) {
-    ElMessage(bookResponse.data.message);
-  } else {
-    book.value = bookResponse.data.data;
-    functions.value = book.value.aigc_function.split(';');
-  }
+    const bookIdentify = window.location.pathname.split('/').pop();
+    await loadDoc(bookIdentify);
+    const params = {
+        identify: bookIdentify,  
+    };
+    const bookResponse = await axios.get(`/api/book/${bookIdentify}`, { params }); 
+    console.log(bookResponse);
+    if (bookResponse.data.errcode !== 0) {
+        ElMessage(bookResponse.data.message);
+    } else {
+        book.value = bookResponse.data.data;
+        functions.value = book.value.aigc_function.split(';');
+    }
 })
 </script>
 
