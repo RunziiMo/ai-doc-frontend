@@ -23,70 +23,52 @@ const docId = ref(0);
 const bookIdentify = ref("")
 
 const loadDoc = async (bookIdentify, docId) => {
-  if (docId === undefined) {
-    docId = 0;
-  }
-  let response = await axios.get(`/api/${bookIdentify}/content/${docId}`); 
-  console.log(bookIdentify);
-  console.log(response);
-  if (response.data.errcode !== 0) {
-    ElMessage(response.data.message);
-  } else {
-    var data = response.data.data;
-    document.value = data;
-    content.value = data.markdown;
-  }
+    if (docId === undefined) {
+        docId = 0;
+    }
+    let response = await axios.get(`/api/${bookIdentify}/content/${docId}`); 
+    console.log("document response:");
+    console.log(response);
+    if (response.data.errcode !== 0) {
+        ElMessage(response.data.message);
+    } else {
+        var data = response.data.data;
+        document.value = data;
+        content.value = data.markdown;
+    }
 };
 
 watchEffect(async () => {
-  // console.log(`docId newValue is ${newValue}`)
-  // console.log(`docId oldValue is ${oldValue}`)
-  console.log("watchEffect:")
-  console.log(`bookIdentify is ${bookIdentify.value}`)
-  console.log(`docId is ${docId.value}`)
+    if (bookIdentify.value === "" || docId.value === ""){
+        return
+    }
+    console.log("watchEffect:")
+    console.log(`bookIdentify is ${bookIdentify.value}`)
+    console.log(`docId is ${docId.value}`)
+    await loadDoc(bookIdentify.value, docId.value);
+    let params = {
+        identify: bookIdentify.value,
+    };
+    const bookResponse = await axios.get(`/api/book/${bookIdentify.value}`, { params }); 
+    console.log("bookResponse:");
+    console.log(bookResponse);
 
-  if (bookIdentify.value === "" || docId.value === ""){
-    return
-  }
-  await loadDoc(bookIdentify.value, docId.value);
-  let params = {
-    identify: bookIdentify.value,  
-  };
-  const bookResponse = await axios.get(`/api/book/${bookIdentify.value}`, { params }); 
-  console.log("bookResponse:");
-  console.log(bookResponse);
-
-  if (bookResponse.data.errcode !== 0) {
-    ElMessage(bookResponse.data.message);
-  } else {
-    book.value = bookResponse.data.data;
-    functions.value = book.value.aigc_function.split(';');
-  }
+    if (bookResponse.data.errcode !== 0) {
+        ElMessage(bookResponse.data.message);
+    } else {
+        book.value = bookResponse.data.data;
+        functions.value = book.value.aigc_function.split(';');
+    }
 })
 
 onMounted(async () => {
-  bookIdentify.value = window.location.pathname.split('/')[2];
-  docId.value = window.location.pathname.split('/')[3];
-  // console.log("onMounted, bookIdentify", bookIdentify)
-  // console.log("onMounted, docId", docId.value)
-  // await loadDoc(bookIdentify, docId.value);
-  // let params = {
-  //   identify: bookIdentify,  
-  // };
-  // const bookResponse = await axios.get(`/api/book/${bookIdentify}`, { params }); 
-  // console.log("bookResponse:");
-  // console.log(bookResponse);
-  // if (bookResponse.data.errcode !== 0) {
-  //   ElMessage(bookResponse.data.message);
-  // } else {
-  //   book.value = bookResponse.data.data;
-  //   functions.value = book.value.aigc_function.split(';');
-  // }
+    bookIdentify.value = window.location.pathname.split('/')[2];
+    docId.value = window.location.pathname.split('/')[3];
 })
 
 function updateDocId(docIdTmp) {
-  console.log(`updateId docId is:${docIdTmp}`);
-  docId.value = docIdTmp;
+    console.log(`updateId docId is:${docIdTmp}`);
+    docId.value = docIdTmp;
 }
 
 </script>
@@ -109,11 +91,10 @@ function updateDocId(docIdTmp) {
           />
         </div>
         <DocumentReader
-            :book="book"
+            :bookIdentify="bookIdentify"
             :document="document"
             :functions="functions"
             :showChatter="showChatter"
-            @load-doc="loadDoc"
         />
       </div>
     </el-main>

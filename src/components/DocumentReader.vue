@@ -12,8 +12,8 @@ import { defaultOptions, renderAsync } from 'docx-preview'
 import Mark from 'mark.js'
 
 const props = defineProps({
-    book: {  
-        type: Object,
+    bookIdentify: {
+        type: String,
         required: true,
     },
     document: {  
@@ -36,8 +36,7 @@ const props = defineProps({
 watch(
     () => props.document,
     (newValue, oldValue) => {
-        const bookIdentify = window.location.pathname.split('/').pop();
-        loadDocument(bookIdentify, newValue.doc_id)
+        loadDocument(props.bookIdentify, newValue.doc_id)
         loadChatMessages(newValue.doc_id);
     }
 );
@@ -111,7 +110,7 @@ const docChat = async (prompt) => {
     loading.value = true;
     console.log(prompt);
     const formData = new FormData();
-    formData.append('book_identify', props.book.identify);
+    formData.append('book_identify', props.bookIdentify);
     formData.append('doc_id', props.document.doc_id);
     formData.append('prompt', prompt);
     let chatResponse = await axios.post('/aigc/chat', formData);
@@ -130,7 +129,7 @@ const docChat = async (prompt) => {
 const docAnalyze = async (api) => {
     loading.value = true;
     const formData = new FormData();
-    formData.append('book_identify', props.book.identify);
+    formData.append('book_identify', props.bookIdentify);
     formData.append('doc_id', props.document.doc_id);
     formData.append('api', api);
     let chatResponse = await axios.post('/aigc/analyze', formData);
@@ -150,11 +149,11 @@ const toast = (message) => {
     ElMessage.warning(message);
 };
 const scrollToBottom = () => {
-  nextTick(() => {
-    if (scrollContainer.value) {
-      scrollContainer.value.scrollTop = scrollContainer.value.scrollHeight;
-    }
-  });
+    nextTick(() => {
+      if (scrollContainer.value) {
+        scrollContainer.value.scrollTop = scrollContainer.value.scrollHeight;
+      }
+    });
 }
 const scrollToText = async (searchString) => {
     new Mark(docxContainer.value).unmark().mark(searchString, {
@@ -181,11 +180,11 @@ const scrollToText = async (searchString) => {
     >
     <pane class="flex justify-center" size="65">
         <!--vue-office-docx
-            v-if="book.identify && document.doc_id"
-            :src="`/api/book/${book.identify}/download/${document.doc_id}`"
+            v-if="bookIdentify && document.doc_id"
+            :src="`/api/book/${bookIdentify}/download/${document.doc_id}`"
             @error="toast('加载文档失败')"
         /-->
-        <el-scrollbar v-if="book.identify && document.doc_id">
+        <el-scrollbar v-if="bookIdentify && document.doc_id">
             <div ref="docxContainer" />
         </el-scrollbar>
         <el-empty v-else-if="document.markdown !== undefined && document.markdown === ''" description="空白文档">
