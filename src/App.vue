@@ -11,6 +11,8 @@ import {
   Search,
   Star,
 } from '@element-plus/icons-vue'
+import { Splitpanes, Pane } from 'splitpanes'
+import 'splitpanes/dist/splitpanes.css'
 import LeftSidebar from './components/LeftSidebar.vue';
 
 const showChatter = ref(true)
@@ -18,6 +20,7 @@ const book = ref({});
 const document = ref({});
 const content = ref("");
 const functions = ref([]);
+const selectedText = ref("");
 
 const docId = ref(0);
 const bookIdentify = ref("")
@@ -70,35 +73,50 @@ function updateDocId(docIdTmp) {
     console.log(`updateId docId is:${docIdTmp}`);
     docId.value = docIdTmp;
 }
-
 </script>
 
 <template>
-  <el-container>
-    <el-header>      
-      <BaseHeader v-model="showChatter"
-        :book="book"
-        :document="document"
-        />
-    </el-header>
-    <el-main>
-      <div class="app-body">
-        <div class="sidebar">
-          <LeftSidebar
-              :documents="book.document_trees"
+    <el-container>
+        <el-header>      
+            <BaseHeader v-model="showChatter"
               :book="book"
-              @update-doc-id="updateDocId"
-          />
-        </div>
-        <DocumentReader
-            :bookIdentify="bookIdentify"
-            :document="document"
-            :functions="functions"
-            :showChatter="showChatter"
-        />
-      </div>
-    </el-main>
-  </el-container>
+              :document="document"
+              />
+        </el-header>
+        <el-main>
+            <splitpanes 
+                :first-splitter="false"
+                :dbl-click-splitter="false"
+                :push-other-panes="false"
+            >
+                <pane v-if="showChatter" class="flex justify-center" size="20" max-size="20"  min-size="20">
+                    <div class="sidebar">
+                        <LeftSidebar
+                            :documents="book.document_trees"
+                            :book="book"
+                            @update-doc-id="updateDocId"
+                        />
+                    </div>
+                </pane>
+                <pane class="flex justify-center" size="55">
+                    <DocumentReader
+                        :bookIdentify="bookIdentify"
+                        :document="document"
+                        :functions="functions"
+                        :searchString="selectedText"
+                    />
+                </pane>
+                <pane v-if="showChatter" size="25" class="flex flex-col relative justify-between">
+                    <DocumentChatter
+                        :bookIdentify="bookIdentify"
+                        :document="document"
+                        :functions="functions"
+                        @text-selected="(text) => selectedText = text"
+                    />
+                </pane>
+            </splitpanes>
+        </el-main>
+    </el-container>
 </template>
 
 <style>
@@ -124,11 +142,29 @@ html, body {
   padding-bottom: 0;
 }
 
-.app-body {  
+.splitpanes__splitter {
+  margin-right: 10px;
+  margin-left: 10px;
+  position: relative;
+  background-color: #909399;
+}
+.splitpanes__splitter:before {
+  position: absolute;
+  left: 0;
+  top: 0;
+  transition: opacity 0.4s;
+  background-color: #909399;
+  opacity: 0;
+  z-index: 1;
+}
+.splitpanes__splitter:hover:before {opacity: 1;}
+.splitpanes--vertical > .splitpanes__splitter:before {left: -10px;right: -10px;height: 100%;}
+.splitpanes--horizontal > .splitpanes__splitter:before {top: -10px;bottom: -10px;width: 100%;}
+
+.app-body {
   display: flex;
 }
 .sidebar {
-  width: 300px; /* 侧边栏宽度 */  
   background-color: #f9f9f9; /* 侧边栏背景色 */  
   border-right: 1px solid #eee; /* 可选的右侧边框 */  
   padding: 10px; /* 内边距 */  
