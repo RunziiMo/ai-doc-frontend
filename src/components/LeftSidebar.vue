@@ -14,7 +14,7 @@ const props = defineProps({
     required: true,
   },
 });
-  
+
 interface Tree {
   [key: string]: any
 }
@@ -24,7 +24,7 @@ const treeRef = ref<InstanceType<typeof ElTree>>()
 
 const defaultProps = {
     id: 'id',
-    label: 'identify',
+    label: 'text',
 }
 
 watch(filterText, (val) => {
