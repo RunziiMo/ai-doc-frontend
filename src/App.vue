@@ -19,7 +19,6 @@ const showChatter = ref(true)
 const book = ref({});
 const document = ref({});
 const content = ref("");
-const functions = ref([]);
 const selectedText = ref("");
 
 const docId = ref(0);
@@ -60,7 +59,6 @@ watchEffect(async () => {
         ElMessage(bookResponse.data.message);
     } else {
         book.value = bookResponse.data.data;
-        functions.value = book.value.aigc_function.split(';');
     }
 })
 
@@ -103,7 +101,6 @@ function updateDocId(docIdTmp) {
                         <DocumentReader
                             :bookIdentify="bookIdentify"
                             :document="document"
-                            :functions="functions"
                             :searchString="selectedText"
                         />
                     </pane>
@@ -111,7 +108,7 @@ function updateDocId(docIdTmp) {
                         <DocumentChatter
                             :bookIdentify="bookIdentify"
                             :document="document"
-                            :functions="functions"
+                            :functions="book.aigc_function ? book.aigc_function.split(';'): []"
                             @text-selected="(text) => selectedText = text"
                         />
                     </pane>

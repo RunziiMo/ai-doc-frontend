@@ -1,10 +1,8 @@
 <script lang="ts" setup>
-import { ref, computed, watch, onMounted, nextTick } from "vue"
+import { reactive, ref, computed, watch, onMounted, nextTick } from "vue"
 import { ElScrollbar } from 'element-plus'
 import { Promotion } from '@element-plus/icons-vue'
 import axios from 'axios'
-import VueOfficeDocx from '@vue-office/docx'
-import '@vue-office/docx/lib/index.css'
 
 const props = defineProps({
     bookIdentify: {
@@ -17,7 +15,7 @@ const props = defineProps({
     },
     functions: {
         type: Array,
-        required: true
+        required: true,
     }
 });
 
@@ -36,12 +34,12 @@ watch(
 watch(
     () => props.functions,
     (newValue, oldValue) => {
-        console.log("functions changed");
         scrollToBottom();
     },
     {deep: true}
 );
 
+const role = ref("");
 const prompt = ref("");
 const loading = ref(false);
 const messages = ref([]);
@@ -54,6 +52,29 @@ watch(
     {deep: true}
 );
 const scrollContainer = ref<HTMLDivElement>();
+
+let timeout: ReturnType<typeof setTimeout>
+const querySearch = (queryString: string, cb: any) => {
+    clearTimeout(timeout)
+    const functions = queryString
+        ? props.functions.filter(createFilter(queryString))
+        : props.functions
+    const results = functions.map(api => ({ value: api }));
+    // call callback function to return suggestions
+    timeout = setTimeout(() => {
+        cb(results)
+    }, 500 * Math.random())
+}
+const createFilter = (queryString: string) => {
+    return (api: string) => {
+        return (
+            api.toLowerCase().indexOf(queryString.toLowerCase()) === 0
+        )
+    }
+}
+const handleSelect = (api: string) => {
+    console.log(api)
+}
 
 const loadChatMessages = async (documentId) => {
     const params = {
@@ -70,30 +91,15 @@ const loadChatMessages = async (documentId) => {
     }
 };
 
-const docChat = async (prompt) => {
+const docAnalyze = async () => {
     loading.value = true;
-    console.log(prompt);
     const formData = new FormData();
+    formData.append('role', role.value);
     formData.append('book_identify', props.bookIdentify);
     formData.append('doc_id', props.document.doc_id);
-    formData.append('prompt', prompt);
+    formData.append('prompt', prompt.value);
+    formData.append('action', props.functions.includes(prompt.value) ? "analyze" : "chat")
     let chatResponse = await axios.post('/aigc/chat', formData);
-    let response = chatResponse.data;
-    if (response.errcode !== 0) {
-        ElMessage.warning(response.message);
-    } else {
-        messages.value.push(response.data);
-        scrollToBottom();
-    }
-    loading.value = false;
-};
-const docAnalyze = async (api) => {
-    loading.value = true;
-    const formData = new FormData();
-    formData.append('book_identify', props.bookIdentify);
-    formData.append('doc_id', props.document.doc_id);
-    formData.append('api', api);
-    let chatResponse = await axios.post('/aigc/analyze', formData);
     let response = chatResponse.data;
     if (response.errcode !== 0) {
         ElMessage({
@@ -105,12 +111,13 @@ const docAnalyze = async (api) => {
         scrollToBottom();
     }
     loading.value = false;
+    prompt.value = "";
 };
 const scrollToBottom = () => {
     nextTick(() => {
-      if (scrollContainer.value) {
-        scrollContainer.value.scrollTop = scrollContainer.value.scrollHeight;
-      }
+        if (scrollContainer.value) {
+            scrollContainer.value.scrollTop = scrollContainer.value.scrollHeight;
+        }
     });
 }
 const emit = defineEmits(['textSelected']);
@@ -125,18 +132,27 @@ const emit = defineEmits(['textSelected']);
             @text-selected="(text) => $emit('textSelected', text)"
         />
     </div>
-    <div>
-        <el-button
-            v-for="func in functions"
-            class="mt-3" type="success" :icon="Promotion"
-            @click="docAnalyze(func)"
-            round>
-            {{ func }}
-        </el-button>
-        <div class="flex my-3">
-            <el-input v-model="prompt" placeholder="请输入问题" />
-            <el-button @click="docChat(prompt)" :loading="loading" class="ml-3" type="success" :icon="Promotion" />
-        </div>
+    <el-form
+        class="mt-3"
+        :label-position="right"
+        label-width="auto"
+    >
+        <el-form-item label="利益方">
+           <el-input v-model="role"
+                placeholder="ex. 甲方，张三"
+            />
+        </el-form-item>
+    </el-form>
+    <div class="self-stretch flex mb-3 justify-between">
+        <el-autocomplete
+            class="flex-1 inline-input"
+            v-model="prompt"
+            :fetch-suggestions="querySearch"
+            :trigger-on-focus="false"
+            clearable
+            placeholder="输入 / 选择或者直接提问"
+        </el-autocomplete>
+        <el-button @click="docAnalyze" :loading="loading" class="ml-3" type="success" :icon="Promotion" />
     </div>
 </template>
 
