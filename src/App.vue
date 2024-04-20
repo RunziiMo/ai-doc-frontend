@@ -144,9 +144,12 @@ html, body {
 }
 
 @media print {
-  .el-aside {
-    display: none;
-  }
+    .el-aside {
+        display: none;
+    }
+    .el-container.el-container {
+        height: auto;
+    }
 }
 
 .splitpanes__splitter {
