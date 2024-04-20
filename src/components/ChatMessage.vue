@@ -10,44 +10,7 @@ const props = defineProps({
         required: true,
     }
 });
-// Override function
-const tokenizer = {
-    codespan(src) {
-        console.log(src);
-        const match = src.match(/^\$+([^\$\n]+?)\$+/);
-        if (match) {
-            return {
-                type: 'codespan',
-                raw: match[0],
-                text: match[1].trim()
-            };
-        }
 
-        // return false to use original codespan tokenizer
-        return false;
-    }
-};
-function preprocess(markdown) {
-    console.log(markdown);
-    return markdown;
-}
-// Override function
-function postprocess(html) {
-    console.log(html);
-    return html;
-}
-
-const walkTokens = (token) => {
-    if (token.type !== 'text') {
-        return;
-    }
-    console.log(token);
-    const replacedText = token.text.replace(/【依据】(.*)/, (match, p1) => {
-        return `<el-button @click="$emit('textSelected', '${p1}')">依据</el-button>${p1}`;
-    });
-    console.log(replacedText)
-    token.text = replacedText
-};
 const renderer = {
     text(text) {
         if (!text.includes("【依据】")) {
@@ -71,9 +34,10 @@ const response = computed(() => {
     marked.use(options);
     let result = props.message.response;
     try {
-        result = JSON.parse(props.message.response).result;
+        const jsonResult = JSON.parse(props.message.response)
+        result = jsonResult.result;
     } catch (error) {
-        ElMessage.warning(error);
+        console.log("parse message result error", error);
     }
     return marked(result);
 });
@@ -86,8 +50,8 @@ const deleteMessage = async (message) => {
     const data = response.data;
     if (data.errcode !== 0) {
         ElMessage({
-        message: data.message,
-        type: 'warning',
+            message: data.message,
+            type: 'warning',
         });
     } else {
        isDelete.value = true;
@@ -96,7 +60,7 @@ const deleteMessage = async (message) => {
 };
 
 const emit = defineEmits(['textSelected']);
-const showSelectedText = () => {
+const getSelectedText = () => {
     const selectedText = window.getSelection().toString();
     if (selectedText === '') {
         return
@@ -132,7 +96,7 @@ const handleSourceClick = (event) => {
                 <Monitor />
             </el-icon>
             <el-card
-                @mouseup="showSelectedText"
+                @mouseup="getSelectedText"
                 @click="handleSourceClick"
                 v-html="response"
                 class="px-3 flex-1"
