@@ -143,6 +143,12 @@ html, body {
     padding-bottom: 0;
 }
 
+@media print {
+  .el-aside {
+    display: none;
+  }
+}
+
 .splitpanes__splitter {
     margin-right: 10px;
     margin-left: 10px;
