@@ -10,6 +10,8 @@ import VueOfficeDocx from '@vue-office/docx'
 import '@vue-office/docx/lib/index.css'
 import { defaultOptions, renderAsync } from 'docx-preview'
 import Mark from 'mark.js'
+import * as pdfjsDist from 'pdfjs-dist'
+import * as pdfWorkerMin from 'pdfjs-dist/build/pdf.worker.min?url'
 
 const props = defineProps({
     book: {  
@@ -36,8 +38,13 @@ const props = defineProps({
 watch(
     () => props.document,
     (newValue, oldValue) => {
+        // console.log("newValue", newValue.value)  // proxy对象
         const bookIdentify = window.location.pathname.split('/').pop();
-        loadDocument(bookIdentify, newValue.doc_id)
+
+        // const docObject = JSON.parse(JSON.stringify(newValue));
+        // console.log("docObject", docObject)  // proxy对象
+
+        loadDocument(bookIdentify, newValue.doc_id, newValue.identify)
         loadChatMessages(newValue.doc_id);
     }
 );
@@ -94,17 +101,48 @@ const loadChatMessages = async (documentId) => {
     console.log("messages", data);
   }
 };
-const loadDocument = async (bookIdentify, documentId) => {
-    const url = `/api/book/${bookIdentify}/download/${documentId}`
-    let response = await axios.get(url, {  
-        responseType: 'blob' // 设置响应类型为 blob  
-    });
-    const docxOptions = Object.assign(defaultOptions, {
-        inWrapper: false,
-        ignoreWidth: true,
-        experimental: true
-    })
-    await renderAsync(response.data, docxContainer.value, null, docxOptions)
+const loadDocument = async (bookIdentify, doc_id, doc_identify) => {
+    const url = `/api/book/${bookIdentify}/download/${doc_id}`
+    console.log("loadDocument->doc_id", doc_id)
+    console.log("loadDocument->doc_identify", doc_identify)
+    console.log("loadDocument->url", url)
+    
+    // pdf
+    if (doc_identify.endsWith(".pdf")) {
+        pdfjsDist.GlobalWorkerOptions.workerSrc = pdfWorkerMin.default
+        // 测试url
+        // const url_test = '/assets/test_1.pdf'
+
+        const loadingTask = pdfjsDist.getDocument({ url: url });
+        const pdf = await loadingTask.promise;
+        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+            const page = await pdf.getPage(pageNum);
+            const scale = 1.5;
+            const viewport = page.getViewport({ scale });
+            const canvas = document.createElement('canvas');
+            const context = canvas.getContext('2d');
+            canvas.width = viewport.width;
+            canvas.height = viewport.height;
+            const renderContext = {
+                canvasContext: context,
+                viewport: viewport,
+            };
+            await page.render(renderContext).promise;
+            // Append the canvas to the div
+            docxContainer.value.appendChild(canvas);
+        }
+    } else {
+        // docx
+        let response = await axios.get(url, {  
+            responseType: 'blob' // 设置响应类型为 blob  
+        });
+        const docxOptions = Object.assign(defaultOptions, {
+            inWrapper: false,
+            ignoreWidth: true,
+            experimental: true
+        })
+        await renderAsync(response.data, docxContainer.value, null, docxOptions)
+    }
 };
 
 const docChat = async (prompt) => {
