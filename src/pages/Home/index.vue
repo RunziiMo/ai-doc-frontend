@@ -1,0 +1,183 @@
+<template>
+    <div class="home-content">
+        <banner :search-handle="searchHandle" :create-project="createProject"></banner>
+        <div class="doc-list">
+            <project-item :book-id="doc.bookId" v-for="doc in homeData.docList" :doc-data="doc"></project-item>
+            <el-card class="add-doc" @click="addDocHandle">
+                <el-icon :size="30">
+                    <Plus />
+                </el-icon>
+            </el-card>
+        </div>
+        <el-dialog v-model="dialogVisible" title="项目空间">
+            <add-project :dialog-hidden-handle="dialogHiddenHandle"></add-project>
+        </el-dialog>
+    </div>
+</template>
+<script setup>
+import Banner from './components/Banner.vue';
+import ProjectItem from './components/ProjectItem.vue';
+import { reactive, ref } from 'vue';
+import AddProject from './components/AddProject.vue';
+import axios from 'axios'
+const homeData = reactive({
+    docList: []
+})
+const dialogVisible = ref(false)
+function test() {
+    this.$router.push('/docs')
+}
+function addDocHandle() {
+    dialogVisible.value = true;
+}
+function dialogHiddenHandle() {
+    dialogVisible.value = false;
+}
+function searchHandle(searchText) {
+    homeData.docList = [...mockData]
+    homeData.docList = homeData.docList.filter(item => item.docName.indexOf(searchText) > -1 || item.docAuthor.indexOf(searchText) > -1)
+}
+function createProject() {
+    dialogVisible.value = true;
+}
+const mockData = [
+    {
+        doctId: 1,
+        docName: '项目名1-测试',
+        docAuthor: '作者1-测试',
+        bookId: 4,
+    },
+    {
+        doctId: 1,
+        docName: '项目名2-测试',
+        docAuthor: '作者2-测试',
+        bookId: 4,
+    },
+    {
+        doctId: 1,
+        docName: '项目名3-测试',
+        docAuthor: '作者13测试',
+    },
+    {
+        doctId: 1,
+        docName: '项目名1-测试',
+        docAuthor: '作者1-测试',
+    },
+    {
+        doctId: 1,
+        docName: '项目名1-测试',
+        docAuthor: '作者1-测试',
+    },
+    {
+        doctId: 1,
+        docName: '项目名1-测试',
+        docAuthor: '作者1-测试',
+    },
+    {
+        doctId: 1,
+        docName: '项目名1-测试',
+        docAuthor: '作者1-测试',
+    },
+    {
+        doctId: 1,
+        docName: '项目名1-测试',
+        docAuthor: '作者1-测试',
+    },
+    {
+        doctId: 1,
+        docName: '项目名1-测试',
+        docAuthor: '作者1-测试',
+    },
+    {
+        doctId: 1,
+        docName: '项目名1-测试',
+        docAuthor: '作者1-测试',
+    },
+    {
+        doctId: 1,
+        docName: '项目名1-测试',
+        docAuthor: '作者1-测试',
+    },
+    {
+        doctId: 1,
+        docName: '项目名1-测试',
+        docAuthor: '作者1-测试',
+    },
+    {
+        doctId: 1,
+        docName: '项目名1-测试',
+        docAuthor: '作者1-测试',
+    },
+    {
+        doctId: 1,
+        docName: '项目名1-测试',
+        docAuthor: '作者1-测试',
+    },
+    {
+        doctId: 1,
+        docName: '项目名1-测试',
+        docAuthor: '作者1-测试',
+    },
+    {
+        doctId: 1,
+        docName: '项目名1-测试',
+        docAuthor: '作者1-测试',
+    },
+    {
+        doctId: 1,
+        docName: '项目名1-测试',
+        docAuthor: '作者1-测试',
+    },
+    {
+        doctId: 1,
+        docName: '项目名1-测试',
+        docAuthor: '作者1-测试',
+    },
+    {
+        doctId: 1,
+        docName: '项目名1-测试',
+        docAuthor: '作者1-测试',
+    },
+    {
+        doctId: 1,
+        docName: '项目名1-测试',
+        docAuthor: '作者1-测试',
+    }
+];
+homeData.docList = [...mockData]
+// 初始化请求  
+async function fetchInitialData() {
+    try {
+        const response = await axios.get('你的API地址'); // 替换为你的API地址  
+        homeData.docList = response.data; // 假设返回的数据结构与你定义的homeData.docList一致  
+    } catch (error) {
+        console.error('初始化数据请求失败:', error);
+        // 可以在这里处理错误，比如显示错误消息等  
+    }
+}
+
+// 接口请求
+// fetchInitialData()
+</script>
+<style>
+.home-content {}
+
+.doc-list {
+    display: flex;
+    /* justify-content: center; */
+    gap: 15px;
+    padding: 20px 20px;
+    flex-wrap: wrap;
+}
+
+.add-doc {
+    display: flex;
+    flex-shrink: 0;
+    flex-direction: column;
+    justify-content: center;
+    align-items: center;
+    width: 130px;
+    height: 200px;
+    border-radius: 3px;
+}
+</style>

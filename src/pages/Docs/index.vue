@@ -1,4 +1,4 @@
-<!-- <script setup>
+<script setup>
 import { ElMessage } from 'element-plus'
 import { ref, onMounted, watch, watchEffect } from 'vue'
 import axios from 'axios'
@@ -13,7 +13,12 @@ import {
 } from '@element-plus/icons-vue'
 import { Splitpanes, Pane } from 'splitpanes'
 import 'splitpanes/dist/splitpanes.css'
-import LeftSidebar from './components/LeftSidebar.vue';
+// import LeftSidebar from '../../components/LeftSidebar.vue';
+import LeftSidebar from '../../components/LeftSidebar2.vue';
+import {bookData, documentData} from './mock.js';
+
+import UploadFile from './components/UploadFile.vue';
+import DocTag from './components/DocTag.vue';
 
 const showChatter = ref(true)
 const book = ref({});
@@ -23,13 +28,21 @@ const selectedText = ref("");
 
 const docId = ref(0);
 const bookIdentify = ref("")
+const dialogVisible = ref(false)
+const docTreeVisible = ref(false)
+
+const uploadDocHandle = () => {
+    dialogVisible.value = true;
+}
 
 const loadDoc = async (bookIdentify, docId) => {
     if (docId === undefined) {
         docId = 0;
     }
-    let response = await axios.get(`/api/${bookIdentify}/content/${docId}`); 
+    // let response = await axios.get(`/api/${bookIdentify}/content/${docId}`); 
+    let response = await axios.get(`/api/${bookIdentify}/content/5`); 
     console.log("document response:");
+    response = documentData;
     console.log(response);
     if (response.data.errcode !== 0) {
         ElMessage(response.data.message);
@@ -51,7 +64,8 @@ watchEffect(async () => {
     let params = {
         identify: bookIdentify.value,
     };
-    const bookResponse = await axios.get(`/api/book/${bookIdentify.value}`, { params }); 
+    let bookResponse = await axios.get(`/api/book/${bookIdentify.value}`, { params }); 
+    bookResponse = {data: bookData};
     console.log("bookResponse:");
     console.log(bookResponse);
 
@@ -67,9 +81,23 @@ onMounted(async () => {
     docId.value = window.location.pathname.split('/')[3];
 })
 
+function handleClose() {
+    dialogVisible.value = false;
+}
+
+function handleBatchAppendTag(data) {
+    console.log('add-tree-tag')
+    docTreeVisible.value = false;
+    book.document_trees = data;
+}
+
 function updateDocId(docIdTmp) {
     console.log(`updateId docId is:${docIdTmp}`);
     docId.value = docIdTmp;
+}
+function setTagHandle() {
+    console.log('setTagHandle');
+    docTreeVisible.value = true;
 }
 </script>
 
@@ -83,6 +111,14 @@ function updateDocId(docIdTmp) {
         </el-header>
         <el-container>
             <el-aside width="300px">
+                <!-- 增加“上传文档”和“设置标签” 开始 -->
+                <div style="paddingLeft: 10px;marginTop: 10px;">
+                    <el-button type="success" @click="uploadDocHandle">上传文档</el-button>
+                    <el-button type="primary" @click="setTagHandle">设置标签</el-button>
+                    <upload-file :dialog-visible="dialogVisible" :handle-close="handleClose"></upload-file>
+                    <doc-tag :dialog-visible="docTreeVisible" :handle-batch-append-tag="handleBatchAppendTag"></doc-tag>
+                </div>
+                <!-- 增加“上传文档”和“设置标签” 结束-->
                 <div class="sidebar">
                     <LeftSidebar
                         :documents="book.document_trees"
@@ -176,15 +212,4 @@ html, body {
     border-right: 1px solid #eee; /* 可选的右侧边框 */  
     padding: 10px; /* 内边距 */  
 }
-</style> -->
-
-
-<template>
-    <router-view></router-view>
-</template>
-
-<script>
-export default {
-    name: 'App'
-}
-</script>
+</style>

@@ -6,6 +6,7 @@ import 'element-plus/dist/index.css'
 import 'virtual:uno.css'
 import router from './router'
 import App from './App.vue'
+import Home from './Home.vue';
 
 const app = createApp(App)
 
@@ -15,5 +16,5 @@ app.use(ElementPlus, {
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
     app.component(key, component)
 }
-// app.use(router)
+app.use(router)
 app.mount('#app')

@@ -45,40 +45,40 @@ const docxContainer = ref<HTMLDivElement>();
 
 const loadDocument = async (bookIdentify, docId, docIdentify) => {
     const url = `/api/book/${bookIdentify}/download/${docId}`
-    if (docIdentify.endsWith(".pdf")) {
-        // pdf    
-        pdfjsDist.GlobalWorkerOptions.workerSrc = pdfWorkerMin.default
-        // const url_test = '/assets/test_1.pdf'    // 测试url
-        const loadingTask = pdfjsDist.getDocument({ url: url });
-        const pdf = await loadingTask.promise;
-        for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-            const page = await pdf.getPage(pageNum);
-            const scale = 1.5;
-            const viewport = page.getViewport({ scale });
-            const canvas = document.createElement('canvas');
-            const context = canvas.getContext('2d');
-            canvas.width = viewport.width;
-            canvas.height = viewport.height;
-            const renderContext = {
-                canvasContext: context,
-                viewport: viewport,
-            };
-            await page.render(renderContext).promise;
-            // Append the canvas to the div
-            docxContainer.value.appendChild(canvas);
-        }
-    } else {
-        // docx
-        let response = await axios.get(url, {  
-            responseType: 'blob' // 设置响应类型为 blob  
-        });
-        const docxOptions = Object.assign(defaultOptions, {
-            inWrapper: false,
-            ignoreWidth: true,
-            experimental: true
-        })
-        await renderAsync(response.data, docxContainer.value, null, docxOptions)
-    }
+    // if (docIdentify.endsWith(".pdf")) {
+    //     // pdf    
+    //     pdfjsDist.GlobalWorkerOptions.workerSrc = pdfWorkerMin.default
+    //     // const url_test = '/assets/test_1.pdf'    // 测试url
+    //     const loadingTask = pdfjsDist.getDocument({ url: url });
+    //     const pdf = await loadingTask.promise;
+    //     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
+    //         const page = await pdf.getPage(pageNum);
+    //         const scale = 1.5;
+    //         const viewport = page.getViewport({ scale });
+    //         const canvas = document.createElement('canvas');
+    //         const context = canvas.getContext('2d');
+    //         canvas.width = viewport.width;
+    //         canvas.height = viewport.height;
+    //         const renderContext = {
+    //             canvasContext: context,
+    //             viewport: viewport,
+    //         };
+    //         await page.render(renderContext).promise;
+    //         // Append the canvas to the div
+    //         docxContainer.value.appendChild(canvas);
+    //     }
+    // } else {
+    // docx
+    let response = await axios.get(url, {  
+        responseType: 'blob' // 设置响应类型为 blob  
+    });
+    const docxOptions = Object.assign(defaultOptions, {
+        inWrapper: false,
+        ignoreWidth: true,
+        experimental: true
+    })
+    await renderAsync(response.data, docxContainer.value, null, docxOptions)
+    // }
 };
 
 const toast = (message) => {

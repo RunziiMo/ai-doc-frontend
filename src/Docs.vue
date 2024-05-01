@@ -1,4 +1,4 @@
-<!-- <script setup>
+<script setup>
 import { ElMessage } from 'element-plus'
 import { ref, onMounted, watch, watchEffect } from 'vue'
 import axios from 'axios'
@@ -176,15 +176,4 @@ html, body {
     border-right: 1px solid #eee; /* 可选的右侧边框 */  
     padding: 10px; /* 内边距 */  
 }
-</style> -->
-
-
-<template>
-    <router-view></router-view>
-</template>
-
-<script>
-export default {
-    name: 'App'
-}
-</script>
+</style>
