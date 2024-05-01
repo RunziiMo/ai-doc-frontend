@@ -33,7 +33,8 @@ watch(
 );
 watch(
     () => props.functions,
-    (newValue, oldValue) => {
+    async (newValue, oldValue) => {
+        await nextTick();
         scrollToBottom();
     },
     {deep: true}
@@ -45,7 +46,8 @@ const loading = ref(false);
 const messages = ref([]);
 watch(
     () => messages,
-    (newValue, oldValue) => {
+    async (newValue, oldValue) => {
+        await nextTick();
         console.log("messages changed");
         scrollToBottom();
     },
@@ -108,6 +110,7 @@ const docAnalyze = async () => {
         });
     } else {
         messages.value.push(response.data);
+        await nextTick();
         scrollToBottom();
     }
     loading.value = false;
