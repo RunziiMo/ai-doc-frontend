@@ -33,7 +33,8 @@ watch(
 );
 watch(
     () => props.functions,
-    (newValue, oldValue) => {
+    async (newValue, oldValue) => {
+        await nextTick();
         scrollToBottom();
     },
     {deep: true}
@@ -45,7 +46,8 @@ const loading = ref(false);
 const messages = ref([]);
 watch(
     () => messages,
-    (newValue, oldValue) => {
+    async (newValue, oldValue) => {
+        await nextTick();
         console.log("messages changed");
         scrollToBottom();
     },
@@ -53,17 +55,18 @@ watch(
 );
 const scrollContainer = ref<HTMLDivElement>();
 
-let timeout: ReturnType<typeof setTimeout>
 const querySearch = (queryString: string, cb: any) => {
-    clearTimeout(timeout)
+    if (!queryString.startsWith("/")) {
+        cb([]);
+        return;
+    }
+    // 如果是，使用 substring 方法删除第一个斜杠
+    queryString = queryString.substring(1);
     const functions = queryString
         ? props.functions.filter(createFilter(queryString))
         : props.functions
     const results = functions.map(api => ({ value: api }));
-    // call callback function to return suggestions
-    timeout = setTimeout(() => {
-        cb(results)
-    }, 500 * Math.random())
+    cb(results);
 }
 const createFilter = (queryString: string) => {
     return (api: string) => {
@@ -108,6 +111,7 @@ const docAnalyze = async () => {
         });
     } else {
         messages.value.push(response.data);
+        await nextTick();
         scrollToBottom();
     }
     loading.value = false;
