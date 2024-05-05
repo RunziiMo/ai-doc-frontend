@@ -1,7 +1,7 @@
 <template>
     <el-card @click="enterProject" class="project-item">
-        <div>{{docData.docName}}</div>
-        <div>{{docData.docAuthor}}</div>
+        <div>{{docData.book_name}}</div>
+        <div>{{docData.identify}}</div>
         
     </el-card>
 </template>
@@ -9,10 +9,12 @@
 import { useRouter } from 'vue-router';
 const router = useRouter();  
 const enterProject = () => {  
-    router.push(`/docs/${props.docData.bookId}`);  
+    router.push(`/docs/${props.docData.identify}`);  
 };
 
 const props = defineProps(['docData'])
+
+console.log("docData_2", props.docData)
 </script>
 <style>
 .project-item {

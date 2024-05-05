@@ -15,7 +15,7 @@ import { Splitpanes, Pane } from 'splitpanes'
 import 'splitpanes/dist/splitpanes.css'
 // import LeftSidebar from '../../components/LeftSidebar.vue';
 import LeftSidebar from '../../components/LeftSidebar2.vue';
-import {bookData, documentData} from './mock.js';
+// import {bookData, documentData} from './mock.js';
 
 import UploadFile from './components/UploadFile.vue';
 import DocTag from './components/DocTag.vue';
@@ -39,10 +39,10 @@ const loadDoc = async (bookIdentify, docId) => {
     if (docId === undefined) {
         docId = 0;
     }
-    // let response = await axios.get(`/api/${bookIdentify}/content/${docId}`); 
-    let response = await axios.get(`/api/${bookIdentify}/content/5`); 
+    let response = await axios.get(`/api/${bookIdentify}/content/${docId}`); 
+    // let response = await axios.get(`/api/${bookIdentify}/content/5`); 
     console.log("document response:");
-    response = documentData;
+    // response = documentData;
     console.log(response);
     if (response.data.errcode !== 0) {
         ElMessage(response.data.message);
@@ -57,29 +57,36 @@ watchEffect(async () => {
     if (bookIdentify.value === "" || docId.value === ""){
         return
     }
-    console.log("watchEffect:")
-    console.log(`bookIdentify is ${bookIdentify.value}`)
-    console.log(`docId is ${docId.value}`)
-    await loadDoc(bookIdentify.value, docId.value);
+    console.log("watchEffect, bookIdentify:", bookIdentify.value);
+    
     let params = {
         identify: bookIdentify.value,
     };
     let bookResponse = await axios.get(`/api/book/${bookIdentify.value}`, { params }); 
-    bookResponse = {data: bookData};
-    console.log("bookResponse:");
-    console.log(bookResponse);
-
+    // bookResponse = {data: bookData};
+    console.log("watchEffect, bookResponse:", bookResponse);
+    
     if (bookResponse.data.errcode !== 0) {
         ElMessage(bookResponse.data.message);
     } else {
         book.value = bookResponse.data.data;
     }
+
+    docId.value = book.value.document_trees[0].id;
+    console.log("watchEffect, docId:", docId.value);
+
+    await loadDoc(bookIdentify.value, docId.value);
 })
+
 
 onMounted(async () => {
     bookIdentify.value = window.location.pathname.split('/')[2];
-    docId.value = window.location.pathname.split('/')[3];
+    // console.log("onMounted:bookIdentify.value", bookIdentify.value);
+
+    // docId.value = window.location.pathname.split('/')[3];
+    // console.log("onMounted:docId.value", docId.value);
 })
+
 
 function handleClose() {
     dialogVisible.value = false;

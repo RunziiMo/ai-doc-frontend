@@ -1,20 +1,20 @@
 <template>
     <el-form :model="form" label-width="auto" style="max-width: 600px" label-position="top" :rules="rules"
         ref="ruleFormRef">
-        <el-form-item label="项目空间" prop="projectSpace">
-            <el-input v-model="form.projectSpace" placeholder="每个项目必须归属一个项目空间，超级管理员可在后台管理和维护"/>
+        <el-form-item label="项目空间" prop="itemId">
+            <el-input v-model="form.itemId" placeholder="每个项目必须归属一个项目空间，超级管理员可在后台管理和维护"/>
         </el-form-item>
-        <el-form-item label="项目标题" prop="projectTitle">
-            <el-input v-model="form.projectTitle" placeholder="项目标题，不超过100字"/>
+        <el-form-item label="项目标题" prop="book_name">
+            <el-input v-model="form.book_name" placeholder="项目标题，不超过100字"/>
         </el-form-item>
-        <el-form-item label="项目标识" prop="projectFlag">
-            <el-input v-model="form.projectFlag" placeholder="项目标识，不超过50字"/>
+        <el-form-item label="项目标识" prop="identify">
+            <el-input v-model="form.identify" placeholder="项目标识，不超过50字"/>
         </el-form-item>
-        <el-form-item label="项目描述" prop="projectDesc">
-            <el-input type="textarea" v-model="form.projectDesc" placeholder="项目描述，不超过500字"/>
+        <el-form-item label="项目描述" prop="description">
+            <el-input type="textarea" v-model="form.description" placeholder="项目描述，不超过500字"/>
         </el-form-item>
         <el-form-item label="">
-            <el-radio-group v-model="form.projectSecret">
+            <el-radio-group v-model="form.privately_owned">
                 <el-radio :value="1">公开(任何人都可以访问)</el-radio>
                 <el-radio :value="0">私有(只有参与者或者使用令牌才能访问)</el-radio>
             </el-radio-group>
@@ -48,35 +48,37 @@
 </template>
 <script setup>
 import { ref, reactive, onMounted } from 'vue';
+import { useRouter } from 'vue-router';
 import axios from 'axios';
 import { ElMessage } from 'element-plus';
+const router = useRouter();
 const props = defineProps(['dialogHiddenHandle'])
 // dialogHiddenHandle
 
 // 表单数据  
 const form = reactive({
-    projectSpace: '',
-    projectTitle: '',
-    projectFlag: '',
-    projectDesc: '',
-    projectSecret: 1, // 假设公开为默认值  
+    itemId: '',
+    book_name: '',
+    identify: '',
+    description: '',
+    privately_owned: 1, // 假设公开为默认值  
     file: [] // 文件列表  
 });
 
 const rules = {
-    projectSpace: [
+    itemId: [
         { required: true, message: '请输入项目空间', trigger: 'blur' },
         { min: 1, max: 50, message: '长度在 1 到 50 个字符', trigger: 'blur' }
     ],
-    projectTitle: [
+    book_name: [
         { required: true, message: '请输入项目标题', trigger: 'blur' },
         { min: 1, max: 100, message: '长度在 1 到 100 个字符', trigger: 'blur' }
     ],
-    projectFlag: [
+    identify: [
         { required: true, message: '请输入项目标识', trigger: 'blur' },
         { min: 1, max: 50, message: '长度在 1 到 50 个字符', trigger: 'blur' }
     ],
-    projectDesc: [
+    description: [
         { required: true, message: '请输入项目描述', trigger: 'blur' },
         { min: 1, max: 500, message: '长度在 1 到 500 个字符', trigger: 'blur' }
     ],
@@ -119,16 +121,27 @@ function submitForm() {
         if (valid) {
             // 表单校验通过，开始提交表单数据  
             console.log('提交数据', form);
-            axios.post('/api/createProject', form) // 替换为实际的API地址  
+
+            const formData = new FormData();
+            formData.append('itemId', form.itemId);
+            formData.append('book_name', form.book_name);
+            formData.append('identify', form.identify);
+            formData.append('description', form.description);
+            formData.append('privately_owned', form.privately_owned);
+            formData.append('import-file', form.file[0].raw);
+            
+            axios.post('/book/create', formData) // 替换为实际的API地址  
                 .then(response => {
-                    if (response.data.success) {
+                    if (response.data.errcode == 0) {
                         ElMessage.success('项目创建成功');
-                        // 重置表单  
-                        form.projectSpace = '';
-                        form.projectTitle = '';
-                        form.projectFlag = '';
-                        form.projectDesc = '';
-                        form.projectSecret = 1;
+
+                        router.push(`/docs/${form.identify}`);
+                        // 重置表单
+                        form.itemId = 0;
+                        form.book_name = '';
+                        form.identify = '';
+                        form.description = '';
+                        form.privately_owned = 1;
                         form.file = [];
                     } else {
                         ElMessage.error('项目创建失败: ' + response.data.message);

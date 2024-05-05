@@ -1,8 +1,8 @@
 <template>
     <div class="banner-content">
         <div class="banner-left">
-            <div>网站名</div>
-            <div>首页</div>
+            <div>合同分析</div>
+            <div @click="enterHome">首页</div>
             <div class="create-project" @click="createProject">新建项目</div>
         </div>
         <div class="banner-right">
@@ -14,13 +14,16 @@
                 @input="handleInput" 
             />
         </div>
-        <div>账号名称</div>
+        <div @click="enterPersonal">账号名称</div>
     </div>
 </template>
 <script setup>
 import { reactive, ref, watchEffect } from 'vue'
+import { useRouter } from 'vue-router';
 const props = defineProps(['searchHandle', 'createProject']);
 const searchModel = ref('')
+const router = useRouter();
+
 function handleInput() {
     console.log('ddddd', searchModel);
     props.searchHandle(trimQuotes(searchModel.value));
@@ -30,6 +33,16 @@ function createProject() {
 }
 function trimQuotes(str) {
   return str.replace(/^"|"$/g, '');
+}
+function enterHome() {
+    router.push("/");
+}
+// es6语法
+// const enterHome = () => {  
+//     router.push("/");
+// };
+function enterPersonal() {
+    router.push("/myspace");
 }
 </script>
 <style>

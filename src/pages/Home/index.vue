@@ -2,7 +2,7 @@
     <div class="home-content">
         <banner :search-handle="searchHandle" :create-project="createProject"></banner>
         <div class="doc-list">
-            <project-item :book-id="doc.bookId" v-for="doc in homeData.docList" :doc-data="doc"></project-item>
+            <project-item :book-id="doc.book_id" v-for="doc in homeData.docList" :doc-data="doc"></project-item>
             <el-card class="add-doc" @click="addDocHandle">
                 <el-icon :size="30">
                     <Plus />
@@ -34,12 +34,18 @@ function dialogHiddenHandle() {
     dialogVisible.value = false;
 }
 function searchHandle(searchText) {
-    homeData.docList = [...mockData]
-    homeData.docList = homeData.docList.filter(item => item.docName.indexOf(searchText) > -1 || item.docAuthor.indexOf(searchText) > -1)
+    // homeData.docList = [...mockData]
+
+    // if (!searchText) {
+    //     homeData.docList = [...mockData]
+    // }
+    homeData.docList = homeData.docList.filter(item => item.book_name.indexOf(searchText) > -1 || item.identify.indexOf(searchText) > -1)
 }
 function createProject() {
     dialogVisible.value = true;
 }
+
+/***
 const mockData = [
     {
         doctId: 1,
@@ -145,11 +151,14 @@ const mockData = [
     }
 ];
 homeData.docList = [...mockData]
+ */
+
 // 初始化请求  
 async function fetchInitialData() {
     try {
-        const response = await axios.get('你的API地址'); // 替换为你的API地址  
-        homeData.docList = response.data; // 假设返回的数据结构与你定义的homeData.docList一致  
+        const response = await axios.get('/book/getList'); // 替换为你的API地址  
+        homeData.docList = response.data.data; // 假设返回的数据结构与你定义的homeData.docList一致
+        console.log("docList", homeData.docList)
     } catch (error) {
         console.error('初始化数据请求失败:', error);
         // 可以在这里处理错误，比如显示错误消息等  
@@ -157,7 +166,7 @@ async function fetchInitialData() {
 }
 
 // 接口请求
-// fetchInitialData()
+fetchInitialData()
 </script>
 <style>
 .home-content {}
