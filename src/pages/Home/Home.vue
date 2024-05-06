@@ -2,7 +2,12 @@
     <div class="home-content">
         <banner :search-handle="searchHandle" :create-project="createProject"></banner>
         <div class="doc-list">
-            <project-item :book-id="doc.book_id" v-for="doc in homeData.docList" :doc-data="doc"></project-item>
+            <project-item
+                v-for="book in homeData.bookList"
+                :key="book"
+                :book-id="book.book_id"
+                :doc-data="book">
+            </project-item>
             <el-card class="add-doc" @click="addDocHandle">
                 <el-icon :size="30">
                     <Plus />
@@ -21,7 +26,7 @@ import { reactive, ref } from 'vue';
 import AddProject from './components/AddProject.vue';
 import axios from 'axios'
 const homeData = reactive({
-    docList: []
+    bookList: []
 })
 const dialogVisible = ref(false)
 function test() {
@@ -34,12 +39,12 @@ function dialogHiddenHandle() {
     dialogVisible.value = false;
 }
 function searchHandle(searchText) {
-    // homeData.docList = [...mockData]
+    // homeData.bookList = [...mockData]
 
     // if (!searchText) {
-    //     homeData.docList = [...mockData]
+    //     homeData.bookList = [...mockData]
     // }
-    homeData.docList = homeData.docList.filter(item => item.book_name.indexOf(searchText) > -1 || item.identify.indexOf(searchText) > -1)
+    homeData.bookList = homeData.bookList.filter(item => item.book_name.indexOf(searchText) > -1 || item.identify.indexOf(searchText) > -1)
 }
 function createProject() {
     dialogVisible.value = true;
@@ -150,15 +155,15 @@ const mockData = [
         docAuthor: '作者1-测试',
     }
 ];
-homeData.docList = [...mockData]
+homeData.bookList = [...mockData]
  */
 
 // 初始化请求  
 async function fetchInitialData() {
     try {
-        const response = await axios.get('/book/getList'); // 替换为你的API地址  
-        homeData.docList = response.data.data; // 假设返回的数据结构与你定义的homeData.docList一致
-        console.log("docList", homeData.docList)
+        const response = await axios.get('/api/book/home'); // 替换为你的API地址
+        homeData.bookList = response.data.data; // 假设返回的数据结构与你定义的homeData.bookList一致
+        console.log("bookList", homeData.bookList)
     } catch (error) {
         console.error('初始化数据请求失败:', error);
         // 可以在这里处理错误，比如显示错误消息等  

@@ -58,7 +58,7 @@ export default {
           active-text="问答"
           inactive-text="全屏"
         />
-        <el-link href="/" :underline="false"><el-button>首页</el-button></el-link>
+        <router-link to="/"><el-button>首页</el-button></router-link>
         <el-link v-if="editable" :href="`/api/${book.identify}/edit/`" :underline="false"><el-button type="danger">编辑</el-button></el-link>
         <el-link v-if="owner" :href="`/book/${book.identify}/users`" :underline="false"><el-button type="success">成员</el-button></el-link>
         <el-link v-if="owner" :href="`/book/${book.identify}/setting`" :underline="false"><el-button type="primary">设置</el-button></el-link>
@@ -107,15 +107,21 @@ export default {
 </template>
 
 <style scoped>
-@media print {  
+@media print {
   .el-page-header {  
     display: none;  
-  }  
+  }
 }
 .el-page-header {
   width: 100%;
 }
 .el-switch+.el-link {
+  margin-left: 12px;
+}
+.el-switch+a {
+  margin-left: 12px;
+}
+a+.el-link {
   margin-left: 12px;
 }
 .el-button+.el-link {

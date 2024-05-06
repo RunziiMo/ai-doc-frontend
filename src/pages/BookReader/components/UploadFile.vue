@@ -1,5 +1,5 @@
 <template>
-    <el-dialog v-model="props.dialogVisible" title="上传文档" :before-close="handleClose" style="width: 435px">
+    <el-dialog v-model="dialogFormVisible" title="上传文档" :before-close="handleClose" style="width: 435px">
         <div>
             <el-upload
                 v-model:file-list="form.file"
@@ -27,24 +27,31 @@
         </div>
         <template #footer>
             <div class="dialog-footer">
-                <el-button @click="handleClose">取消</el-button>
-                <el-button @click="handleClose" type="primary">上传</el-button>
+                <el-button @click="dialogFormVisible = false">取消</el-button>
+                <el-button type="primary">上传</el-button>
             </div>
         </template>
     </el-dialog>
 </template>
 <script setup>
-import { reactive, ref } from 'vue';
+import { reactive, computed } from 'vue';
 import axios from 'axios';
-// const dialogVisible = ref(false)
-const props = defineProps(['dialogVisible', 'handleClose']);
+
+const props = defineProps(['dialogVisible']);
 const form = reactive({
-  file: '',
+    file: '',
 })
 
-function handleClose() {
-    props.handleClose();
-}
+const emit = defineEmits(['update:dialogVisible']);
+const dialogFormVisible = computed({
+    get() {
+        return props.dialogVisible;  
+    },
+    set(newValue) {
+        emit('update:dialogVisible', newValue);
+    },
+});
+
 function handlePreview() {}
 function handleRemove() {}
 function beforeRemove() {}
