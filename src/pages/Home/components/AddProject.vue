@@ -1,8 +1,24 @@
 <template>
-    <el-form :model="form" label-width="auto" style="max-width: 600px" label-position="top" :rules="rules"
+    <el-form v-model="dialogFormVisible" :model="form" label-width="auto" style="max-width: 600px" label-position="top" :rules="rules"
         ref="ruleFormRef">
         <el-form-item label="项目空间" prop="itemId">
-            <el-input v-model="form.itemId" placeholder="每个项目必须归属一个项目空间，超级管理员可在后台管理和维护"/>
+            <el-select
+                v-model="form.itemId"
+                filterable
+                remote
+                reserve-keyword
+                placeholder="每个项目必须归属一个项目空间，超级管理员可在后台管理和维护"
+                remote-show-suffix
+                :remote-method="itemSearch"
+                :loading="loading"
+            >
+                <el-option
+                    v-for="item in options"
+                    :key="item"
+                    :label="item.text"
+                    :value="item.id"
+                />
+            </el-select>
         </el-form-item>
         <el-form-item label="项目标题" prop="book_name">
             <el-input v-model="form.book_name" placeholder="项目标题，不超过100字"/>
@@ -42,18 +58,30 @@
             <el-button type="primary" @click="submitForm(ruleFormRef)">
                 创建
             </el-button>
-            <el-button @click="props.dialogHiddenHandle">取消</el-button>
+            <el-button @click="dialogFormVisible = false">取消</el-button>
         </el-form-item>
     </el-form>
 </template>
-<script setup>
-import { ref, reactive, onMounted } from 'vue';
-import { useRouter } from 'vue-router';
+<script lang="ts" setup>
+import { ref, reactive, onMounted, computed } from 'vue';
 import axios from 'axios';
 import { ElMessage } from 'element-plus';
-const router = useRouter();
-const props = defineProps(['dialogHiddenHandle'])
-// dialogHiddenHandle
+
+const props = defineProps({
+    dialogVisible: {
+        type: Boolean,
+        required: true,
+    },
+});
+const emit = defineEmits(['update:dialogVisible']);
+const dialogFormVisible = computed({
+    get() {
+        return props.dialogVisible;  
+    },
+    set(newValue) {
+        emit('update:dialogVisible', newValue);
+    },
+});
 
 // 表单数据  
 const form = reactive({
@@ -67,8 +95,7 @@ const form = reactive({
 
 const rules = {
     itemId: [
-        { required: true, message: '请输入项目空间', trigger: 'blur' },
-        { min: 1, max: 50, message: '长度在 1 到 50 个字符', trigger: 'blur' }
+        { type: 'number', required: true, message: '请输入项目空间', trigger: 'blur' },
     ],
     book_name: [
         { required: true, message: '请输入项目标题', trigger: 'blur' },
@@ -115,6 +142,22 @@ const beforeUpload = file => {
     // 处理文件上传的逻辑
 }
 
+const options = ref([])
+const loading = ref(false)
+const itemSearch = async (query) => {
+    loading.value = true
+    const params = {
+        q: query,
+    }
+    const response = await axios.get("/book/itemsets/search", { params });
+    if (response.data.errcode !== 0) {
+        ElMessage.warning(response.data.message);
+    } else {
+        options.value = response.data.data.results;
+    }
+    loading.value = false;
+}
+
 // 提交表单  
 function submitForm() {
     ruleFormRef.value.validate((valid) => {
@@ -130,12 +173,10 @@ function submitForm() {
             formData.append('privately_owned', form.privately_owned);
             formData.append('import-file', form.file[0].raw);
             
-            axios.post('/book/create', formData) // 替换为实际的API地址  
+            axios.post('/book/users/import', formData) // 替换为实际的API地址  
                 .then(response => {
                     if (response.data.errcode == 0) {
                         ElMessage.success('项目创建成功');
-
-                        router.push(`/docs/${form.identify}`);
                         // 重置表单
                         form.itemId = 0;
                         form.book_name = '';
@@ -143,6 +184,7 @@ function submitForm() {
                         form.description = '';
                         form.privately_owned = 1;
                         form.file = [];
+                        dialogFormVisible.value = false;
                     } else {
                         ElMessage.error('项目创建失败: ' + response.data.message);
                     }

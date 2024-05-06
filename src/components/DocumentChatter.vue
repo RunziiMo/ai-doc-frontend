@@ -155,6 +155,7 @@ const emit = defineEmits(['textSelected']);
             :trigger-on-focus="false"
             clearable
             placeholder="输入 / 选择或者直接提问"
+        >
         </el-autocomplete>
         <el-button @click="docAnalyze" :loading="loading" class="ml-3" type="success" :icon="Promotion" />
     </div>

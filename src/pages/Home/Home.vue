@@ -15,28 +15,33 @@
             </el-card>
         </div>
         <el-dialog v-model="dialogVisible" title="项目空间">
-            <add-project :dialog-hidden-handle="dialogHiddenHandle"></add-project>
+            <add-project
+                v-model:dialog-visible="dialogVisible"
+            >
+            </add-project>
         </el-dialog>
     </div>
 </template>
 <script setup>
 import Banner from './components/Banner.vue';
 import ProjectItem from './components/ProjectItem.vue';
-import { reactive, ref } from 'vue';
+import { reactive, ref, watch } from 'vue';
 import AddProject from './components/AddProject.vue';
 import axios from 'axios'
+
 const homeData = reactive({
     bookList: []
 })
+
 const dialogVisible = ref(false)
-function test() {
-    this.$router.push('/docs')
-}
+watch(
+    () => dialogVisible.value,
+    (newVal) => {
+        fetchInitialData();
+    }
+)
 function addDocHandle() {
     dialogVisible.value = true;
-}
-function dialogHiddenHandle() {
-    dialogVisible.value = false;
 }
 function searchHandle(searchText) {
     // homeData.bookList = [...mockData]
