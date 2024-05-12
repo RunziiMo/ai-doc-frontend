@@ -132,7 +132,7 @@ const handleEditProjectNameConfirm = ({key}) => {
                         >
                           {{ tag }}
                         </el-tag>
-                        <el-input
+                        <!-- <el-input
                             v-if="inputVisibleKey === node.key"
                             ref="InputRef"
                             v-model="inputValue"
@@ -144,7 +144,7 @@ const handleEditProjectNameConfirm = ({key}) => {
                         />
                         <el-button v-else class="button-new-tag" size="small" @click="showInput(node.key)">
                             + New Tag
-                        </el-button>
+                        </el-button> -->
                     </div>
                 </div>
 

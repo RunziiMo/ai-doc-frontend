@@ -88,7 +88,7 @@ function updateDocId(docIdTmp) {
                 <!-- 增加“上传文档”和“设置标签” 开始 -->
                 <div style="paddingLeft: 10px;marginTop: 10px;">
                     <el-button type="success" @click="uploadDialogVisible = !uploadDialogVisible">上传文档</el-button>
-                    <el-button type="primary" @click="docTreeVisible = !docTreeVisible">设置标签</el-button>
+                    <!-- <el-button type="primary" @click="docTreeVisible = !docTreeVisible">设置标签</el-button> -->
                     <upload-file v-model:dialog-visible="uploadDialogVisible">
                     </upload-file>
                     <doc-tag

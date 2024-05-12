@@ -32,7 +32,7 @@
         <el-form-item label="">
             <el-radio-group v-model="form.privately_owned">
                 <el-radio :value="1">公开(任何人都可以访问)</el-radio>
-                <el-radio :value="0">私有(只有参与者或者使用令牌才能访问)</el-radio>
+                <!-- <el-radio :value="0">私有(只有参与者或者使用令牌才能访问)</el-radio> -->
             </el-radio-group>
         </el-form-item>
         <el-form-item label="" prop="file">
@@ -120,9 +120,9 @@ const rules = {
                 if (value.length > 0) {
                     const file = value[0].raw; // 获取第一个文件对象  
                     const fileType = file.type;
-                    const acceptTypes = ['application/zip', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document'];
+                    const acceptTypes = ['application/zip', 'application/vnd.openxmlformats-officedocument.wordprocessingml.document', 'application/pdf'];
                     if (acceptTypes.indexOf(fileType) === -1) {
-                        return callback(new Error('文件类型必须是 ZIP 或 DOCX'));
+                        return callback(new Error('文件类型必须是 ZIP 或 DOCX 或 PDF'));
                     }
                     // 还可以添加其他文件属性检查，比如大小限制等  
                     callback();
