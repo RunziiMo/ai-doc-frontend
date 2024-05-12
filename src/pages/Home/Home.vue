@@ -36,7 +36,7 @@ const homeData = reactive({
 const dialogVisible = ref(false)
 watch(
     () => dialogVisible.value,
-    (newVal) => {
+    () => {
         fetchInitialData();
     }
 )
@@ -54,114 +54,6 @@ function searchHandle(searchText) {
 function createProject() {
     dialogVisible.value = true;
 }
-
-/***
-const mockData = [
-    {
-        doctId: 1,
-        docName: '项目名1-测试',
-        docAuthor: '作者1-测试',
-        bookId: 4,
-    },
-    {
-        doctId: 1,
-        docName: '项目名2-测试',
-        docAuthor: '作者2-测试',
-        bookId: 4,
-    },
-    {
-        doctId: 1,
-        docName: '项目名3-测试',
-        docAuthor: '作者13测试',
-    },
-    {
-        doctId: 1,
-        docName: '项目名1-测试',
-        docAuthor: '作者1-测试',
-    },
-    {
-        doctId: 1,
-        docName: '项目名1-测试',
-        docAuthor: '作者1-测试',
-    },
-    {
-        doctId: 1,
-        docName: '项目名1-测试',
-        docAuthor: '作者1-测试',
-    },
-    {
-        doctId: 1,
-        docName: '项目名1-测试',
-        docAuthor: '作者1-测试',
-    },
-    {
-        doctId: 1,
-        docName: '项目名1-测试',
-        docAuthor: '作者1-测试',
-    },
-    {
-        doctId: 1,
-        docName: '项目名1-测试',
-        docAuthor: '作者1-测试',
-    },
-    {
-        doctId: 1,
-        docName: '项目名1-测试',
-        docAuthor: '作者1-测试',
-    },
-    {
-        doctId: 1,
-        docName: '项目名1-测试',
-        docAuthor: '作者1-测试',
-    },
-    {
-        doctId: 1,
-        docName: '项目名1-测试',
-        docAuthor: '作者1-测试',
-    },
-    {
-        doctId: 1,
-        docName: '项目名1-测试',
-        docAuthor: '作者1-测试',
-    },
-    {
-        doctId: 1,
-        docName: '项目名1-测试',
-        docAuthor: '作者1-测试',
-    },
-    {
-        doctId: 1,
-        docName: '项目名1-测试',
-        docAuthor: '作者1-测试',
-    },
-    {
-        doctId: 1,
-        docName: '项目名1-测试',
-        docAuthor: '作者1-测试',
-    },
-    {
-        doctId: 1,
-        docName: '项目名1-测试',
-        docAuthor: '作者1-测试',
-    },
-    {
-        doctId: 1,
-        docName: '项目名1-测试',
-        docAuthor: '作者1-测试',
-    },
-    {
-        doctId: 1,
-        docName: '项目名1-测试',
-        docAuthor: '作者1-测试',
-    },
-    {
-        doctId: 1,
-        docName: '项目名1-测试',
-        docAuthor: '作者1-测试',
-    }
-];
-homeData.bookList = [...mockData]
- */
 
 // 初始化请求  
 async function fetchInitialData() {
@@ -195,8 +87,8 @@ fetchInitialData()
     flex-direction: column;
     justify-content: center;
     align-items: center;
-    width: 130px;
-    height: 200px;
+    width: 170px;
+    height: 230px;
     border-radius: 3px;
 }
 </style>
