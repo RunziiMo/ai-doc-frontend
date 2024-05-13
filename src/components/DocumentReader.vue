@@ -13,6 +13,7 @@ import Mark from 'mark.js'
 import * as pdfjsDist from 'pdfjs-dist'
 import * as pdfWorkerMin from 'pdfjs-dist/build/pdf.worker.min?url'
 import {ElMessage} from 'element-plus'
+import PdfView from './PdfView.vue'
 
 const props = defineProps({
   bookIdentify: {
@@ -29,9 +30,15 @@ const props = defineProps({
   }
 })
 
+const isPdf = computed(() => {
+  return props.document.identify?.endsWith('.pdf')
+})
+
+
 watch(
   () => props.document,
   (newValue, oldValue) => {
+    if(isPdf.value) return;
     loadDocument(props.bookIdentify, newValue.doc_id, newValue.identify)
   }
 )
@@ -39,6 +46,7 @@ watch(
 watch(
   () => props.searchString,
   (newValue, oldValue) => {
+    if(isPdf.value) return;
     scrollToText(newValue)
   }
 )
@@ -102,9 +110,6 @@ const scrollToText = async (searchString) => {
   }
 }
 
-const isPdf = computed(() => {
-  return props.document.identify?.endsWith('.pdf')
-})
 
 const isDocx = computed(() => {
   return props.document.identify?.endsWith('.docx')
@@ -121,7 +126,7 @@ const url = computed(() => {
         @error="toast('加载文档失败')"
     /-->
   <el-scrollbar v-if="isPdf">
-    <PdfView :url="url" />
+    <PdfView url="https://raw.githubusercontent.com/mozilla/pdf.js/ba2edeae/web/compressed.tracemonkey-pldi-09.pdf" />
   </el-scrollbar>
   <el-scrollbar v-else-if="isDocx">
     <div ref="docxContainer" />
@@ -149,5 +154,9 @@ const url = computed(() => {
 }
 .no-scroll {
   overflow: hidden;
+}
+.el-scrollbar {
+  width: 100%;
+  height: 100%
 }
 </style>
