@@ -8,6 +8,7 @@ import LeftSidebar from '../../components/LeftSidebar.vue';
 
 import UploadFile from './components/UploadFile.vue';
 import DocTag from './components/DocTag.vue';
+import DocumentReader from '../../components/DocumentReader.vue'
 
 const showChatter = ref(true)
 const book = ref({});
