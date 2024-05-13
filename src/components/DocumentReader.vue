@@ -126,7 +126,7 @@ const url = computed(() => {
         @error="toast('加载文档失败')"
     /-->
   <el-scrollbar v-if="isPdf">
-    <PdfView url="https://raw.githubusercontent.com/mozilla/pdf.js/ba2edeae/web/compressed.tracemonkey-pldi-09.pdf" />
+    <PdfView :url="url" />
   </el-scrollbar>
   <el-scrollbar v-else-if="isDocx">
     <div ref="docxContainer" />
