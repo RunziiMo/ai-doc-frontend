@@ -44,7 +44,6 @@ watch(
 watch(
   () => props.searchString,
   (newValue, oldValue) => {
-    if(isPdf.value) return;
     scrollToText(newValue)
   }
 )
