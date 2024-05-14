@@ -46,6 +46,7 @@ export default {
         // 调用删除文档Api
         // await this.$http.delete(`/api/${this.book.identify}/document/${this.document.doc_id}`)
         ElMessage.success('删除文档成功')
+        this.$router.push('/');
       })
     }
   }
