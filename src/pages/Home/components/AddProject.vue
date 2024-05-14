@@ -54,6 +54,27 @@
                 <el-button type="primary">选择</el-button>  
             </el-upload>
         </el-form-item>
+
+
+        <el-form-item label="项目功能" prop="selectedAiFunctions">
+            <el-checkbox
+                v-model="selectAll"
+                :indeterminate="isIndeterminate"
+                @change="handleSelectAllChange"
+            >
+                选择所有
+            </el-checkbox>
+            <el-checkbox-group
+                v-model="selectedAiFunctions"
+                @change="handleSelectedAiFunctionsChange"
+            >
+                <el-checkbox v-for="func in aiFunctions" :key="func" :label="func" :value="func">
+                {{ func }}
+                </el-checkbox>
+            </el-checkbox-group>
+        </el-form-item>
+
+
         <el-form-item>
             <el-button type="primary" @click="submitForm(ruleFormRef)">
                 创建
@@ -66,6 +87,23 @@
 import { ref, reactive, onMounted, computed } from 'vue';
 import axios from 'axios';
 import { ElMessage } from 'element-plus';
+
+
+// checkbox
+const selectAll = ref(false)
+const isIndeterminate = ref(true)
+const selectedAiFunctions = ref(['摘要', '实体提取', '合法审查', '利益分析', '缺漏审查'])
+const aiFunctions = ['摘要', '实体提取', '合法审查', '利益分析', '缺漏审查']
+const handleSelectAllChange = (val: boolean) => {
+    selectedAiFunctions.value = val ? aiFunctions : []
+    isIndeterminate.value = false
+}
+const handleSelectedAiFunctionsChange = (value: string[]) => {
+    const selectedCount = value.length
+    selectAll.value = selectedCount === aiFunctions.length
+    isIndeterminate.value = selectedCount > 0 && selectedCount < aiFunctions.length
+}
+
 
 const props = defineProps({
     dialogVisible: {
@@ -172,6 +210,11 @@ function submitForm() {
             formData.append('description', form.description);
             formData.append('privately_owned', form.privately_owned);
             formData.append('import-file', form.file[0].raw);
+            formData.append('selectedAiFunctions', selectedAiFunctions.value);
+
+            // console.log("jh_debug book_name:", form.book_name);
+            // console.log("jh_debug selectedAiFunctions:", selectedAiFunctions.value);
+            
             
             axios.post('/book/users/import', formData) // 替换为实际的API地址  
                 .then(response => {

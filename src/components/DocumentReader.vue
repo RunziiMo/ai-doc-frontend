@@ -10,8 +10,6 @@ import VueOfficeDocx from '@vue-office/docx'
 import '@vue-office/docx/lib/index.css'
 import { defaultOptions, renderAsync } from 'docx-preview'
 import Mark from 'mark.js'
-import * as pdfjsDist from 'pdfjs-dist'
-import * as pdfWorkerMin from 'pdfjs-dist/build/pdf.worker.min?url'
 import {ElMessage} from 'element-plus'
 import PdfView from './PdfView.vue'
 
