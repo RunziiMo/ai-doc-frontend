@@ -39,7 +39,6 @@
             <el-upload  
                 v-model:file-list="form.file"  
                 class="upload-file"  
-                action="https://run.mocky.io/v3/9d059bf9-4660-45f2-925d-ce80ad6c4d15"  
                 :on-success="handleSuccess"  
                 :auto-upload="false"
                 :before-upload="beforeUpload"
@@ -55,7 +54,7 @@
             </el-upload>
         </el-form-item>
         <el-form-item>
-            <el-button type="primary" @click="submitForm(ruleFormRef)">
+            <el-button type="primary" @click="submitForm">
                 创建
             </el-button>
             <el-button @click="dialogFormVisible = false">取消</el-button>

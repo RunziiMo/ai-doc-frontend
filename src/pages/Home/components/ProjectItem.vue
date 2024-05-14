@@ -2,7 +2,7 @@
     <div>
         <el-card class="project-item" shadow="hover">
             <router-link :to="`/docs/${docData.identify}`">
-                <el-image style="width: 170px; height: 230px" :src="docData.cover" :fit="cover" />
+                <el-image style="width: 170px; height: 230px" :src="docData?.cover" :fit="cover" />
             </router-link>
         </el-card>
         <div><el-text>{{docData.book_name}}</el-text></div>

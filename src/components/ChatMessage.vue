@@ -120,7 +120,7 @@ const handleSourceClick = (event) => {
             </el-text>
         </div>
         <div class="self-end">
-            <el-text class="author" :align="right">
+            <el-text class="author">
                 提问者：{{ message.author }}
             </el-text>
             <el-button v-if="message.show_del"

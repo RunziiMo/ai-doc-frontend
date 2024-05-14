@@ -1,8 +1,83 @@
+<template>
+    <el-input
+        v-model="filterText"
+        style="width: 240px"
+        placeholder="输入文件名或标签名过滤"
+    />
+
+    <div style="overflow-x: scroll;margin-top: 20px;">
+        <el-tree
+          ref="treeRef"
+          class="filter-tree"
+          :data="documents"
+          :props="defaultProps"
+          default-expand-all
+          :filter-node-method="filterNode"
+          node-key="id"
+          @node-contextmenu="(event, node, data)=>handleNodeContextmenu(event, node, data)"
+        >
+            <template #default="{ node, data }">
+                <div
+                    v-if="editProjectNameVisibleKey != node.key"
+                    class="node-label"
+                    @click="handleNodeClick(data)">
+                    {{ node.label }}
+                </div>
+                <el-input
+                    v-else 
+                    style="display: flex; min-width: 50px; width: auto"
+                    class="w-20"
+                    size="small"
+                    v-model="editProjectNameValue"
+                    @keyup.enter="handleEditDocNameConfirm(node, data)"
+                />
+                <el-button
+                    v-if="editProjectNameVisibleKey == node.key"
+                    @click="handleDocDelete(data)"
+                    class="ml-1"
+                    type="danger"
+                    :icon="Delete"
+                    size="small"
+                    circle/>
+                <div class="node-tag" style="overflow: visible;">
+                    <div class="flex gap-2" style="overflow: visible;">
+                        <el-tag
+                            v-for="tag in data.dynamicTags"
+                            :key="tag"
+                            closable
+                            :disable-transitions="false"
+                            @close="handleClose(tag, node)"
+                        >
+                          {{ tag }}
+                        </el-tag>
+                        <!-- <el-input
+                            v-if="inputVisibleKey === node.key"
+                            ref="InputRef"
+                            v-model="inputValue"
+                            class="w-20"
+                            style="width: 100px"
+                            size="small"
+                            @keyup.enter="handleInputConfirm(node)"
+                            @blur="handleInputConfirm(node)"
+                        />
+                        <el-button v-else class="button-new-tag" size="small" @click="showInput(node.key)">
+                            + New Tag
+                        </el-button> -->
+                    </div>
+                </div>
+
+            </template>  
+        </el-tree>
+    </div>
+</template>
+
 <script lang="ts" setup>
 import { ref, watch, nextTick, reactive, toRefs } from 'vue'
+import axios from 'axios';
+import { Delete } from '@element-plus/icons-vue'
 import { ElTree, ElInput } from 'element-plus'
 
-const emit = defineEmits(['updateDocId']);
+const emit = defineEmits(['updateDocId', 'deleteDocId']);
 
 const props = defineProps({
     documents: {
@@ -35,6 +110,24 @@ const filterNode = (value: string, data: Tree) => {
 
 const handleNodeClick = (data: Tree) => {
     emit('updateDocId', data.id)
+}
+
+const handleDocDelete = (data: Tree) => {
+    const formData = new FormData()
+    formData.append('doc_id', data.id);
+    axios.post(`/api/${props.book.identify}/delete`, formData) // 替换为实际的API地址  
+        .then(response => {
+            if (response.data.errcode == 0) {
+                ElMessage.success(response.data.message);
+                emit('deleteDocId', data.id)
+            } else {
+                ElMessage.error('文档删除失败: ' + response.data.message);
+            }
+        })
+        .catch(error => {
+            console.error('请求失败:', error);
+            ElMessage.error('请求失败，请稍后再试');
+        });
 }
 
 const inputValue = ref('')
@@ -82,76 +175,29 @@ const handleNodeContextmenu = (event, node, data) => {
     // currentNode = tree.getNode(event);
     // nodeName = data.label;
 }
-const handleEditProjectNameConfirm = ({key}) => {
-    const node = treeRef.value.getNode(key);
-    node.data.text = editProjectNameValue.value;
-    editProjectNameVisibleKey.value = '';
-    editProjectNameValue.value = '';
+const handleEditDocNameConfirm = (key, data) => {
+    const formData = new FormData()
+    formData.append('doc_name', editProjectNameValue.value);
+    formData.append('doc_id', data.id);
+    axios.post(`/api/${props.book.identify}/create`, formData)
+        .then(response => {
+            if (response.data.errcode == 0) {
+                ElMessage.success(response.data.message);
+                const node = treeRef.value.getNode(key);
+                node.data.text = editProjectNameValue.value;
+                editProjectNameVisibleKey.value = '';
+                editProjectNameValue.value = '';
+            } else {
+                ElMessage.error('文档修改失败: ' + response.data.message);
+            }
+        })
+        .catch(error => {
+            console.error('请求失败:', error);
+            ElMessage.error('请求失败，请稍后再试');
+        });
 }
 </script>
 
-<template>
-    <el-input
-        v-model="filterText"
-        style="width: 240px"
-        placeholder="输入文件名或标签名过滤"
-    />
-
-    <div style="overflow-x: scroll;margin-top: 20px;">
-        <el-tree
-          ref="treeRef"
-          class="filter-tree"
-          :data="documents"
-          :props="defaultProps"
-          default-expand-all
-          :filter-node-method="filterNode"
-          @node-click="handleNodeClick"
-          node-key="id"
-          @node-contextmenu="(event, node, data)=>handleNodeContextmenu(event, node, data)"
-        >
-            <template #default="{ node, data }">
-                <div>
-                    <div v-if="editProjectNameVisibleKey != node.key" class="node-label">{{node.label }}</div>
-                    <el-input
-                        v-else 
-                        style="display: flex; min-width: 50px; width: auto"
-                        class="w-20"
-                        size="small"
-                        v-model="editProjectNameValue"
-                        @keyup.enter="handleEditProjectNameConfirm(node)"
-                    />
-                </div>
-                <div class="node-tag" style="overflow: visible;">
-                    <div class="flex gap-2" style="overflow: visible;">
-                        <el-tag
-                            v-for="tag in data.dynamicTags"
-                            :key="tag"
-                            closable
-                            :disable-transitions="false"
-                            @close="handleClose(tag, node)"
-                        >
-                          {{ tag }}
-                        </el-tag>
-                        <!-- <el-input
-                            v-if="inputVisibleKey === node.key"
-                            ref="InputRef"
-                            v-model="inputValue"
-                            class="w-20"
-                            style="width: 100px"
-                            size="small"
-                            @keyup.enter="handleInputConfirm(node)"
-                            @blur="handleInputConfirm(node)"
-                        />
-                        <el-button v-else class="button-new-tag" size="small" @click="showInput(node.key)">
-                            + New Tag
-                        </el-button> -->
-                    </div>
-                </div>
-
-            </template>  
-        </el-tree>
-    </div>
-</template>
 <style>
 .node-label {
     margin-right: 10px;
