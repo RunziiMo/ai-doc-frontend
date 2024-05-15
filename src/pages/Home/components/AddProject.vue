@@ -210,11 +210,8 @@ function submitForm() {
             formData.append('description', form.description);
             formData.append('privately_owned', form.privately_owned);
             formData.append('import-file', form.file[0].raw);
-            formData.append('selectedAiFunctions', selectedAiFunctions.value);
-
-            // console.log("jh_debug book_name:", form.book_name);
-            // console.log("jh_debug selectedAiFunctions:", selectedAiFunctions.value);
-            
+            formData.append('selectedAiFunctions', selectedAiFunctions.value.join(' '));
+            // console.log("jh_debug selectedAiFunctions:", selectedAiFunctions.value.join(' '));
             
             axios.post('/book/users/import', formData) // 替换为实际的API地址  
                 .then(response => {
