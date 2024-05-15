@@ -11,7 +11,9 @@ import DocTag from './components/DocTag.vue';
 import DocumentReader from '../../components/DocumentReader.vue'
 
 const showChatter = ref(true)
-const book = ref({});
+const book = ref({
+    'document_trees': []
+});
 const document = ref({});
 const content = ref("");
 const selectedText = ref("");
@@ -74,6 +76,11 @@ function updateDocId(docIdTmp) {
     console.log(`updateId docId is:${docIdTmp}`);
     docId.value = docIdTmp;
 }
+
+function deleteDocId(docIdTmp) {
+    console.log(`deleteDocId docId is:${docIdTmp}`);
+    book.value.document_trees = book.value.document_trees.filter(item => item.id !== docIdTmp);  
+}
 </script>
 
 <template>
@@ -90,7 +97,9 @@ function updateDocId(docIdTmp) {
                 <div style="paddingLeft: 10px;marginTop: 10px;">
                     <el-button type="success" @click="uploadDialogVisible = !uploadDialogVisible">上传文档</el-button>
                     <!-- <el-button type="primary" @click="docTreeVisible = !docTreeVisible">设置标签</el-button> -->
-                    <upload-file v-model:dialog-visible="uploadDialogVisible">
+                    <upload-file
+                        v-model:dialog-visible="uploadDialogVisible"
+                        :book="book">
                     </upload-file>
                     <doc-tag
                         v-model:dialog-visible="docTreeVisible"
@@ -104,6 +113,7 @@ function updateDocId(docIdTmp) {
                         :documents="book.document_trees"
                         :book="book"
                         @update-doc-id="updateDocId"
+                        @delete-doc-id="deleteDocId"
                     />
                 </div>
             </el-aside>

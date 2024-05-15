@@ -138,7 +138,7 @@ const emit = defineEmits(['textSelected']);
     </div>
     <el-form
         class="mt-3"
-        :label-position="right"
+        label-position="right"
         label-width="auto"
     >
         <el-form-item label="利益方">

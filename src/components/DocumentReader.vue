@@ -47,34 +47,10 @@ watch(
     scrollToText(newValue)
   }
 )
-const docxContainer = ref<HTMLDivElement>()
+const docContainer = ref<HTMLDivElement>()
 
 const loadDocument = async (bookIdentify, docId, docIdentify) => {
   const url = `/api/book/${bookIdentify}/download/${docId}`
-  // if (docIdentify.endsWith(".pdf")) {
-  //     // pdf
-  //     pdfjsDist.GlobalWorkerOptions.workerSrc = pdfWorkerMin.default
-  //     // const url_test = '/assets/test_1.pdf'    // 测试url
-  //     const loadingTask = pdfjsDist.getDocument({ url: url });
-  //     const pdf = await loadingTask.promise;
-  //     for (let pageNum = 1; pageNum <= pdf.numPages; pageNum++) {
-  //         const page = await pdf.getPage(pageNum);
-  //         const scale = 1.5;
-  //         const viewport = page.getViewport({ scale });
-  //         const canvas = document.createElement('canvas');
-  //         const context = canvas.getContext('2d');
-  //         canvas.width = viewport.width;
-  //         canvas.height = viewport.height;
-  //         const renderContext = {
-  //             canvasContext: context,
-  //             viewport: viewport,
-  //         };
-  //         await page.render(renderContext).promise;
-  //         // Append the canvas to the div
-  //         docxContainer.value.appendChild(canvas);
-  //     }
-  // } else {
-  // docx
   let response = await axios.get(url, {
     responseType: 'blob' // 设置响应类型为 blob
   })
@@ -83,20 +59,19 @@ const loadDocument = async (bookIdentify, docId, docIdentify) => {
     ignoreWidth: true,
     experimental: true
   })
-  await renderAsync(response.data, docxContainer.value, null, docxOptions)
-  // }
+  await renderAsync(response.data, docContainer.value, null, docxOptions)
 }
 
 const toast = (message) => {
   ElMessage.warning(message)
 }
 const scrollToText = async (searchString) => {
-  new Mark(docxContainer.value).unmark().mark(searchString, {
+  new Mark(docContainer.value).unmark().mark(searchString, {
     acrossElements: true,
     accuracy: 'partially'
   })
   await nextTick() // 等待DOM更新
-  const elements = docxContainer.value.querySelectorAll('mark') // 假设被高亮的文本被<mark>标签包裹
+  const elements = docContainer.value.querySelectorAll('mark') // 假设被高亮的文本被<mark>标签包裹
   if (elements.length > 0) {
     const firstElement = elements[0]
     firstElement.scrollIntoView({ behavior: 'smooth' })
@@ -123,10 +98,10 @@ const url = computed(() => {
         @error="toast('加载文档失败')"
     /-->
   <el-scrollbar v-if="isPdf">
-    <PdfView :url="url" />
+    <PdfView ref="docContainer" :url="url" />
   </el-scrollbar>
   <el-scrollbar v-else-if="isDocx">
-    <div ref="docxContainer" />
+    <div ref="docContainer" />
   </el-scrollbar>
   <el-empty
     v-else-if="document.markdown !== undefined && document.markdown === ''"
