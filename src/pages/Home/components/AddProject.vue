@@ -55,7 +55,7 @@
         </el-form-item>
 
 
-        <el-form-item label="项目功能" prop="selectedAiFunctions">
+        <!-- <el-form-item label="项目功能" prop="selectedAiFunctions">
             <el-checkbox
                 v-model="selectAll"
                 :indeterminate="isIndeterminate"
@@ -71,7 +71,7 @@
                 {{ func }}
                 </el-checkbox>
             </el-checkbox-group>
-        </el-form-item>
+        </el-form-item> -->
 
 
         <el-form-item>
@@ -209,7 +209,7 @@ function submitForm() {
             formData.append('description', form.description);
             formData.append('privately_owned', form.privately_owned);
             formData.append('import-file', form.file[0].raw);
-            formData.append('selectedAiFunctions', selectedAiFunctions.value.join(' '));
+            // formData.append('selectedAiFunctions', selectedAiFunctions.value.join(' '));
             // console.log("jh_debug selectedAiFunctions:", selectedAiFunctions.value.join(' '));
             
             axios.post('/book/users/import', formData) // 替换为实际的API地址  

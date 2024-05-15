@@ -2,6 +2,7 @@
 import { ArrowDown } from '@element-plus/icons-vue'
 import { ref, watch } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
+import axios from 'axios'
 
 export default {
   data() {
@@ -43,9 +44,22 @@ export default {
         cancelButtonText: '取消',
         type: 'warning'
       }).then(async () => {
-        // 调用删除文档Api
-        // await this.$http.delete(`/api/${this.book.identify}/document/${this.document.doc_id}`)
-        ElMessage.success('删除文档成功')
+        // 调用删除项目Api
+        const formData = new FormData();
+        formData.append('identify', this.book.identify);
+        const response = await axios.post('/book/setting/delete', formData);
+        const data = response.data;
+        if (data.errcode !== 0) {
+            ElMessage({
+                message: data.message,
+                type: 'warning',
+            });
+        } else {
+            ElMessage({
+                message: "删除项目成功",
+                type: 'success',
+            });
+        }
         this.$router.push('/');
       })
     }
