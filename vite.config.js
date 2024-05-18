@@ -27,5 +27,34 @@ export default defineConfig({
     supported: {
       'top-level-await': true
     },
-  }
+  },
+  server: {
+    proxy: {
+      "/api": {
+        target: "http://localhost:8181",
+        changeOrigin: true,
+        // rewrite: (path) => path.replace(/^\/api/, ""),
+      },
+      "/static": {
+        target: "http://localhost:8181",
+        changeOrigin: true,
+      },
+      "/aigc": {
+        target: "http://localhost:8181",
+        changeOrigin: true,
+      },
+      "/captcha": {
+        target: "http://localhost:8181",
+        changeOrigin: true,
+      },
+      "/auth": {
+        target: "http://localhost:8181",
+        changeOrigin: true,
+      },
+      "/logout": {
+        target: "http://localhost:8181",
+        changeOrigin: true,
+      },
+    },
+  },
 })
