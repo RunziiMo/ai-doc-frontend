@@ -27,5 +27,19 @@ export default defineConfig({
     supported: {
       'top-level-await': true
     },
-  }
+  },
+  server: {
+    port: 8888,
+    host: '0.0.0.0',
+    cors: true,
+    proxy: {
+      '/api': {
+        target: 'http://123.57.55.24:8181/api/',
+        changeOrigin: true,
+        secure: false,
+        rewrite: (path) => path.replace(/^\/api/, '')
+      }
+    }
+  },
+
 })
