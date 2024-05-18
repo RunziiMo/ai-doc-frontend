@@ -1,5 +1,5 @@
 <script setup>
-import { ref, computed, nextTick } from "vue";
+import { ref, watch, computed, nextTick } from "vue";
 import axios from 'axios'
 import { marked } from 'marked'
 import { Delete, UserFilled, Monitor, Warning, Service } from '@element-plus/icons-vue'
@@ -23,24 +23,27 @@ const renderer = {
         return replacedText;
     }
 };
+
 marked.use({ renderer });
+const options = {
+    gfm: true, // 开启 GitHub Flavored Markdown（GFM）
+    breaks: true,
+    headerIds: false // 禁止为标题自动生成 ID
+    // 还可以添加其他自定义参数...
+};
+marked.use(options);
 const response = computed(() => {
-    const options = {
-        gfm: true, // 开启 GitHub Flavored Markdown（GFM）
-        breaks: true,
-        headerIds: false // 禁止为标题自动生成 ID
-        // 还可以添加其他自定义参数...
-    };
-    marked.use(options);
-    let result = props.message.response;
-    try {
-        const jsonResult = JSON.parse(props.message.response)
-        result = jsonResult.result;
-    } catch (error) {
-        console.log("parse message result error", error);
-    }
-    return marked(result);
+    return marked(props.message.response);
 });
+
+const messageAnchor = ref()
+watch(
+    () => props.message.response,
+    async (newValue, oldValue) => {
+        await nextTick();
+        messageAnchor.value.scrollIntoView()
+    }
+);
 const isError = computed(() => {
     return response.value.error && response.value.error.trim() !== "";
 });
@@ -145,7 +148,7 @@ const handleSourceClick = (event) => {
                 <div v-html="response"/>
             </el-text>
         </div>
-        <div class="self-end">
+        <div ref="messageAnchor" class="self-end">
             <el-text>反馈数：{{ message.against_count }}</el-text>
             <el-button
                 @click="switchFeedback"

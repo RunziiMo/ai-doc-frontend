@@ -47,8 +47,6 @@ const messages = ref([]);
 watch(
     () => messages,
     async (newValue, oldValue) => {
-        await nextTick();
-        console.log("messages changed");
         scrollToBottom();
     },
     {deep: true}
@@ -95,33 +93,49 @@ const loadChatMessages = async (documentId) => {
 };
 
 const docAnalyze = async () => {
-    loading.value = true;
-    const formData = new FormData();
-    formData.append('role', role.value);
-    formData.append('book_identify', props.bookIdentify);
-    formData.append('doc_id', props.document.doc_id);
-    formData.append('prompt', prompt.value);
-    formData.append('action', props.functions.includes(prompt.value) ? "analyze" : "chat")
-    let chatResponse = await axios.post('/aigc/chat', formData);
-    let response = chatResponse.data;
-    if (response.errcode !== 0) {
-        ElMessage({
-            message: response.message,
-            type: 'warning',
-        });
-    } else {
-        messages.value.push(response.data);
-        await nextTick();
-        scrollToBottom();
+    if (!('EventSource' in window)) {
+        ElMessage.warning('您的浏览器不支持该功能');
+        return
     }
-    loading.value = false;
-    prompt.value = "";
+    loading.value = true;
+    const params = {
+        role: role.value,
+        book_identify: props.bookIdentify,
+        doc_id: props.document.doc_id,
+        prompt: prompt.value,
+        action: props.functions.includes(prompt.value) ? "analyze" : "chat"
+    }
+    const filteredParams = Object.fromEntries(
+        Object.entries(params).filter(([_, v]) => v != null && v !== '')
+    );
+    const queryString = new URLSearchParams(filteredParams).toString();
+    const url = `/aigc/chat?${queryString}`;
+    const eventSource = new EventSource(url);
+    eventSource.onmessage = (event) => {
+        messages.value[messages.value.length - 1].response += event.data;
+    };
+    eventSource.addEventListener('start', async (event) => {
+        const message = JSON.parse(event.data)
+        messages.value.push(message);
+    });
+    eventSource.addEventListener('warning', (event) => {
+        ElMessage.warning(event.data);
+        console.log(event.data);
+    });
+    eventSource.addEventListener('close', (event) => {
+        ElMessage.warning(event.data);
+        console.log(event.data);
+    });
+    eventSource.onerror = (event) => {
+        eventSource.close();
+        loading.value = false;
+        prompt.value = "";
+    };
 };
+const viewAnchor = ref()
 const scrollToBottom = () => {
     nextTick(() => {
-        if (scrollContainer.value) {
-            scrollContainer.value.scrollTop = scrollContainer.value.scrollHeight;
-        }
+        viewAnchor.value.scrollIntoView()
     });
 }
 const emit = defineEmits(['textSelected']);
@@ -135,6 +149,7 @@ const emit = defineEmits(['textSelected']);
             v-for="m in messages" :message="m"
             @text-selected="(text) => $emit('textSelected', text)"
         />
+        <div ref="viewAnchor"/>
     </div>
     <el-form
         class="mt-3"
