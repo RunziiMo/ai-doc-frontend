@@ -141,7 +141,6 @@ const scrollToBottom = () => {
 const emit = defineEmits(['textSelected']);
 
 const updateMessege = (messageId, data) => {
-    console.log(messageId, data)
     messages.value = messages.value.filter( el => {
         if (el.message_id === messageId) {
             el.response = data;
