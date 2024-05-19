@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { reactive, ref, computed, watch, onMounted, nextTick } from "vue"
-import { ElScrollbar } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { Promotion } from '@element-plus/icons-vue'
 import axios from 'axios'
 
@@ -139,6 +139,15 @@ const scrollToBottom = () => {
     });
 }
 const emit = defineEmits(['textSelected']);
+
+const updateMessege = (messageId, data) => {
+    messages.value = messages.value.filter( el => {
+        if (el.message_id === messageId) {
+            el.response = data;
+        }
+        return el;
+    });
+}
 </script>
 
 <template>
@@ -148,6 +157,7 @@ const emit = defineEmits(['textSelected']);
         <ChatMessage 
             v-for="m in messages" :message="m"
             @text-selected="(text) => $emit('textSelected', text)"
+            @update-response-success="updateMessege"
         />
         <div ref="viewAnchor"/>
     </div>

@@ -70,7 +70,7 @@ const handlePasswordRequest = ({ callback, isWrongPassword }) => {
     <div class="pdf-wrap">
       <template v-if="isLoading"> pdf File Loading... </template>
       <vue-pdf-embed
-        :source="state.source"
+        :source="url"
         :style="scale"
         class="vue-pdf-embed"
         @loaded="handleDocumentLoad"
