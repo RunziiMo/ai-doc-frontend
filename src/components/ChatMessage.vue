@@ -2,7 +2,7 @@
 import { ref, watch, computed, nextTick } from "vue";
 import axios from 'axios'
 import { marked } from 'marked'
-import { Delete, UserFilled, Monitor, Warning, Service } from '@element-plus/icons-vue'
+import { Delete, UserFilled, Monitor, Warning, Service, Edit } from '@element-plus/icons-vue'
 import { ElMessage } from "element-plus";
 
 const props = defineProps({
@@ -32,9 +32,7 @@ const options = {
     // 还可以添加其他自定义参数...
 };
 marked.use(options);
-const response = computed(() => {
-    return marked(props.message.response);
-});
+const response = ref(marked(props.message.response))
 
 const messageAnchor = ref()
 watch(
@@ -108,6 +106,33 @@ const handleSourceClick = (event) => {
         emit('textSelected', targetElement.getAttribute('title'));
     }
 };
+
+const isReadonly = ref(true)
+
+const handleSave = () => {
+    const formData = new FormData();
+    formData.append('response', response.value);
+    const response = await axios.post(`/api/message/${props.message.message_id}/update`, formData);
+    const data = response.data;
+    if (data.errcode !== 0) {
+        ElMessage({
+            message: data.message,
+            type: 'warning',
+        });
+    } else {
+        ElMessage({
+            message: data.message,
+            type: 'success',
+        });
+        showFeedback.value = false;
+    }
+}
+const handleCancel = () => {
+//   responseText.value = props.message.content
+  response.value = marked(props.message.response)
+  isReadonly.value = true;
+}
+
 </script>
 
 <template>
@@ -145,7 +170,7 @@ const handleSourceClick = (event) => {
                 @click="handleSourceClick"
                 class="flex-1"
                 shadow="never">
-                <div v-html="response"/>
+                <div v-html="response" :contenteditable="!isReadonly"/>
             </el-text>
         </div>
         <div ref="messageAnchor" class="self-end">
@@ -158,6 +183,16 @@ const handleSourceClick = (event) => {
                 size="small"
                 circle>
             </el-button>
+            <el-button v-if="isReadonly"
+                class="ml-1"
+                :icon="Edit"
+                size="small"
+                @click="isReadonly = false"
+                circle/>
+            <template v-else>
+                <el-button class="!ml-1" size="small" @click="handleSave">更新</el-button>
+                <el-button class="!ml-1" size="small" @clck="handleCancel">取消</el-button>
+            </template>
         </div>
     </div>
     <div v-if="showFeedback" ref="feedbackContainer" class="card answer">
@@ -183,7 +218,18 @@ const handleSourceClick = (event) => {
 </template>
 
 <style>
-.query {
+.message-view {
+  width: 100% !important;
+}
+
+.message-view .el-textarea__inner {
+  box-shadow: none !important;
+  background-color: unset !important;
+  color: unset !important;
+  padding: 0;
+  min-height: 14px !important;
+  height: unset !important;
+  resize: none;
 }
 
 .answer {

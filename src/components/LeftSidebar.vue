@@ -75,7 +75,7 @@
 import { ref, watch, nextTick, reactive, toRefs } from 'vue'
 import axios from 'axios';
 import { Delete } from '@element-plus/icons-vue'
-import { ElTree, ElInput } from 'element-plus'
+import { ElTree, ElInput, ElMessage } from 'element-plus'
 
 const emit = defineEmits(['updateDocId', 'deleteDocId']);
 
@@ -169,6 +169,7 @@ const menu = ref({
 const handleNodeContextmenu = (event, node, data) => {
     console.log('右键事件', data.key);
     editProjectNameVisibleKey.value = data.key;
+    editProjectNameValue.value = node.text;
     // menuVisible = true;
     // menu.value.top = event.clientY;
     // menu.value.left = event.clientX;

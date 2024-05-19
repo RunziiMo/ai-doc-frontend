@@ -39,8 +39,8 @@ const loadDoc = async (bookIdentify, docId) => {
     }
 };
 
-watchEffect(async () => {
-    if (bookIdentify.value === "" || docId.value === ""){
+const getBook = async () => {
+    if (bookIdentify.value === "" || docId.value === "") {
         return
     }
     console.log("watchEffect:")
@@ -50,7 +50,7 @@ watchEffect(async () => {
     let params = {
         identify: bookIdentify.value,
     };
-    const bookResponse = await axios.get(`/api/book/${bookIdentify.value}`, { params }); 
+    const bookResponse = await axios.get(`/api/book/${bookIdentify.value}`, { params });
     console.log("bookResponse:");
     console.log(bookResponse);
 
@@ -59,11 +59,12 @@ watchEffect(async () => {
     } else {
         book.value = bookResponse.data.data;
     }
-})
+}
 
 onMounted(async () => {
     bookIdentify.value = window.location.pathname.split('/')[2];
     docId.value = window.location.pathname.split('/')[3];
+    await getBook();
 })
 
 function handleBatchAppendTag(data) {
@@ -75,6 +76,7 @@ function handleBatchAppendTag(data) {
 function updateDocId(docIdTmp) {
     console.log(`updateId docId is:${docIdTmp}`);
     docId.value = docIdTmp;
+    getBook();
 }
 
 function deleteDocId(docIdTmp) {
@@ -99,7 +101,7 @@ function deleteDocId(docIdTmp) {
                     <!-- <el-button type="primary" @click="docTreeVisible = !docTreeVisible">设置标签</el-button> -->
                     <upload-file
                         v-model:dialog-visible="uploadDialogVisible"
-                        :book="book">
+                        :book="book"  @success="getBook()">
                     </upload-file>
                     <doc-tag
                         v-model:dialog-visible="docTreeVisible"
