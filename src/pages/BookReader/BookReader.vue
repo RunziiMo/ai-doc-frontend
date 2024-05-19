@@ -1,6 +1,6 @@
 <script setup>
 import { ElMessage } from 'element-plus'
-import { ref, onMounted, watch, watchEffect } from 'vue'
+import { ref, onMounted, watch, watchEffect, nextTick } from 'vue'
 import axios from 'axios'
 import { Splitpanes, Pane } from 'splitpanes'
 import 'splitpanes/dist/splitpanes.css'
@@ -23,6 +23,7 @@ const bookIdentify = ref("")
 const uploadDialogVisible = ref(false)
 const docTreeVisible = ref(false)
 
+
 const loadDoc = async (bookIdentify, docId) => {
     if (docId === undefined) {
         docId = 0;
@@ -39,8 +40,8 @@ const loadDoc = async (bookIdentify, docId) => {
     }
 };
 
-watchEffect(async () => {
-    if (bookIdentify.value === "" || docId.value === ""){
+const getBook = async () => {
+    if (bookIdentify.value === "" || docId.value === "") {
         return
     }
     console.log("watchEffect:")
@@ -50,7 +51,7 @@ watchEffect(async () => {
     let params = {
         identify: bookIdentify.value,
     };
-    const bookResponse = await axios.get(`/api/book/${bookIdentify.value}`, { params }); 
+    const bookResponse = await axios.get(`/api/book/${bookIdentify.value}`, { params });
     console.log("bookResponse:");
     console.log(bookResponse);
 
@@ -59,11 +60,13 @@ watchEffect(async () => {
     } else {
         book.value = bookResponse.data.data;
     }
-})
+}
+
 
 onMounted(async () => {
     bookIdentify.value = window.location.pathname.split('/')[2];
     docId.value = window.location.pathname.split('/')[3];
+    await getBook();
 })
 
 function handleBatchAppendTag(data) {
@@ -75,21 +78,19 @@ function handleBatchAppendTag(data) {
 function updateDocId(docIdTmp) {
     console.log(`updateId docId is:${docIdTmp}`);
     docId.value = docIdTmp;
+    getBook();
 }
 
 function deleteDocId(docIdTmp) {
     console.log(`deleteDocId docId is:${docIdTmp}`);
-    book.value.document_trees = book.value.document_trees.filter(item => item.id !== docIdTmp);  
+    book.value.document_trees = book.value.document_trees.filter(item => item.id !== docIdTmp);
 }
 </script>
 
 <template>
     <el-container>
-        <el-header>      
-            <BaseHeader v-model="showChatter"
-              :book="book"
-              :document="document"
-              />
+        <el-header>
+            <BaseHeader v-model="showChatter" :book="book" :document="document" />
         </el-header>
         <el-container>
             <el-aside width="300px">
@@ -97,46 +98,27 @@ function deleteDocId(docIdTmp) {
                 <div style="paddingLeft: 10px;marginTop: 10px;">
                     <el-button type="success" @click="uploadDialogVisible = !uploadDialogVisible">上传文档</el-button>
                     <!-- <el-button type="primary" @click="docTreeVisible = !docTreeVisible">设置标签</el-button> -->
-                    <upload-file
-                        v-model:dialog-visible="uploadDialogVisible"
-                        :book="book">
+                    <upload-file v-model:dialog-visible="uploadDialogVisible" :book="book" @success="getBook()">
                     </upload-file>
-                    <doc-tag
-                        v-model:dialog-visible="docTreeVisible"
-                        :handle-batch-append-tag="handleBatchAppendTag"
+                    <doc-tag v-model:dialog-visible="docTreeVisible" :handle-batch-append-tag="handleBatchAppendTag"
                         :documents="book.document_trees">
                     </doc-tag>
                 </div>
                 <!-- 增加“上传文档”和“设置标签” 结束-->
                 <div class="sidebar">
-                    <LeftSidebar
-                        :documents="book.document_trees"
-                        :book="book"
-                        @update-doc-id="updateDocId"
-                        @delete-doc-id="deleteDocId"
-                    />
+                    <LeftSidebar :documents="book.document_trees" :book="book" @update-doc-id="updateDocId"
+                        @delete-doc-id="deleteDocId" />
                 </div>
             </el-aside>
             <el-main>
-                <splitpanes 
-                    :first-splitter="false"
-                    :dbl-click-splitter="false"
-                    :push-other-panes="false"
-                >
+                <splitpanes :first-splitter="false" :dbl-click-splitter="false" :push-other-panes="false">
                     <pane class="flex justify-center" size="65">
-                        <DocumentReader
-                            :bookIdentify="bookIdentify"
-                            :document="document"
-                            :searchString="selectedText"
-                        />
+                        <DocumentReader :bookIdentify="bookIdentify" :document="document" :searchString="selectedText" />
                     </pane>
                     <pane v-if="showChatter" size="35" class="flex flex-col relative justify-between">
-                        <DocumentChatter
-                            :bookIdentify="bookIdentify"
-                            :document="document"
-                            :functions="book.aigc_function ? book.aigc_function.split(';'): []"
-                            @text-selected="(text) => selectedText = text"
-                        />
+                        <DocumentChatter :bookIdentify="bookIdentify" :document="document"
+                            :functions="book.aigc_function ? book.aigc_function.split(';') : []"
+                            @text-selected="(text) => selectedText = text" />
                     </pane>
                 </splitpanes>
             </el-main>
@@ -145,8 +127,9 @@ function deleteDocId(docIdTmp) {
 </template>
 
 <style>
-/* 全局样式，确保 html 和 body 的高度为 100% */  
-html, body {
+/* 全局样式，确保 html 和 body 的高度为 100% */
+html,
+body {
     margin: 0;
     padding: 0;
 }
@@ -170,6 +153,7 @@ html, body {
     .el-aside {
         display: none;
     }
+
     .el-container.el-container {
         height: auto;
     }
@@ -181,6 +165,7 @@ html, body {
     position: relative;
     background-color: #909399;
 }
+
 .splitpanes__splitter:before {
     position: absolute;
     left: 0;
@@ -190,16 +175,33 @@ html, body {
     opacity: 0;
     z-index: 1;
 }
-.splitpanes__splitter:hover:before {opacity: 1;}
-.splitpanes--vertical > .splitpanes__splitter:before {left: -10px;right: -10px;height: 100%;}
-.splitpanes--horizontal > .splitpanes__splitter:before {top: -10px;bottom: -10px;width: 100%;}
+
+.splitpanes__splitter:hover:before {
+    opacity: 1;
+}
+
+.splitpanes--vertical>.splitpanes__splitter:before {
+    left: -10px;
+    right: -10px;
+    height: 100%;
+}
+
+.splitpanes--horizontal>.splitpanes__splitter:before {
+    top: -10px;
+    bottom: -10px;
+    width: 100%;
+}
 
 .app-body {
     display: flex;
 }
+
 .sidebar {
-    background-color: #f9f9f9; /* 侧边栏背景色 */  
-    border-right: 1px solid #eee; /* 可选的右侧边框 */  
-    padding: 10px; /* 内边距 */  
+    background-color: #f9f9f9;
+    /* 侧边栏背景色 */
+    border-right: 1px solid #eee;
+    /* 可选的右侧边框 */
+    padding: 10px;
+    /* 内边距 */
 }
 </style>
