@@ -42,10 +42,10 @@ const messageAnchor = ref()
 watch(
     () => props.message.response,
     async (newValue, oldValue) => {
-        await nextTick();
-        messageAnchor.value.scrollIntoView()
         response.value = marked(props.message.response);
         cloneResponse.value = props.message.response;
+        await nextTick();
+        messageAnchor.value.scrollIntoView();
     }
 );
 const isError = computed(() => {
@@ -126,7 +126,7 @@ const handleSave = async () => {
             type: 'warning',
         });
     } else {
-        emit('updateResponseSuccess');
+        emit('updateResponseSuccess', props.message.message_id, cloneResponse.value);
         isReadonly.value = true;
         ElMessage({
             message: data.message,

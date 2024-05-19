@@ -139,6 +139,16 @@ const scrollToBottom = () => {
     });
 }
 const emit = defineEmits(['textSelected']);
+
+const updateMessege = (messageId, data) => {
+    console.log(messageId, data)
+    messages.value = messages.value.filter( el => {
+        if (el.message_id === messageId) {
+            el.response = data;
+        }
+        return el;
+    });
+}
 </script>
 
 <template>
@@ -148,7 +158,7 @@ const emit = defineEmits(['textSelected']);
         <ChatMessage 
             v-for="m in messages" :message="m"
             @text-selected="(text) => $emit('textSelected', text)"
-            @update-response-success="loadChatMessages(document.doc_id)"
+            @update-response-success="updateMessege"
         />
         <div ref="viewAnchor"/>
     </div>
