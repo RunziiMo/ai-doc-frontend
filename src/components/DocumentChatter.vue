@@ -1,4 +1,4 @@
-<script lang="ts" setup>
+g<script lang="ts" setup>
 import { reactive, ref, computed, watch, onMounted, nextTick } from 'vue'
 import { ElMessage, ElScrollbar } from 'element-plus'
 import { Promotion } from '@element-plus/icons-vue'
