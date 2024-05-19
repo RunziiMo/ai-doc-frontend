@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { reactive, ref, computed, watch, onMounted, nextTick } from "vue"
-import { ElScrollbar } from 'element-plus'
+import { ElMessage, ElScrollbar } from 'element-plus'
 import { Promotion } from '@element-plus/icons-vue'
 import axios from 'axios'
 
@@ -104,6 +104,7 @@ const docAnalyze = async () => {
     formData.append('action', props.functions.includes(prompt.value) ? "analyze" : "chat")
     let chatResponse = await axios.post('/aigc/chat', formData);
     let response = chatResponse.data;
+    console.log(chatResponse)
     if (response.errcode !== 0) {
         ElMessage({
             message: response.message,

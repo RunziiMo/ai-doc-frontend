@@ -60,7 +60,7 @@ const form = reactive({
     description: 'This is an example file upload', // 任何其他描述或信息  
 })
 
-const emit = defineEmits(['update:dialogVisible']);
+const emit = defineEmits(['update:dialogVisible', 'success', 'error']);
 const dialogFormVisible = computed({
     get() {
         return props.dialogVisible;  
@@ -86,11 +86,14 @@ const submitUpload = () => {
                 form.privately_owned = 1;
                 form.file = [];
                 dialogFormVisible.value = false;
+                emit('success');
             } else {
+                emit('error');
                 ElMessage.error('项目创建失败: ' + response.data.message);
             }
         })
         .catch(error => {
+            emit('error');
             console.error('请求失败:', error);
             ElMessage.error('请求失败，请稍后再试');
         });
