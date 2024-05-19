@@ -1,7 +1,7 @@
 <script setup>
-import { onMounted, reactive, computed, ref } from 'vue'
+import { computed, ref } from 'vue'
 import VuePdfEmbed from 'vue-pdf-embed'
-import { createLoadingTask } from 'vue3-pdfjs'
+// import { createLoadingTask } from 'vue3-pdfjs'
 
 const props = defineProps({
   url: {
@@ -10,43 +10,18 @@ const props = defineProps({
   }
 })
 
-const state = reactive({
-  source: props.url, // 预览pdf文件地址
-  pageNum: 1, // 当前页面
-  scale: 1, // 缩放比例
-  numPages: 0 // 总页数
-})
+// const scale = computed(() => `transform:scale(${state.scale})`)
 
-const scale = computed(() => `transform:scale(${state.scale})`)
-
-const lastPage = () => {
-  if (state.pageNum > 1) {
-    state.pageNum -= 1
-  }
-}
-const nextPage = () => {
-  if (state.pageNum < state.numPages) {
-    state.pageNum += 1
-  }
-}
-const pageZoomOut = () => {
-  if (state.scale < 2) {
-    state.scale += 0.1
-  }
-}
-const pageZoomIn = () => {
-  if (state.scale > 1) {
-    state.scale -= 0.1
-  }
-}
 const isLoading = ref(true)
+const pdfRef = ref()
 
-onMounted(() => {
-  const loadingTask = createLoadingTask(state.source)
-  loadingTask.promise.then((pdf) => {
-    state.numPages = pdf.numPages
-  })
-})
+// onMounted(() => {
+//   const loadingTask = createLoadingTask(state.source)
+//   loadingTask.promise.then((pdf) => {
+//     state.numPages = pdf.numPages
+//   })
+// })
+
 const handleDocumentLoad = (e) => {
   console.log(e)
 }
@@ -70,8 +45,8 @@ const handlePasswordRequest = ({ callback, isWrongPassword }) => {
     <div class="pdf-wrap">
       <template v-if="isLoading"> pdf File Loading... </template>
       <vue-pdf-embed
-        :source="state.source"
-        :style="scale"
+        ref="pdfRef"
+        :source="url"
         class="vue-pdf-embed"
         @loaded="handleDocumentLoad"
         @rendered="handleDocumentRender"
@@ -104,5 +79,4 @@ const handlePasswordRequest = ({ callback, isWrongPassword }) => {
   margin: 0 auto;
   box-sizing: border-box;
 }
-
 </style>

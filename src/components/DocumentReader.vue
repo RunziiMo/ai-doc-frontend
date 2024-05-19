@@ -10,7 +10,7 @@ import VueOfficeDocx from '@vue-office/docx'
 import '@vue-office/docx/lib/index.css'
 import { defaultOptions, renderAsync } from 'docx-preview'
 import Mark from 'mark.js'
-import {ElMessage} from 'element-plus'
+import { ElMessage } from 'element-plus'
 import PdfView from './PdfView.vue'
 
 const props = defineProps({
@@ -36,7 +36,7 @@ const isPdf = computed(() => {
 watch(
   () => props.document,
   (newValue, oldValue) => {
-    if(isPdf.value) return;
+    if (isPdf.value) return;
     loadDocument(props.bookIdentify, newValue.doc_id, newValue.identify)
   }
 )
@@ -98,15 +98,12 @@ const url = computed(() => {
         @error="toast('加载文档失败')"
     /-->
   <el-scrollbar v-if="isPdf">
-    <PdfView ref="docContainer" :url="url" />
+    <PdfView :url="url" />
   </el-scrollbar>
   <el-scrollbar v-else-if="isDocx">
     <div ref="docContainer" />
   </el-scrollbar>
-  <el-empty
-    v-else-if="document.markdown !== undefined && document.markdown === ''"
-    description="空白文档"
-  >
+  <el-empty v-else-if="document.markdown !== undefined && document.markdown === ''" description="空白文档">
   </el-empty>
   <el-skeleton v-else :rows="20" animated />
 </template>
@@ -117,6 +114,7 @@ const url = computed(() => {
   overflow-y: auto;
   padding: 10px;
 }
+
 .right-sidebar {
   width: 200px;
   background-color: #f9f9f9;
@@ -124,9 +122,11 @@ const url = computed(() => {
   padding: 10px;
   overflow: hidden;
 }
+
 .no-scroll {
   overflow: hidden;
 }
+
 .el-scrollbar {
   width: 100%;
   height: 100%

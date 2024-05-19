@@ -1,16 +1,16 @@
 <script setup>
-import { ref, watch, computed, nextTick } from "vue";
+import { ref, computed, nextTick } from "vue";
 import axios from 'axios'
 import { marked } from 'marked'
-import { Delete, UserFilled, Monitor, Warning, Service } from '@element-plus/icons-vue'
-import { ElMessage } from "element-plus";
+import { Delete, UserFilled, Monitor, Warning, Service, Edit } from '@element-plus/icons-vue'
+import { ElMessage } from 'element-plus'
 
 const props = defineProps({
-    message: {
-        type: Object,
-        required: true,
-    }
-});
+  message: {
+    type: Object,
+    required: true
+  }
+})
 
 const renderer = {
     text(text) {
@@ -23,91 +23,112 @@ const renderer = {
         return replacedText;
     }
 };
-
 marked.use({ renderer });
-const options = {
-    gfm: true, // 开启 GitHub Flavored Markdown（GFM）
-    breaks: true,
-    headerIds: false // 禁止为标题自动生成 ID
-    // 还可以添加其他自定义参数...
-};
-marked.use(options);
 const response = computed(() => {
-    return marked(props.message.response);
-});
-
-const messageAnchor = ref()
-watch(
-    () => props.message.response,
-    async (newValue, oldValue) => {
-        await nextTick();
-        messageAnchor.value.scrollIntoView()
+    const options = {
+        gfm: true, // 开启 GitHub Flavored Markdown（GFM）
+        breaks: true,
+        headerIds: false // 禁止为标题自动生成 ID
+        // 还可以添加其他自定义参数...
+    };
+    marked.use(options);
+    let result = props.message.response;
+    try {
+        const jsonResult = JSON.parse(props.message.response)
+        result = jsonResult.result;
+    } catch (error) {
+        console.log("parse message result error", error);
     }
-);
+    return marked(result);
+});
 const isError = computed(() => {
-    return response.value.error && response.value.error.trim() !== "";
-});
-const isDelete = ref(false);
+  return response.value.error && response.value.error.trim() !== ''
+})
+const isDelete = ref(false)
 const deleteMessage = async (message) => {
-    const response = await axios.delete(`/api/message/${message.message_id}`);
-    const data = response.data;
-    if (data.errcode !== 0) {
-        ElMessage({
-            message: data.message,
-            type: 'warning',
-        });
-    } else {
-       isDelete.value = true;
-    }
-    console.log(response);
-};
+  const response = await axios.delete(`/api/message/${message.message_id}`)
+  const data = response.data
+  if (data.errcode !== 0) {
+    ElMessage({
+      message: data.message,
+      type: 'warning'
+    })
+  } else {
+    isDelete.value = true
+  }
+  console.log(response)
+}
 
 const reasons = ['事实性错误', '没有理解问题', '答案格式错误', '不喜欢答案风格', '没有帮助', '其他']
-const checkboxGroup = ref([]);
-const showFeedback = ref(false);
-const feedbackContainer = ref();
+const checkboxGroup = ref([])
+const showFeedback = ref(false)
+const feedbackContainer = ref()
 const switchFeedback = async () => {
-    showFeedback.value = !showFeedback.value;
-    await nextTick();
-    if (feedbackContainer.value) {
-        feedbackContainer.value.scrollIntoView({ behavior: 'smooth', block: 'center' });
-    }
-};
+  showFeedback.value = !showFeedback.value
+  await nextTick()
+  if (feedbackContainer.value) {
+    feedbackContainer.value.scrollIntoView({ behavior: 'smooth', block: 'center' })
+  }
+}
 const feedback = async () => {
-    console.log(checkboxGroup.value.join(' '));
-    const formData = new FormData();
-    formData.append('feedback', checkboxGroup.value.join(' '));
-    formData.append('agree', false);
-    const response = await axios.post(`/api/message/${props.message.message_id}/feedback`, formData);
-    const data = response.data;
-    if (data.errcode !== 0) {
-        ElMessage({
-            message: data.message,
-            type: 'warning',
-        });
-    } else {
-        ElMessage({
-            message: data.message,
-            type: 'success',
-        });
-        showFeedback.value = false;
-    }
-};
+  console.log(checkboxGroup.value.join(' '))
+  const formData = new FormData()
+  formData.append('feedback', checkboxGroup.value.join(' '))
+  formData.append('agree', false)
+  const response = await axios.post(`/api/message/${props.message.message_id}/feedback`, formData)
+  const data = response.data
+  if (data.errcode !== 0) {
+    ElMessage({
+      message: data.message,
+      type: 'warning'
+    })
+  } else {
+    ElMessage({
+      message: data.message,
+      type: 'success'
+    })
+    showFeedback.value = false
+  }
+}
 
-const emit = defineEmits(['textSelected']);
+const emit = defineEmits(['textSelected'])
 const getSelectedText = () => {
-    const selectedText = window.getSelection().toString();
-    if (selectedText === '') {
-        return
-    }
-    emit('textSelected', selectedText);
-};
+  const selectedText = window.getSelection().toString()
+  if (selectedText === '') {
+    return
+  }
+  emit('textSelected', selectedText)
+}
 const handleSourceClick = (event) => {
-    let targetElement = event.target;
-    if (targetElement.hasAttribute('title')) {
-        emit('textSelected', targetElement.getAttribute('title'));
-    }
-};
+  let targetElement = event.target
+  if (targetElement.hasAttribute('title')) {
+    emit('textSelected', targetElement.getAttribute('title'))
+  }
+}
+
+const isReadonly = ref(true)
+const messageText = ref(props.message.content)
+const handleSave = () => {
+  console.log(messageText.value, '==messageText')
+  // 调用更新接口
+  // const response = await axios.post('xxxxxxx--xxxx',);
+  // const data = response.data;
+  // if (data.errcode !== 0) {
+  //     ElMessage({
+  //         message: data.message,
+  //         type: 'warning',
+  //     });
+  // } else {
+  //     ElMessage({
+  //         message: "删除项目成功",
+  //         type: 'success',
+  //     });
+  // }
+}
+const handleCancel = () => {
+  messageText.value = props.message.content
+  isReadonly.value = true
+}
 </script>
 
 <template>
@@ -148,7 +169,7 @@ const handleSourceClick = (event) => {
                 <div v-html="response"/>
             </el-text>
         </div>
-        <div ref="messageAnchor" class="self-end">
+        <div class="self-end">
             <el-text>反馈数：{{ message.against_count }}</el-text>
             <el-button
                 @click="switchFeedback"
@@ -183,29 +204,40 @@ const handleSourceClick = (event) => {
 </template>
 
 <style>
-.query {
+.message-view {
+  width: 100% !important;
+}
+
+.message-view .el-textarea__inner {
+  box-shadow: none !important;
+  background-color: unset !important;
+  color: unset !important;
+  padding: 0;
+  min-height: 14px !important;
+  height: unset !important;
+  resize: none;
 }
 
 .answer {
-    border: 1px solid var(--el-border-color);
-    border-radius: var(--el-border-radius-base);
-    background: var(--el-color-info-light-9);
-    margin-top: 0.75rem;
+  border: 1px solid var(--el-border-color);
+  border-radius: var(--el-border-radius-base);
+  background: var(--el-color-info-light-9);
+  margin-top: 0.75rem;
 }
 
 .author {
-    align-self: end;
+  align-self: end;
 }
 
 .card {
-    align-self: stretch;
-    padding: 0.75rem;
-    display: flex;
-    flex-direction: column;
+  align-self: stretch;
+  padding: 0.75rem;
+  display: flex;
+  flex-direction: column;
 }
 
 .card p:first-of-type {
-    margin-top: 0;
+  margin-top: 0;
 }
 
 .el-checkbox {
