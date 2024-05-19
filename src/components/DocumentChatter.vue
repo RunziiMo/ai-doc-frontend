@@ -1,6 +1,6 @@
 <script lang="ts" setup>
-import { reactive, ref, computed, watch, onMounted, nextTick } from 'vue'
-import { ElMessage, ElScrollbar } from 'element-plus'
+import { reactive, ref, computed, watch, onMounted, nextTick } from "vue"
+import { ElScrollbar } from 'element-plus'
 import { Promotion } from '@element-plus/icons-vue'
 import axios from 'axios'
 
@@ -96,26 +96,6 @@ const docAnalyze = async () => {
         return
     }
     loading.value = true;
-    const formData = new FormData();
-    formData.append('role', role.value);
-    formData.append('book_identify', props.bookIdentify);
-    formData.append('doc_id', props.document.doc_id);
-    formData.append('prompt', prompt.value);
-    formData.append('action', props.functions.includes(prompt.value) ? "analyze" : "chat")
-    let chatResponse = await axios.post('/aigc/chat', formData);
-    let response = chatResponse.data;
-    console.log(chatResponse)
-    if (response.errcode !== 0) {
-        ElMessage({
-            message: response.message,
-            type: 'warning',
-        });
-    } else {
-        messages.value.push(response.data);
-        await nextTick();
-        scrollToBottom();
-    }
-    loading.value = true;
     const params = {
         role: role.value,
         book_identify: props.bookIdentify,
@@ -150,7 +130,6 @@ const docAnalyze = async () => {
         prompt.value = "";
     };
 };
-
 const viewAnchor = ref()
 const scrollToBottom = () => {
   nextTick(() => {
