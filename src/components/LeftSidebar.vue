@@ -23,22 +23,31 @@
                     @click="handleNodeClick(data)">
                     {{ node.label }}
                 </div>
-                <el-input
-                    v-else 
-                    style="display: flex; min-width: 50px; width: auto"
-                    class="w-20"
-                    size="small"
-                    v-model="editProjectNameValue"
-                    @keyup.enter="handleEditDocNameConfirm(node, data)"
-                />
+                <template  v-else >
+                    <el-input
+                        style="display: flex; min-width: 50px; width: auto"
+                        class="w-20"
+                        size="small"
+                        v-model="editProjectNameValue"
+                        @keyup.enter="handleEditDocNameConfirm(node, data)"
+                    />
+                    <el-button
+                        @click="handleEditDocNameConfirm(node, data)"
+                        class="ml-1"
+                        :icon="Check"
+                        size="small"
+                        circle/>
+                </template>
+              
                 <el-button
                     v-if="editProjectNameVisibleKey == node.key"
                     @click="handleDocDelete(data)"
-                    class="ml-1"
+                    class="!ml-1"
                     type="danger"
                     :icon="Delete"
                     size="small"
                     circle/>
+              
                 <div class="node-tag" style="overflow: visible;">
                     <div class="flex gap-2" style="overflow: visible;">
                         <el-tag
@@ -74,7 +83,7 @@
 <script lang="ts" setup>
 import { ref, watch, nextTick, reactive, toRefs } from 'vue'
 import axios from 'axios';
-import { Delete } from '@element-plus/icons-vue'
+import { Delete, Check } from '@element-plus/icons-vue'
 import { ElTree, ElInput, ElMessage } from 'element-plus'
 
 const emit = defineEmits(['updateDocId', 'deleteDocId']);

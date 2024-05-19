@@ -1,6 +1,6 @@
 <script lang="ts" setup>
 import { reactive, ref, computed, watch, onMounted, nextTick } from "vue"
-import { ElScrollbar } from 'element-plus'
+import { ElMessage } from 'element-plus'
 import { Promotion } from '@element-plus/icons-vue'
 import axios from 'axios'
 
@@ -148,6 +148,7 @@ const emit = defineEmits(['textSelected']);
         <ChatMessage 
             v-for="m in messages" :message="m"
             @text-selected="(text) => $emit('textSelected', text)"
+            @update-response-success="loadChatMessages(document.doc_id)"
         />
         <div ref="viewAnchor"/>
     </div>

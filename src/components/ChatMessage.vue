@@ -32,7 +32,11 @@ const options = {
     // 还可以添加其他自定义参数...
 };
 marked.use(options);
-const response = ref(marked(props.message.response))
+
+const response = ref(marked(props.message.response));
+
+const cloneResponse = ref(props.message.response);
+
 
 const messageAnchor = ref()
 watch(
@@ -40,6 +44,8 @@ watch(
     async (newValue, oldValue) => {
         await nextTick();
         messageAnchor.value.scrollIntoView()
+        response.value = marked(props.message.response);
+        cloneResponse.value = props.message.response;
     }
 );
 const isError = computed(() => {
@@ -92,7 +98,7 @@ const feedback = async () => {
     }
 };
 
-const emit = defineEmits(['textSelected']);
+const emit = defineEmits(['textSelected', 'updateResponseSuccess']);
 const getSelectedText = () => {
     const selectedText = window.getSelection().toString();
     if (selectedText === '') {
@@ -111,7 +117,7 @@ const isReadonly = ref(true)
 
 const handleSave = async () => {
     const formData = new FormData();
-    formData.append('response', response.value);
+    formData.append('response', cloneResponse.value);
     const response = await axios.post(`/api/message/${props.message.message_id}/update`, formData);
     const data = response.data;
     if (data.errcode !== 0) {
@@ -120,16 +126,17 @@ const handleSave = async () => {
             type: 'warning',
         });
     } else {
+        emit('updateResponseSuccess');
+        isReadonly.value = true;
         ElMessage({
             message: data.message,
             type: 'success',
         });
-        showFeedback.value = false;
     }
 }
 const handleCancel = () => {
-//   responseText.value = props.message.content
   response.value = marked(props.message.response)
+  cloneResponse.value = props.message.response;
   isReadonly.value = true;
 }
 
@@ -165,13 +172,22 @@ const handleCancel = () => {
             <el-icon class="mr-3 mt-1">
                 <Monitor />
             </el-icon>
+            <el-input
+                v-if="!isReadonly"
+                v-model="cloneResponse"
+                style="width: 100%"
+                :autosize="{ minRows: 4, maxRows: 20 }"
+                type="textarea"
+            />
             <el-text
+                v-else
                 @mouseup="getSelectedText"
                 @click="handleSourceClick"
                 class="flex-1"
                 shadow="never">
-                <div v-html="response" :contenteditable="!isReadonly"/>
+                <div v-html="response"/>
             </el-text>
+         
         </div>
         <div ref="messageAnchor" class="self-end">
             <el-text>反馈数：{{ message.against_count }}</el-text>
@@ -191,7 +207,7 @@ const handleCancel = () => {
                 circle/>
             <template v-else>
                 <el-button class="!ml-1" size="small" @click="handleSave">更新</el-button>
-                <el-button class="!ml-1" size="small" @clck="handleCancel">取消</el-button>
+                <el-button class="!ml-1" size="small" @click="handleCancel">取消</el-button>
             </template>
         </div>
     </div>
