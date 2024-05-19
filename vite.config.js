@@ -51,11 +51,20 @@ export default defineConfig({
         target: "http://123.57.55.24:8181",
         changeOrigin: true,
       },
+<<<<<<< HEAD
       "/logout": {
         target: "http://123.57.55.24:8181",
         changeOrigin: true,
       },
     },
   },
+=======
+      '/logout': {
+        target: 'http://123.57.55.24:8181',
+        changeOrigin: true
+      }
+    }
+  }
+>>>>>>> 65a36a7 (fix: merge)
 
 })
