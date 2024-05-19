@@ -12,11 +12,11 @@ export default defineConfig({
     vue(),
     UnoCSS(),
     AutoImport({
-      resolvers: [ElementPlusResolver()],
+      resolvers: [ElementPlusResolver()]
     }),
     Components({
-      resolvers: [ElementPlusResolver()],
-    }),
+      resolvers: [ElementPlusResolver()]
+    })
   ],
   resolve: {
     alias: {
@@ -26,35 +26,35 @@ export default defineConfig({
   esbuild: {
     supported: {
       'top-level-await': true
-    },
+    }
   },
   server: {
     proxy: {
-      "/api": {
-        target: "http://localhost:8181",
-        changeOrigin: true,
+      '/api': {
+        target: 'http://123.57.55.24:8181',
+        changeOrigin: true
         // rewrite: (path) => path.replace(/^\/api/, ""),
       },
-      "/static": {
-        target: "http://localhost:8181",
-        changeOrigin: true,
+      '/static': {
+        target: 'http://123.57.55.24:8181',
+        changeOrigin: true
       },
-      "/aigc": {
-        target: "http://localhost:8181",
-        changeOrigin: true,
+      '/aigc': {
+        target: 'http://123.57.55.24:8181',
+        changeOrigin: true
       },
-      "/captcha": {
-        target: "http://localhost:8181",
-        changeOrigin: true,
+      '/captcha': {
+        target: 'http://123.57.55.24:8181',
+        changeOrigin: true
       },
-      "/auth": {
-        target: "http://localhost:8181",
-        changeOrigin: true,
+      '/auth': {
+        target: 'http://123.57.55.24:8181',
+        changeOrigin: true
       },
-      "/logout": {
-        target: "http://localhost:8181",
-        changeOrigin: true,
-      },
-    },
-  },
+      '/logout': {
+        target: 'http://123.57.55.24:8181',
+        changeOrigin: true
+      }
+    }
+  }
 })
