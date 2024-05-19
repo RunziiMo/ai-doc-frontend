@@ -1,4 +1,4 @@
-g<script lang="ts" setup>
+<script lang="ts" setup>
 import { reactive, ref, computed, watch, onMounted, nextTick } from 'vue'
 import { ElMessage, ElScrollbar } from 'element-plus'
 import { Promotion } from '@element-plus/icons-vue'
@@ -91,7 +91,6 @@ const loadChatMessages = async (documentId) => {
 }
 
 const docAnalyze = async () => {
-<<<<<<< HEAD
     if (!('EventSource' in window)) {
         ElMessage.warning('您的浏览器不支持该功能');
         return
@@ -151,35 +150,7 @@ const docAnalyze = async () => {
         prompt.value = "";
     };
 };
-const viewAnchor = ref()
-const scrollToBottom = () => {
-    nextTick(() => {
-        viewAnchor.value.scrollIntoView()
-    });
-=======
-  loading.value = true
-  const formData = new FormData()
-  formData.append('role', role.value)
-  formData.append('book_identify', props.bookIdentify)
-  formData.append('doc_id', props.document.doc_id)
-  formData.append('prompt', prompt.value)
-  formData.append('action', props.functions.includes(prompt.value) ? 'analyze' : 'chat')
-  let chatResponse = await axios.post('/aigc/chat', formData)
-  let response = chatResponse.data
-  if (response.errcode !== 0) {
-    ElMessage({
-      message: response.message,
-      type: 'warning'
-    })
-  } else {
-    messages.value.push(response.data)
-    await nextTick()
-    scrollToBottom()
-  }
-  loading.value = false
-  prompt.value = ''
->>>>>>> ddcf01e (fix: merge)
-}
+
 const viewAnchor = ref()
 const scrollToBottom = () => {
   nextTick(() => {
