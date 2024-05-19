@@ -109,7 +109,7 @@ const handleSourceClick = (event) => {
 
 const isReadonly = ref(true)
 
-const handleSave = () => {
+const handleSave = async () => {
     const formData = new FormData();
     formData.append('response', response.value);
     const response = await axios.post(`/api/message/${props.message.message_id}/update`, formData);
