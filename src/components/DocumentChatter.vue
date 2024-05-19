@@ -47,8 +47,6 @@ const messages = ref([]);
 watch(
     () => messages,
     async (newValue, oldValue) => {
-        await nextTick();
-        console.log("messages changed");
         scrollToBottom();
     },
     {deep: true}
@@ -104,7 +102,6 @@ const docAnalyze = async () => {
     formData.append('action', props.functions.includes(prompt.value) ? "analyze" : "chat")
     let chatResponse = await axios.post('/aigc/chat', formData);
     let response = chatResponse.data;
-    console.log(chatResponse)
     if (response.errcode !== 0) {
         ElMessage({
             message: response.message,
@@ -120,9 +117,7 @@ const docAnalyze = async () => {
 };
 const scrollToBottom = () => {
     nextTick(() => {
-        if (scrollContainer.value) {
-            scrollContainer.value.scrollTop = scrollContainer.value.scrollHeight;
-        }
+        viewAnchor.value.scrollIntoView()
     });
 }
 const emit = defineEmits(['textSelected']);
@@ -136,6 +131,7 @@ const emit = defineEmits(['textSelected']);
             v-for="m in messages" :message="m"
             @text-selected="(text) => $emit('textSelected', text)"
         />
+        <div ref="viewAnchor"/>
     </div>
     <el-form
         class="mt-3"
