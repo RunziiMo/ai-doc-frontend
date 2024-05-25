@@ -73,7 +73,19 @@ const dialogFormVisible = computed({
 const submitUpload = () => {
     const formData = new FormData();
     formData.append('import-file', form.file[0].raw);
-    // formData.append('doc_name', form.doc_name);
+    
+    let filename = form.file[0].name;
+    if (filename.endsWith('.docx')) {  
+        filename = filename.slice(0, -5);
+    } else if (filename.endsWith('.pdf')) {
+        filename = filename.slice(0, -4);
+    } else {
+        ElMessage.error('文件必须是docx或者pdf');
+        emit('error');
+        return;
+    }
+    formData.append('doc_name', filename);
+    
     axios.post(`/api/${props.book.identify}/create`, formData)
         .then(response => {
             if (response.data.errcode == 0) {
