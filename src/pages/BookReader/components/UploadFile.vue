@@ -1,9 +1,9 @@
 <template>
     <el-dialog v-model="dialogFormVisible" title="上传文档" style="width: 435px">
         <el-form :model="form" label-width="auto" style="max-width: 600px" label-position="top" :rules="rules">
-            <el-form-item label="文档标识" prop="doc_name">
+            <!-- <el-form-item label="文档标识" prop="doc_name">
                 <el-input v-model="form.doc_name" placeholder="文档名称，不超过100字"/>
-            </el-form-item>
+            </el-form-item> -->
             <el-form-item label="" prop="file">
                 <el-upload
                     v-model:file-list="form.file"
@@ -16,7 +16,7 @@
                     :on-exceed="handleExceed"
                     :auto-upload="false"
                 >
-                    <el-input placeholder="请选择Zip或者Docx文件" style="width: 400px">
+                    <el-input placeholder="请选择docx或者pdf文件" style="width: 400px">
                         <template #append>
                             <el-button type="primary">选择</el-button>
                         </template>
@@ -73,7 +73,7 @@ const dialogFormVisible = computed({
 const submitUpload = () => {
     const formData = new FormData();
     formData.append('import-file', form.file[0].raw);
-    formData.append('doc_name', form.doc_name);
+    // formData.append('doc_name', form.doc_name);
     axios.post(`/api/${props.book.identify}/create`, formData)
         .then(response => {
             if (response.data.errcode == 0) {
