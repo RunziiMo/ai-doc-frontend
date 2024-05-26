@@ -8,7 +8,8 @@ import LeftSidebar from '../../components/LeftSidebar.vue';
 
 import UploadFile from './components/UploadFile.vue';
 import DocTag from './components/DocTag.vue';
-import DocumentReader from '../../components/DocumentReader.vue'
+import DocumentReader from './components/DocumentReader.vue'
+import DocumentChatter from './components/DocumentChatter.vue'
 
 const showChatter = ref(true)
 const book = ref({
@@ -132,7 +133,7 @@ function deleteDocId(docIdTmp) {
                             :searchString="selectedText"
                         />
                     </pane>
-                    <pane v-if="showChatter" size="35" class="flex flex-col relative justify-between">
+                    <pane v-if="showChatter" size="35" class="flex flex-col items-stretch relative justify-between">
                         <DocumentChatter
                             :bookIdentify="bookIdentify"
                             :document="document"

@@ -1,22 +1,5 @@
 <template>
-    <el-checkbox-group v-if="exportMode" class="hide-scrobar flex flex-1 flex-col items-stretch overflow-y-scroll mb-3"
-        style="scrollbar-width: none; -ms-overflow-style: none;">
-        <el-checkbox
-            v-for="m in messages"
-            class="export-box self-stretch" >
-            <ChatMessage 
-                :message="m"
-                :export="true"
-                @text-selected="(text) => $emit('textSelected', text)"
-                @deleted-message="(id) => switchExport(id)"
-                @switch-export="(id) => switchExport(id)"
-                @update-response-success="updateMessege"
-            >
-            </ChatMessage>
-        </el-checkbox>
-        <div ref="viewAnchor"/>
-    </el-checkbox-group>
-    <div v-else class="hide-scrobar flex flex-col flex-1 items-stretch overflow-y-scroll mb-3"
+    <div class="flex-1 hide-scrobar flex flex-col items-stretch overflow-y-scroll mb-3"
         ref="scrollContainer"
         style="scrollbar-width: none; -ms-overflow-style: none;">
         <ChatMessage
@@ -24,7 +7,7 @@
             :message="m"
             :export="exportMode"
             @text-selected="(text) => $emit('textSelected', text)"
-            @deleted-message="(id) => messages = messages.filter(item => item.message_id !== id)"
+            @deleted-message="handleDeleteMessage"
             @switch-export="(id) => switchExport(id)"
             @update-response-success="updateMessege"
         >
@@ -64,15 +47,19 @@
             全部选中
         </el-checkbox>
         <el-button @click="switchExport" class="w-30">取消</el-button>
-        <el-button @click="switchExport" class="w-30" type="primary">导出</el-button>
+        <el-button @click="showExportDialog = true" class="w-30" type="primary">导出</el-button>
     </div>
+    <ExportDialog v-model:showDialog="showExportDialog"
+        :document="document"
+        :messages="messages" />
 </template>
 
 <script lang="ts" setup>
-import { reactive, ref, computed, watch, onMounted, nextTick } from "vue"
+import { reactive, ref, computed, watch, onMounted, nextTick, provide } from "vue"
 import { ElMessage } from 'element-plus'
 import { Promotion } from '@element-plus/icons-vue'
 import axios from 'axios'
+import ExportDialog from './ExportDialog.vue'
 
 const props = defineProps({
     bookIdentify: {
@@ -115,19 +102,34 @@ const role = ref("");
 const prompt = ref("");
 const loading = ref(false);
 
+const showExportDialog = ref(false);
 const exportMode = ref(false);
 const checkedExport = ref(false);
 const checkAll = ref(false)
-const isIndeterminate = ref(true)
+const isIndeterminate = ref(false)
 const checkedMessages = ref([])
-const cities = ['Shanghai', 'Beijing', 'Guangzhou', 'Shenzhen']
+
+const checkMessage = (message_id) => {
+    if (checkedMessages.value.includes(message_id)) {
+        checkedMessages.value = checkedMessages.value.filter(id => id !== message_id);
+    } else {
+        checkedMessages.value.push(message_id);
+    }
+    const checkedCount = checkedMessages.value.length
+    checkAll.value = checkedCount === messages.value.length
+    isIndeterminate.value = checkedCount > 0 && checkedCount < messages.value.length
+};
+provide('checkedMessages', checkedMessages);
+provide('checkMessage', checkMessage);
 
 const handleCheckAllChange = (val) => {
-    checkedMessages.value = val ? cities : []
+    checkedMessages.value = val ? messages.value.map(item => item.message_id) : []
     isIndeterminate.value = false
 }
 const switchExport = (id) => {
     exportMode.value = !exportMode.value
+    checkedMessages.value = []
+    checkMessage(id)
 }
 
 const messages = ref([]);
@@ -174,7 +176,7 @@ const loadChatMessages = async (documentId) => {
         ElMessage.warning(response.data.message);
     } else {
         const data = response.data.data;
-        messages.value = data.page.List
+        messages.value = data.page.List;
         console.log("messages", data);
     }
 };
@@ -235,6 +237,13 @@ const updateMessege = (messageId, data) => {
         return el;
     });
 }
+
+const handleDeleteMessage = (id) => {
+    messages.value = messages.value.filter(item => item.message_id !== id)
+    if (messages.value.length <= 0) {
+        loadChatMessages(props.document.doc_id)
+    }
+}
 </script>
 
 <style>
@@ -258,7 +267,13 @@ const updateMessege = (messageId, data) => {
     height: auto;
     margin-right: 0;
     display: flex;
-    self-align: stretch;
+    align-items: stretch;
     justify-items: start
+}
+.el-checkbox__label {
+    flex: 1 1 0%;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
 }
 </style>
