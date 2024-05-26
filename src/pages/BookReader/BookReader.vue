@@ -1,6 +1,6 @@
 <script setup>
 import { ElMessage } from 'element-plus'
-import { ref, onMounted, watch, watchEffect } from 'vue'
+import { ref, onMounted, watch, watchEffect, provide } from 'vue'
 import axios from 'axios'
 import { Splitpanes, Pane } from 'splitpanes'
 import 'splitpanes/dist/splitpanes.css'
@@ -22,6 +22,7 @@ const docId = ref(0);
 const bookIdentify = ref("")
 const uploadDialogVisible = ref(false)
 const docTreeVisible = ref(false)
+const isShowSide = ref(true)
 
 const loadDoc = async (bookIdentify, docId) => {
     if (docId === undefined) {
@@ -91,10 +92,11 @@ function deleteDocId(docIdTmp) {
             <BaseHeader v-model="showChatter"
               :book="book"
               :document="document"
+              @hide-side="isShowSide = !isShowSide"
               />
         </el-header>
         <el-container>
-            <el-aside width="300px">
+            <el-aside v-show="isShowSide" width="300px">
                 <!-- 增加“上传文档”和“设置标签” 开始 -->
                 <div style="paddingLeft: 10px;marginTop: 10px;">
                     <el-button type="success" @click="uploadDialogVisible = !uploadDialogVisible">上传文档</el-button>

@@ -1,6 +1,6 @@
 <script>
 import { ArrowDown } from '@element-plus/icons-vue'
-import { ref, watch } from 'vue'
+import { ref, watch, inject } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from 'axios'
 
@@ -16,7 +16,7 @@ export default {
     document: Object,
     model: Object
   },
-  emits: ['update:modelValue'],
+  emits: ['update:modelValue', 'hideSide'],
   computed: {
     value: {
       get() {
@@ -62,6 +62,9 @@ export default {
         }
         this.$router.push('/');
       })
+    },
+    handleClickExpand() {
+     this.$emit('hideSide')
     }
   }
 }
@@ -71,6 +74,7 @@ export default {
   <el-page-header @back="onBack" :icon="null">
     <template #content>
       <div class="flex items-center">
+        <el-icon class="mr-2" @click="handleClickExpand"><Expand /></el-icon>
         <span class="text-large font-600 mr-3"> {{ book.book_name }} </span>
         <span class="text-sm mr-2" style="color: var(--el-text-color-regular)">
           {{ document.doc_name }}
