@@ -75,6 +75,7 @@ export default {
     <template #content>
       <div class="flex items-center">
         <el-icon class="mr-2" @click="handleClickExpand"><Expand /></el-icon>
+        <el-divider direction="vertical" />
         <span class="text-large font-600 mr-3"> {{ book.book_name }} </span>
         <span class="text-sm mr-2" style="color: var(--el-text-color-regular)">
           {{ document.doc_name }}

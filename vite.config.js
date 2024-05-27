@@ -55,6 +55,10 @@ export default defineConfig({
         target: "http://123.57.55.24:8181",
         changeOrigin: true,
       },
+      "/book": {
+        target: "http://123.57.55.24:8181",
+        changeOrigin: true,
+      },
     },
   },
 })

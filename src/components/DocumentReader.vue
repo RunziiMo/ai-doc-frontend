@@ -66,6 +66,7 @@ const toast = (message) => {
   ElMessage.warning(message)
 }
 const scrollToText = async (searchString) => {
+  console.log(docContainer.value, '===docContainer')
   new Mark(docContainer.value).unmark().mark(searchString, {
     acrossElements: true,
     accuracy: 'partially'
@@ -98,7 +99,9 @@ const url = computed(() => {
         @error="toast('加载文档失败')"
     /-->
   <el-scrollbar v-if="isPdf">
-    <PdfView ref="docContainer" :url="url" />
+    <div ref="docContainer" class="wh-full">
+      <PdfView :url="url" />
+    </div>
   </el-scrollbar>
   <el-scrollbar v-else-if="isDocx">
     <div ref="docContainer" />
