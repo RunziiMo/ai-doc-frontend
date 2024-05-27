@@ -66,7 +66,6 @@ const toast = (message) => {
   ElMessage.warning(message)
 }
 const scrollToText = async (searchString) => {
-  console.log(docContainer.value, '===docContainer')
   new Mark(docContainer.value).unmark().mark(searchString, {
     acrossElements: true,
     accuracy: 'partially'
