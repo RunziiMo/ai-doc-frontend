@@ -117,6 +117,11 @@ const filterNode = (value: string, data: Tree) => {
     return data.text.includes(value) || (data.dynamicTags && data.dynamicTags.some(item => item.indexOf(value) > -1));
 }
 
+watch(filterText, (val) => {
+  treeRef.value!.filter(val)
+})
+
+
 const handleNodeClick = (data: Tree) => {
     emit('updateDocId', data.id)
 }

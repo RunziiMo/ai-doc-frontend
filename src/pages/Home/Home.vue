@@ -33,6 +33,8 @@ const homeData = reactive({
     bookList: []
 })
 
+const homeDataTemp = ref();
+
 const dialogVisible = ref(false)
 watch(
     () => dialogVisible.value,
@@ -49,7 +51,7 @@ function searchHandle(searchText) {
     // if (!searchText) {
     //     homeData.bookList = [...mockData]
     // }
-    homeData.bookList = homeData.bookList.filter(item => item.book_name.indexOf(searchText) > -1 || item.identify.indexOf(searchText) > -1)
+    homeData.bookList = homeDataTemp.value.filter(item => item.book_name.indexOf(searchText) > -1 || item.identify.indexOf(searchText) > -1)
 }
 function createProject() {
     dialogVisible.value = true;
@@ -60,6 +62,7 @@ async function fetchInitialData() {
     try {
         const response = await axios.get('/api/book/home'); // 替换为你的API地址
         homeData.bookList = response.data.data; // 假设返回的数据结构与你定义的homeData.bookList一致
+        homeDataTemp.value = [...(response.data.data || [])];
         console.log("bookList", homeData.bookList)
     } catch (error) {
         console.error('初始化数据请求失败:', error);
