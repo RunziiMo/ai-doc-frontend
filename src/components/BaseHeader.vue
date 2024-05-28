@@ -156,6 +156,9 @@ export default {
 a+.el-link {
   margin-left: 12px;
 }
+.el-link.el-link {
+  margin-left: 12px;
+}
 .el-button+.el-link {
   margin-left: 12px;
 }

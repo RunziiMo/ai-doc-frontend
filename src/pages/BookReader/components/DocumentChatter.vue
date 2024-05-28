@@ -1,8 +1,65 @@
+<template>
+    <div class="flex-1 hide-scrobar flex flex-col items-stretch overflow-y-scroll mb-3"
+        ref="scrollContainer"
+        style="scrollbar-width: none; -ms-overflow-style: none;">
+        <ChatMessage
+            v-for="m in messages"
+            :message="m"
+            :export="exportMode"
+            @text-selected="(text) => $emit('textSelected', text)"
+            @deleted-message="handleDeleteMessage"
+            @switch-export="(id) => switchExport(id)"
+            @update-response-success="updateMessege"
+        >
+        </ChatMessage>
+        <div ref="viewAnchor"/>
+    </div>
+    <el-form
+        v-if="!exportMode"
+        label-position="right"
+        label-width="auto"
+    >
+        <el-form-item label="利益方">
+           <el-input v-model="role"
+                placeholder="ex. 甲方，张三"
+            />
+        </el-form-item>
+    </el-form>
+    <div v-if="!exportMode" class="self-stretch flex mb-3 justify-between">
+        <el-autocomplete
+            class="flex-1 inline-input"
+            v-model="prompt"
+            :fetch-suggestions="querySearch"
+            :trigger-on-focus="false"
+            clearable
+            placeholder="输入 / 选择或者直接提问"
+        >
+        </el-autocomplete>
+        <el-button @click="docAnalyze" :loading="loading" class="ml-3" type="success" :icon="Promotion" />
+    </div>
+    <div v-else class="self-stretch flex mb-3 justify-between items-center">
+        <el-checkbox
+            class="self-center"
+            v-model="checkAll"
+            :indeterminate="isIndeterminate"
+            @change="handleCheckAllChange"
+        >
+            全部选中
+        </el-checkbox>
+        <el-button @click="switchExport" class="w-30">取消</el-button>
+        <el-button @click="showExportDialog = true" class="w-30" type="primary">导出</el-button>
+    </div>
+    <ExportDialog v-model:showDialog="showExportDialog"
+        :document="document"
+        :messages="messages" />
+</template>
+
 <script lang="ts" setup>
-import { reactive, ref, computed, watch, onMounted, nextTick } from "vue"
+import { reactive, ref, computed, watch, onMounted, nextTick, provide } from "vue"
 import { ElMessage } from 'element-plus'
 import { Promotion } from '@element-plus/icons-vue'
 import axios from 'axios'
+import ExportDialog from './ExportDialog.vue'
 
 const props = defineProps({
     bookIdentify: {
@@ -23,6 +80,7 @@ onMounted(async () => {
     if (props.document.doc_id) {
         loadChatMessages(props.document.doc_id);
     }
+    scrollToBottom()
 })
 
 watch(
@@ -43,6 +101,37 @@ watch(
 const role = ref("");
 const prompt = ref("");
 const loading = ref(false);
+
+const showExportDialog = ref(false);
+const exportMode = ref(false);
+const checkedExport = ref(false);
+const checkAll = ref(false)
+const isIndeterminate = ref(false)
+const checkedMessages = ref([])
+
+const checkMessage = (message_id) => {
+    if (checkedMessages.value.includes(message_id)) {
+        checkedMessages.value = checkedMessages.value.filter(id => id !== message_id);
+    } else {
+        checkedMessages.value.push(message_id);
+    }
+    const checkedCount = checkedMessages.value.length
+    checkAll.value = checkedCount === messages.value.length
+    isIndeterminate.value = checkedCount > 0 && checkedCount < messages.value.length
+};
+provide('checkedMessages', checkedMessages);
+provide('checkMessage', checkMessage);
+
+const handleCheckAllChange = (val) => {
+    checkedMessages.value = val ? messages.value.map(item => item.message_id) : []
+    isIndeterminate.value = false
+}
+const switchExport = (id) => {
+    exportMode.value = !exportMode.value
+    checkedMessages.value = []
+    checkMessage(id)
+}
+
 const messages = ref([]);
 watch(
     () => messages,
@@ -87,7 +176,7 @@ const loadChatMessages = async (documentId) => {
         ElMessage.warning(response.data.message);
     } else {
         const data = response.data.data;
-        messages.value = data.page.List
+        messages.value = data.page.List;
         console.log("messages", data);
     }
 };
@@ -148,43 +237,14 @@ const updateMessege = (messageId, data) => {
         return el;
     });
 }
-</script>
 
-<template>
-    <div class="hide-scrobar flex flex-col flex-1 items-start overflow-y-scroll"
-        ref="scrollContainer"
-        style="scrollbar-width: none; -ms-overflow-style: none;">
-        <ChatMessage 
-            v-for="m in messages" :message="m"
-            @text-selected="(text) => $emit('textSelected', text)"
-            @update-response-success="updateMessege"
-        />
-        <div ref="viewAnchor"/>
-    </div>
-    <el-form
-        class="mt-3"
-        label-position="right"
-        label-width="auto"
-    >
-        <el-form-item label="利益方">
-           <el-input v-model="role"
-                placeholder="ex. 甲方，张三"
-            />
-        </el-form-item>
-    </el-form>
-    <div class="self-stretch flex mb-3 justify-between">
-        <el-autocomplete
-            class="flex-1 inline-input"
-            v-model="prompt"
-            :fetch-suggestions="querySearch"
-            :trigger-on-focus="false"
-            clearable
-            placeholder="输入 / 选择或者直接提问"
-        >
-        </el-autocomplete>
-        <el-button @click="docAnalyze" :loading="loading" class="ml-3" type="success" :icon="Promotion" />
-    </div>
-</template>
+const handleDeleteMessage = (id) => {
+    messages.value = messages.value.filter(item => item.message_id !== id)
+    if (messages.value.length <= 0) {
+        loadChatMessages(props.document.doc_id)
+    }
+}
+</script>
 
 <style>
 .scroll-content {
@@ -201,5 +261,19 @@ const updateMessege = (messageId, data) => {
 }
 .no-scroll {
   overflow: hidden;
+}
+
+.export-box {
+    height: auto;
+    margin-right: 0;
+    display: flex;
+    align-items: stretch;
+    justify-items: start
+}
+.el-checkbox__label {
+    flex: 1 1 0%;
+    display: flex;
+    flex-direction: column;
+    align-items: stretch;
 }
 </style>
