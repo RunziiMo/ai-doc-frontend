@@ -27,5 +27,38 @@ export default defineConfig({
     supported: {
       'top-level-await': true
     },
-  }
+  },
+  server: {
+    proxy: {
+      "/api": {
+        target: "http://123.57.55.24:8181",
+        changeOrigin: true,
+        // rewrite: (path) => path.replace(/^\/api/, ""),
+      },
+      "/static": {
+        target: "http://123.57.55.24:8181",
+        changeOrigin: true,
+      },
+      "/aigc": {
+        target: "http://123.57.55.24:8181",
+        changeOrigin: true,
+      },
+      "/captcha": {
+        target: "http://123.57.55.24:8181",
+        changeOrigin: true,
+      },
+      "/auth": {
+        target: "http://123.57.55.24:8181",
+        changeOrigin: true,
+      },
+      "/logout": {
+        target: "http://123.57.55.24:8181",
+        changeOrigin: true,
+      },
+      "/book": {
+        target: "http://123.57.55.24:8181",
+        changeOrigin: true,
+      },
+    },
+  },
 })

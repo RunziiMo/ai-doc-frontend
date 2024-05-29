@@ -22,14 +22,14 @@
 import { reactive, ref, computed } from 'vue'
 const baseUrl = ref(window.location.origin)
 const props = defineProps({  
-  showDialog: {  
-    type: Boolean, 
-    required: true,
-  },
-  book: {
-    type: Object, 
-    required: true,
-  },
+    showDialog: {  
+        type: Boolean, 
+        required: true,
+    },
+    book: {
+        type: Object, 
+        required: true,
+    },
 });
 
 const emit = defineEmits(['update:showDialog']);
