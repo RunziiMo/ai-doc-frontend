@@ -57,23 +57,23 @@
       </el-upload>
     </el-form-item>
 
-    <!-- <el-form-item label="项目功能" prop="selectedAiFunctions">
-            <el-checkbox
-                v-model="selectAll"
-                :indeterminate="isIndeterminate"
-                @change="handleSelectAllChange"
-            >
-                选择所有
+    <el-form-item label="项目功能" prop="selectedAiFunctions">
+        <el-checkbox
+            v-model="selectAll"
+            :indeterminate="isIndeterminate"
+            @change="handleSelectAllChange"
+        >
+            选择所有
+        </el-checkbox>
+        <el-checkbox-group
+            v-model="selectedAiFunctions"
+            @change="handleSelectedAiFunctionsChange"
+        >
+            <el-checkbox v-for="func in aiFunctions" :value="func.value">
+            {{ func.label }}
             </el-checkbox>
-            <el-checkbox-group
-                v-model="selectedAiFunctions"
-                @change="handleSelectedAiFunctionsChange"
-            >
-                <el-checkbox v-for="func in aiFunctions" :key="func" :label="func" :value="func">
-                {{ func }}
-                </el-checkbox>
-            </el-checkbox-group>
-        </el-form-item> -->
+        </el-checkbox-group>
+    </el-form-item>
 
     <el-form-item>
       <el-button type="primary" @click="submitForm"> 创建 </el-button>
@@ -87,12 +87,19 @@ import axios from 'axios'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 // checkbox
-const selectAll = ref(false)
-const isIndeterminate = ref(true)
-const selectedAiFunctions = ref(['摘要', '实体提取', '合法审查', '利益分析', '缺漏审查'])
-const aiFunctions = ['摘要', '实体提取', '合法审查', '利益分析', '缺漏审查']
+const selectAll = ref(true)
+const isIndeterminate = ref(false)
+const aiFunctions = [
+    { value: 'summary', label: '摘要' },
+    { value: 'extract_once_trace', label: '实体提取' },
+    { value: 'checker_legal', label: '合法审查' },
+    { value: 'checker_interest', label: '利益分析' },
+    { value: 'checker_miss', label: '缺漏审查' },
+]
+const selectedAiFunctions = ref(aiFunctions.map(item => item.value))
+
 const handleSelectAllChange = (val: boolean) => {
-  selectedAiFunctions.value = val ? aiFunctions : []
+  selectedAiFunctions.value = val ? aiFunctions.map(item => item.value) : []
   isIndeterminate.value = false
 }
 const handleSelectedAiFunctionsChange = (value: string[]) => {
@@ -208,8 +215,7 @@ function submitForm() {
       formData.append('description', form.description)
       formData.append('privately_owned', form.privately_owned)
       formData.append('import-file', form.file[0].raw)
-      // formData.append('selectedAiFunctions', selectedAiFunctions.value.join(' '));
-      // console.log("jh_debug selectedAiFunctions:", selectedAiFunctions.value.join(' '));
+      formData.append('aigc_function', selectedAiFunctions.value.join(';'));
 
       axios
         .post('/book/users/import', formData) // 替换为实际的API地址

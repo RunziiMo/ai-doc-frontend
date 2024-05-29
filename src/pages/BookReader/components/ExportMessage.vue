@@ -68,27 +68,4 @@ watch(
 </script>
 
 <style>
-.answer {
-    border: 1px solid var(--el-border-color);
-    border-radius: var(--el-border-radius-base);
-    background: var(--el-color-info-light-9);
-}
-
-.card {
-    flex: 1;
-    max-width: 100%;
-    padding: 0.75rem;
-    display: flex;
-    flex-direction: column;
-    align-items: stretch;
-    flex-shrink: 1; /* Allow it to shrink if necessary */
-}
-
-.card p:first-of-type {
-    margin-top: 0;
-}
-
-.card.el-checkbox {
-  margin-top: 12px;
-}
 </style>

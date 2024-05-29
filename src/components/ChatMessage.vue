@@ -46,6 +46,9 @@
                     :autosize="{ minRows: 4, maxRows: 20 }"
                     type="textarea"
                 />
+                <el-skeleton
+                    v-else-if="message.response === ''"
+                    :rows="3" animated />
                 <el-text
                     v-else
                     @mouseup="getSelectedText"
@@ -279,19 +282,17 @@ const handleCancel = () => {
 }
 
 .answer {
-    border: 1px solid var(--el-border-color);
     border-radius: var(--el-border-radius-base);
     background: var(--el-color-info-light-9);
 }
 
 .card {
-    flex: 1;
-    max-width: 100%;
+    width: calc(100% - 1.5rem);
     padding: 0.75rem;
     display: flex;
     flex-direction: column;
     align-items: stretch;
-    flex-shrink: 1; /* Allow it to shrink if necessary */
+    align-self: stretch;
 }
 
 .card p:first-of-type {

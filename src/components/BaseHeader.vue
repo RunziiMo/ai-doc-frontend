@@ -39,7 +39,7 @@ export default {
       window.history.back()
     },
     handleDelete() {
-      ElMessageBox.confirm('确定是否删除当前文档?', '删除', {
+      ElMessageBox.confirm('确定是否删除当前项目？', '删除', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning'

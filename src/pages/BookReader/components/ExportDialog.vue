@@ -163,7 +163,6 @@ const dialogFormVisible = computed({
 
 
 .hljs {
-    width: 100%;
     overflow-x: scroll;
 }
 .chat-response-table {
@@ -173,9 +172,5 @@ const dialogFormVisible = computed({
 .code-header {
     display: flex;
     justify-content: space-between;
-}
-.code-body {
-    width: 200px;
-    max-width: 200px;
 }
 </style>
