@@ -55,7 +55,7 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, ref, computed, watch, onMounted, nextTick, provide } from "vue"
+import { reactive, ref, computed, watch, onMounted, onUnmounted, nextTick, provide } from "vue"
 import { ElMessage } from 'element-plus'
 import { Promotion } from '@element-plus/icons-vue'
 import axios from 'axios'
@@ -76,17 +76,36 @@ const props = defineProps({
     }
 });
 
+let intervalId;
 onMounted(async () => {
     if (props.document.doc_id) {
-        loadChatMessages(props.document.doc_id);
+        messages.value = await loadChatMessages(props.document.doc_id);
     }
     scrollToBottom()
-})
+    intervalId = setInterval(async () => {
+        if (loading.value) {
+            return;
+        }
+        if (messages.value.some(message => message.approved === 0)) {
+            const updatedMessages = await loadChatMessages(props.document.doc_id);
+            updatedMessages.forEach(updatedMessage => {
+                const index = messages.value.findIndex(message => message.message_id === updatedMessage.message_id);
+                if (index !== -1 && messages.value[index].approved === 0) {
+                    console.log(updatedMessage);
+                    messages.value[index] = updatedMessage;
+                }
+            });
+        }
+    }, 1000); // 每 1 秒请求一次
+});
+onUnmounted(() => {
+    clearInterval(intervalId);
+});
 
 watch(
     () => props.document,
-    (newValue, oldValue) => {
-        loadChatMessages(newValue.doc_id);
+    async (newValue, oldValue) => {
+        messages.value = await loadChatMessages(newValue.doc_id);
     }
 );
 watch(
@@ -176,8 +195,7 @@ const loadChatMessages = async (documentId) => {
         ElMessage.warning(response.data.message);
     } else {
         const data = response.data.data;
-        messages.value = data.page.List;
-        console.log("messages", data);
+        return data.page.List;
     }
 };
 
@@ -214,6 +232,7 @@ const docAnalyze = async () => {
     eventSource.addEventListener('close', (event) => {
         ElMessage.warning(event.data);
         console.log(event.data);
+        messages.value[messages.value.length - 1].approved = 1;
     });
     eventSource.onerror = (event) => {
         eventSource.close();
@@ -238,10 +257,10 @@ const updateMessege = (messageId, data) => {
     });
 }
 
-const handleDeleteMessage = (id) => {
+const handleDeleteMessage = async (id) => {
     messages.value = messages.value.filter(item => item.message_id !== id)
     if (messages.value.length <= 0) {
-        loadChatMessages(props.document.doc_id)
+        messages.value = await loadChatMessages(props.document.doc_id)
     }
 }
 </script>

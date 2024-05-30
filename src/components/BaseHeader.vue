@@ -89,13 +89,13 @@ export default {
           active-text="问答"
           inactive-text="全屏"
         />
-        <router-link to="/"><el-button>首页</el-button></router-link>
+        <el-link href="/" :underline="false"><el-button>首页</el-button></el-link>
         <el-link v-if="editable" :href="`/api/${book.identify}/edit/`" :underline="false"><el-button type="danger">编辑</el-button></el-link>
         <!-- <el-link v-if="owner" :href="`/book/${book.identify}/users`" :underline="false"><el-button type="success">成员</el-button></el-link> -->
         <el-link v-if="owner" :href="`/book/${book.identify}/setting`" :underline="false"><el-button type="primary">设置</el-button></el-link>
         <!-- <el-link href="javascript:window.print();" :underline="false"><el-button>打印</el-button></el-link> -->
         <!-- <el-button v-if="book.privately_owned === 0 && book.is_enable_share" @click="showDialog = true" type="success">分享</el-button> -->
-        <el-dropdown v-if="book.is_download">
+        <!-- <el-dropdown v-if="book.is_download">
           <el-button type="primary">
             下载<el-icon class="el-icon--right"><arrow-down /></el-icon>
           </el-button>
@@ -128,7 +128,7 @@ export default {
               </el-dropdown-item>
             </el-dropdown-menu>
           </template>
-        </el-dropdown>
+        </el-dropdown>-->
         <el-button type="danger" class="m-l-8px" @click="handleDelete">
           删除项目<el-icon class="el-icon--right"> <delete /></el-icon>
         </el-button>
