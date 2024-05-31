@@ -139,7 +139,7 @@ function deleteDocId(docIdTmp) {
                         <DocumentChatter
                             :bookIdentify="bookIdentify"
                             :document="document"
-                            :functions="book.aigc_function ? book.aigc_function.split(';'): []"
+                            :functions="['summary','extract_once_trace','checker_legal','checker_interest','checker_miss']"
                             @text-selected="(text) => selectedText = text"
                         />
                     </pane>
