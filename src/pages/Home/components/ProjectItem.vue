@@ -1,11 +1,11 @@
 <template>
     <div>
-        <el-card v-loading="book.status === 1"
+        <el-card v-loading="book.status === 2"
             @click="showTip" class="project-item" shadow="hover">
             <el-link
                 style="width: 170px; height: 230px"
                 :href="`/docs/${book.identify}`"
-                :disabled="book.status === 1">
+                :disabled="book.status === 2">
                 <el-image
                     :src="book?.cover"
                     :alt="book.book_name"
@@ -25,7 +25,7 @@ const props = defineProps({
 });
 
 const showTip = () => {
-    if (props.book.status === 1) {
+    if (props.book.status === 2) {
         ElMessage.warning("正在后台处理中，请稍后刷新页面")
     }
 }
