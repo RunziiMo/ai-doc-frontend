@@ -221,7 +221,7 @@ function submitForm() {
         .post('/book/users/import', formData) // 替换为实际的API地址
         .then((response) => {
           if (response.data.errcode == 0) {
-            ElMessage.success('项目创建成功')
+            ElMessage.success(response.data.message)
             // 重置表单
             form.itemId = 0
             form.book_name = ''
