@@ -86,7 +86,9 @@ onMounted(async () => {
         if (loading.value) {
             return;
         }
-        if (messages.value.some(message => message.approved === 0)) {
+        if (messages.value.length === 0) {
+            messages.value = await loadChatMessages(props.document.doc_id);
+        } else if (messages.value.some(message => message.approved === 0)) {
             const updatedMessages = await loadChatMessages(props.document.doc_id);
             updatedMessages.forEach(updatedMessage => {
                 const index = messages.value.findIndex(message => message.message_id === updatedMessage.message_id);
@@ -107,14 +109,6 @@ watch(
     async (newValue, oldValue) => {
         messages.value = await loadChatMessages(newValue.doc_id);
     }
-);
-watch(
-    () => props.functions,
-    async (newValue, oldValue) => {
-        await nextTick();
-        scrollToBottom();
-    },
-    {deep: true}
 );
 
 const role = ref("");
