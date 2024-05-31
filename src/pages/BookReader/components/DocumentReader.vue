@@ -6,8 +6,6 @@ import { Promotion } from '@element-plus/icons-vue'
 import { marked } from 'marked'
 import 'splitpanes/dist/splitpanes.css'
 import axios from 'axios'
-import VueOfficeDocx from '@vue-office/docx'
-import '@vue-office/docx/lib/index.css'
 import { defaultOptions, renderAsync } from 'docx-preview'
 import Mark from 'mark.js'
 import {ElMessage} from 'element-plus'
@@ -92,11 +90,6 @@ const url = computed(() => {
 </script>
 
 <template>
-  <!--vue-office-docx
-        v-if="bookIdentify && document.doc_id"
-        :src="`/api/book/${bookIdentify}/download/${document.doc_id}`"
-        @error="toast('加载文档失败')"
-    /-->
   <el-scrollbar v-if="isPdf">
     <div ref="docContainer" class="wh-full">
       <PdfView :url="url" />
