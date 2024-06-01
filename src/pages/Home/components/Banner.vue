@@ -42,7 +42,8 @@ function enterHome() {
 //     router.push("/");
 // };
 function enterPersonal() {
-    router.push("/myspace");
+    // router.push("/myspace");
+    router.push("/");
 }
 </script>
 <style>
