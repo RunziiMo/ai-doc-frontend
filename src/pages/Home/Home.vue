@@ -6,7 +6,7 @@
                 v-for="book in homeData.bookList"
                 :key="book"
                 :book-id="book.book_id"
-                :doc-data="book">
+                :book="book">
             </project-item>
             <el-card class="add-doc" @click="addDocHandle">
                 <el-icon :size="30">
