@@ -10,6 +10,7 @@ import UploadFile from './components/UploadFile.vue';
 import DocTag from './components/DocTag.vue';
 import DocumentReader from './components/DocumentReader.vue'
 import DocumentChatter from './components/DocumentChatter.vue'
+import DocumentOperate from './components/DocumentOperate.vue';
 
 const showChatter = ref(true)
 const book = ref({
@@ -24,6 +25,9 @@ const bookIdentify = ref("")
 const uploadDialogVisible = ref(false)
 const docTreeVisible = ref(false)
 const isShowSide = ref(true)
+
+const entityList = ref([])
+const messageList = ref([])
 
 const loadDoc = async (bookIdentify, docId) => {
     if (docId === undefined) {
@@ -136,6 +140,7 @@ function deleteDocId(docIdTmp) {
                         />
                     </pane>
                     <pane v-if="showChatter" size="35" class="flex flex-col items-stretch relative justify-between">
+                        <DocumentOperate v-model:entityList="entityList" v-model:messageList="messageList"/>
                         <DocumentChatter
                             :bookIdentify="bookIdentify"
                             :document="document"

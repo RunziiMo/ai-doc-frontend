@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed, watch, watchEffect, nextTick } from 'vue'
+import { ref, computed, watch, watchEffect, nextTick, onMounted } from 'vue'
 import { Splitpanes, Pane } from 'splitpanes'
 import { ElScrollbar } from 'element-plus'
 import { Promotion } from '@element-plus/icons-vue'
@@ -30,6 +30,11 @@ const isPdf = computed(() => {
   return props.document.identify?.endsWith('.pdf')
 })
 
+const operatePopover = ref({
+  visible: false,
+  top: 0,
+  left: 0,
+})
 
 watch(
   () => props.document,
@@ -87,6 +92,48 @@ const isDocx = computed(() => {
 const url = computed(() => {
   return `/api/book/${props.bookIdentify}/download/${props.document?.doc_id}`
 })
+
+const getOffsetLeft = (element) => {  
+    let offset = 0;  
+    while (element) {  
+        offset += element.offsetLeft;  
+        element = element.offsetParent;  
+    }  
+    return offset;  
+}
+
+const getOffsetTop = (element) =>{  
+    let offset = 0;  
+    if (element.offsetParent) {  
+        do {  
+            offset += element.offsetTop;  
+            element = element.offsetParent;  
+        } while (element);  
+    }  
+    return offset;  
+}  
+
+onMounted(()=> {
+  setTimeout(() => {
+    new Mark(docContainer.value).mark([
+     '中国',
+     '银行'
+  ], {
+    each: (element) => {
+      console.log(element)
+      element.onclick = function (e) {
+       
+        operatePopover.value = {
+             visible: true,
+             top: getOffsetTop(e),
+             left: getOffsetLeft(e),
+           }
+      }
+    }
+  })
+  }, 3000);
+
+})
 </script>
 
 <template>
@@ -104,6 +151,15 @@ const url = computed(() => {
   >
   </el-empty>
   <el-skeleton v-else :rows="20" animated />
+
+  <div
+    v-if="operatePopover.visible"
+    class="operate-popover"
+    :style="{ top: operatePopover.top + 'px', left: operatePopover.left + 'px' }"
+  >
+      <div class="py-1 bg-gray-100 text-center">取 消</div>
+      <div class="py-1 bg-gray-100 mt-2 text-center">重 选</div>
+    </div>
 </template>
 
 <style>
@@ -125,5 +181,20 @@ const url = computed(() => {
 .el-scrollbar {
   width: 100%;
   height: 100%
+}
+.text-selected {
+  background: red !important;
+}
+.operate-popover {
+  position: absolute;
+  z-index: 20;
+  padding: 16px;
+  cursor: pointer;
+  width: 100px;
+  background: #fff;
+  border-radius: 4px;
+  box-shadow: 0 9px 28px 8px rgb(0 0 0 / 3%), 0 6px 16px 4px rgb(0 0 0 / 9%),
+    0 3px 6px -2px rgb(0 0 0 / 20%);
+  user-select: none;
 }
 </style>
