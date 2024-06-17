@@ -8,8 +8,10 @@ import 'splitpanes/dist/splitpanes.css'
 import axios from 'axios'
 import { defaultOptions, renderAsync } from 'docx-preview'
 import Mark from 'mark.js'
-import {ElMessage} from 'element-plus'
+import { ElMessage } from 'element-plus'
 import PdfView from './PdfView.vue'
+import { RefSymbol } from '@vue/reactivity'
+import { useElementBounding, onClickOutside } from '@vueuse/core'
 
 const props = defineProps({
   bookIdentify: {
@@ -33,13 +35,13 @@ const isPdf = computed(() => {
 const operatePopover = ref({
   visible: false,
   top: 0,
-  left: 0,
+  left: 0
 })
 
 watch(
   () => props.document,
   (newValue, oldValue) => {
-    if(isPdf.value) return;
+    if (isPdf.value) return
     loadDocument(props.bookIdentify, newValue.doc_id, newValue.identify)
   }
 )
@@ -85,7 +87,6 @@ const scrollToText = async (searchString) => {
   }
 }
 
-
 const isDocx = computed(() => {
   return props.document.identify?.endsWith('.docx')
 })
@@ -93,56 +94,66 @@ const url = computed(() => {
   return `/api/book/${props.bookIdentify}/download/${props.document?.doc_id}`
 })
 
-const getOffsetLeft = (element) => {  
-    let offset = 0;  
-    while (element) {  
-        offset += element.offsetLeft;  
-        element = element.offsetParent;  
-    }  
-    return offset;  
+const getOffsetLeft = (element) => {
+  let offset = 0
+  while (element) {
+    offset += element.offsetLeft
+    element = element.offsetParent
+  }
+  return offset
 }
 
-const getOffsetTop = (element) =>{  
-    let offset = 0;  
-    if (element.offsetParent) {  
-        do {  
-            offset += element.offsetTop;  
-            element = element.offsetParent;  
-        } while (element);  
-    }  
-    return offset;  
-}  
+const getOffsetTop = (element) => {
+  let offset = 0
+  if (element.offsetParent) {
+    do {
+      offset += element.offsetTop
+      element = element.offsetParent
+    } while (element)
+  }
+  return offset
+}
 
-onMounted(()=> {
+const operatePopoverRef = ref<HTMLDivElement>()
+
+onMounted(() => {
   setTimeout(() => {
-    new Mark(docContainer.value).mark([
-     '中国',
-     '银行'
-  ], {
-    each: (element) => {
-      console.log(element)
-      element.onclick = function (e) {
-       
-        operatePopover.value = {
-             visible: true,
-             top: getOffsetTop(e),
-             left: getOffsetLeft(e),
-           }
+    new Mark(docContainer.value).mark(['中国', '银行'], {
+      className: 'text-selected',
+      each: (element) => {
+        console.log(element)
+        // let newElement = document.createElement('div') // 创建一个新的div元素
+        // newElement.textContent = '置信度222' // 设置元素的内容
+        // element.appendChild(newElement)
+        element.onclick = function (e) {
+          const { x, y, height } = useElementBounding(e.target)
+          console.log(x.value, y.value)
+          console.log(getOffsetTop(e.target), getOffsetLeft(e.target))
+          operatePopover.value = {
+            visible: true,
+            top: y.value + height.value,
+            left: x.value
+          }
+          nextTick(() => {
+            onClickOutside(operatePopoverRef, (event) => {
+              console.log(event,'点击了外部')
+              operatePopover.value.visible = false
+            })
+          })
+        }
       }
-    }
-  })
-  }, 3000);
-
+    })
+  }, 3000)
 })
 </script>
 
 <template>
-  <el-scrollbar v-if="isPdf">
+  <el-scrollbar v-if="isPdf" @scroll="() => (operatePopover.visible = false)">
     <div ref="docContainer" class="wh-full">
       <PdfView :url="url" />
     </div>
   </el-scrollbar>
-  <el-scrollbar v-else-if="isDocx">
+  <el-scrollbar v-else-if="isDocx" @scroll="() => (operatePopover.visible = false)">
     <div ref="docContainer" />
   </el-scrollbar>
   <el-empty
@@ -151,15 +162,16 @@ onMounted(()=> {
   >
   </el-empty>
   <el-skeleton v-else :rows="20" animated />
-
-  <div
-    v-if="operatePopover.visible"
-    class="operate-popover"
-    :style="{ top: operatePopover.top + 'px', left: operatePopover.left + 'px' }"
-  >
-      <div class="py-1 bg-gray-100 text-center">取 消</div>
-      <div class="py-1 bg-gray-100 mt-2 text-center">重 选</div>
+  <Teleport v-if="operatePopover.visible" to="body">
+    <div
+      ref="operatePopoverRef"
+      class="operate-popover"
+      :style="{ top: operatePopover.top + 'px', left: operatePopover.left + 'px' }"
+    >
+      <div class="py-1 bg-gray-100 text-center">编辑</div>
+      <div class="py-1 bg-gray-100 mt-2 text-center">删除</div>
     </div>
+  </Teleport>
 </template>
 
 <style>
@@ -180,10 +192,11 @@ onMounted(()=> {
 }
 .el-scrollbar {
   width: 100%;
-  height: 100%
+  height: 100%;
 }
 .text-selected {
   background: red !important;
+  cursor: pointer;
 }
 .operate-popover {
   position: absolute;
@@ -193,7 +206,9 @@ onMounted(()=> {
   width: 100px;
   background: #fff;
   border-radius: 4px;
-  box-shadow: 0 9px 28px 8px rgb(0 0 0 / 3%), 0 6px 16px 4px rgb(0 0 0 / 9%),
+  box-shadow:
+    0 9px 28px 8px rgb(0 0 0 / 3%),
+    0 6px 16px 4px rgb(0 0 0 / 9%),
     0 3px 6px -2px rgb(0 0 0 / 20%);
   user-select: none;
 }
