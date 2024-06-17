@@ -1,4 +1,5 @@
 <template>
+    <el-button @click="docNameEntityRecognition">匿名实体识别</el-button>
     <div class="flex-1 hide-scrobar flex flex-col items-stretch overflow-y-scroll mb-3"
         ref="scrollContainer"
         style="scrollbar-width: none; -ms-overflow-style: none;">
@@ -98,7 +99,7 @@ onMounted(async () => {
                 }
             });
         }
-    }, 1000); // 每 1 秒请求一次
+    }, 3000); // 每 3 秒请求一次
 });
 onUnmounted(() => {
     clearInterval(intervalId);
@@ -191,6 +192,31 @@ const loadChatMessages = async (documentId) => {
         const data = response.data.data;
         return data.page.List;
     }
+};
+
+const docNameEntityRecognition = async () => {
+    loading.value = true;
+    const params = {
+        book_identify: props.bookIdentify,
+        doc_id: props.document.doc_id,
+    }
+    const formData = new FormData();
+    formData.append('book_identify', props.bookIdentify);
+    formData.append('doc_id', props.document.doc_id);
+    const response = await axios.post('/aigc/ner', formData);
+    const data = response.data;
+    if (data.errcode !== 0) {
+        ElMessage({
+            message: data.message,
+            type: 'warning',
+        });
+    } else {
+        ElMessage({
+            message: data.data,
+            type: 'success',
+        });
+    }
+    loading.value = false;
 };
 
 const docAnalyze = async () => {
