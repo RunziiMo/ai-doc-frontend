@@ -11,7 +11,6 @@ import Mark from 'mark.js'
 import { ElMessage } from 'element-plus'
 import PdfView from './PdfView.vue'
 import { RefSymbol } from '@vue/reactivity'
-import { useElementBounding, onClickOutside } from '@vueuse/core'
 
 const props = defineProps({
   bookIdentify: {
@@ -52,7 +51,7 @@ watch(
     scrollToText(newValue)
   }
 )
-const docContainer = ref<HTMLDivElement>()
+const docContainer = ref<HTMLDivElement>(null)
 
 const loadDocument = async (bookIdentify, docId, docIdentify) => {
   const url = `/api/book/${bookIdentify}/download/${docId}`
@@ -94,35 +93,59 @@ const url = computed(() => {
   return `/api/book/${props.bookIdentify}/download/${props.document?.doc_id}`
 })
 
-const getOffsetLeft = (element) => {
-  let offset = 0
-  while (element) {
-    offset += element.offsetLeft
-    element = element.offsetParent
-  }
-  return offset
+const operatePopoverRef = ref()
+
+const handleAdd = () => {
+  // 添加
+  console.log('添加')
 }
 
-const getOffsetTop = (element) => {
-  let offset = 0
-  if (element.offsetParent) {
-    do {
-      offset += element.offsetTop
-      element = element.offsetParent
-    } while (element)
-  }
-  return offset
+const handleEdit = () => {
+  // 编辑
+  console.log('编辑')
 }
 
-const operatePopoverRef = ref<HTMLDivElement>()
+const handleDelete = () => {
+  // 删除
+  console.log('删除')
+}
 
-const popover = (element: HTMLDivElement) => {
-  let wrap = document.createElement('div')
+const popover = (element) => {
+  const wrap = document.createElement('div')
+  const tmp = document.createDocumentFragment()
+
   wrap.className = 'popover-wrap'
-  let div = document.createElement('div')
-  div.innerText = '置信度: 100%'
-  div.className = 'popover-content'
-  wrap.appendChild(div)
+  wrap.setAttribute('hide', 1)
+
+  const confidence = document.createElement('div')
+  confidence.innerText = '置信度: 100%'
+  const replaceText = document.createElement('div')
+  replaceText.innerText = `替换文本：${'测试'}`
+  const type = document.createElement('div')
+  type.innerText = `类型：${'测试'}`
+  const action = document.createElement('div')
+  action.className = 'action-wrap'
+  const addButton = document.createElement('div')
+  addButton.innerText = '添加'
+  addButton.className = 'button add'
+  addButton.onclick = handleAdd
+  const editButton = document.createElement('div')
+  editButton.innerText = '编辑'
+  editButton.className = 'button edit'
+  editButton.onclick = handleEdit
+  const deleteButton = document.createElement('div')
+  deleteButton.innerText = '删除'
+  deleteButton.className = 'button delete'
+  deleteButton.onclick = handleDelete
+  action.appendChild(addButton)
+  action.appendChild(editButton)
+  action.appendChild(deleteButton)
+
+  tmp.appendChild(confidence)
+  tmp.appendChild(replaceText)
+  tmp.appendChild(type)
+  tmp.appendChild(action)
+  wrap.appendChild(tmp)
 
   element.appendChild(wrap)
 }
@@ -133,24 +156,20 @@ const markText = () => {
     each: (element) => {
       console.log(element)
       popover(element)
-      // let newElement = document.createElement('div') // 创建一个新的div元素
-      // newElement.textContent = '置信度222' // 设置元素的内容
-      // element.appendChild(newElement)
+
       element.onclick = function (e) {
-        const { x, y, height } = useElementBounding(e.target)
-        console.log(x.value, y.value)
-        console.log(getOffsetTop(e.target), getOffsetLeft(e.target))
-        operatePopover.value = {
-          visible: true,
-          top: y.value + height.value,
-          left: x.value
+        console.log(e.target)
+        const popup = e.target.querySelector('.popover-wrap')
+
+        const hide = popup.getAttribute('hide')
+        console.log(hide)
+        if (hide === '0') {
+          popup.setAttribute('hide', 1)
+          popup.style.display = 'none'
+        } else {
+          popup.setAttribute('hide', 0)
+          popup.style.display = 'block'
         }
-        nextTick(() => {
-          onClickOutside(operatePopoverRef, (event) => {
-            console.log(event, '点击了外部')
-            operatePopover.value.visible = false
-          })
-        })
       }
     }
   })
@@ -159,7 +178,7 @@ const markText = () => {
 onMounted(() => {
   setTimeout(() => {
     markText()
-  }, 3000)
+  }, 1000)
 })
 </script>
 
@@ -190,7 +209,7 @@ onMounted(() => {
   </Teleport>
 </template>
 
-<style>
+<style scoped>
 .scroll-content {
   flex-grow: 1;
   overflow-y: auto;
@@ -210,12 +229,13 @@ onMounted(() => {
   width: 100%;
   height: 100%;
 }
-.text-selected {
-  background: red !important;
+:deep(.text-selected) {
+  background: #4a68d1 !important;
   cursor: pointer;
   position: relative;
+  user-select: none;
 }
-.operate-popover {
+:deep(.operate-popover) {
   position: absolute;
   z-index: 20;
   padding: 16px;
@@ -230,13 +250,13 @@ onMounted(() => {
   user-select: none;
 }
 
-.popover-wrap {
+:deep(.popover-wrap) {
   position: absolute;
   z-index: 500;
-  padding: 16px;
+  padding: 8px;
   font-size: 14px;
   letter-spacing: unset;
-  width: 100px;
+  width: 143px;
   bottom: 18px;
   left: 0;
   background: #fff;
@@ -249,5 +269,32 @@ onMounted(() => {
     0 3px 6px -2px rgb(0 0 0 / 20%);
   user-select: none;
   text-indent: 0;
+}
+:deep(.action-wrap) {
+  margin-top: 8px;
+  display: flex;
+}
+:deep(.button) {
+  padding: 4px 8px;
+  border-radius: 4px;
+  font-size: 12px;
+  border: 1px solid #ccc;
+  margin-right: 8px;
+  cursor: pointer;
+}
+:deep(.button:hover) {
+  background: #f5f5f5;
+}
+:deep(.button:active) {
+  background: #e5e5e5;
+}
+:deep(.button:focus) {
+  outline: none;
+}
+:deep(.button:last-child) {
+  margin-right: 0;
+}
+:deep(.hide) {
+  display: none;
 }
 </style>
