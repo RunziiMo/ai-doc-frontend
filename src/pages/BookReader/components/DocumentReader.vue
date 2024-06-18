@@ -116,33 +116,49 @@ const getOffsetTop = (element) => {
 
 const operatePopoverRef = ref<HTMLDivElement>()
 
+const popover = (element: HTMLDivElement) => {
+  let wrap = document.createElement('div')
+  wrap.className = 'popover-wrap'
+  let div = document.createElement('div')
+  div.innerText = '置信度: 100%'
+  div.className = 'popover-content'
+  wrap.appendChild(div)
+
+  element.appendChild(wrap)
+}
+
+const markText = () => {
+  new Mark(docContainer.value).mark(['中国', '银行'], {
+    className: 'text-selected',
+    each: (element) => {
+      console.log(element)
+      popover(element)
+      // let newElement = document.createElement('div') // 创建一个新的div元素
+      // newElement.textContent = '置信度222' // 设置元素的内容
+      // element.appendChild(newElement)
+      element.onclick = function (e) {
+        const { x, y, height } = useElementBounding(e.target)
+        console.log(x.value, y.value)
+        console.log(getOffsetTop(e.target), getOffsetLeft(e.target))
+        operatePopover.value = {
+          visible: true,
+          top: y.value + height.value,
+          left: x.value
+        }
+        nextTick(() => {
+          onClickOutside(operatePopoverRef, (event) => {
+            console.log(event, '点击了外部')
+            operatePopover.value.visible = false
+          })
+        })
+      }
+    }
+  })
+}
+
 onMounted(() => {
   setTimeout(() => {
-    new Mark(docContainer.value).mark(['中国', '银行'], {
-      className: 'text-selected',
-      each: (element) => {
-        console.log(element)
-        // let newElement = document.createElement('div') // 创建一个新的div元素
-        // newElement.textContent = '置信度222' // 设置元素的内容
-        // element.appendChild(newElement)
-        element.onclick = function (e) {
-          const { x, y, height } = useElementBounding(e.target)
-          console.log(x.value, y.value)
-          console.log(getOffsetTop(e.target), getOffsetLeft(e.target))
-          operatePopover.value = {
-            visible: true,
-            top: y.value + height.value,
-            left: x.value
-          }
-          nextTick(() => {
-            onClickOutside(operatePopoverRef, (event) => {
-              console.log(event,'点击了外部')
-              operatePopover.value.visible = false
-            })
-          })
-        }
-      }
-    })
+    markText()
   }, 3000)
 })
 </script>
@@ -197,6 +213,7 @@ onMounted(() => {
 .text-selected {
   background: red !important;
   cursor: pointer;
+  position: relative;
 }
 .operate-popover {
   position: absolute;
@@ -211,5 +228,26 @@ onMounted(() => {
     0 6px 16px 4px rgb(0 0 0 / 9%),
     0 3px 6px -2px rgb(0 0 0 / 20%);
   user-select: none;
+}
+
+.popover-wrap {
+  position: absolute;
+  z-index: 500;
+  padding: 16px;
+  font-size: 14px;
+  letter-spacing: unset;
+  width: 100px;
+  bottom: 18px;
+  left: 0;
+  background: #fff;
+  border-radius: 4px;
+  color: #333 !important;
+  opacity: unset !important;
+  box-shadow:
+    0 9px 28px 8px rgb(0 0 0 / 3%),
+    0 6px 16px 4px rgb(0 0 0 / 9%),
+    0 3px 6px -2px rgb(0 0 0 / 20%);
+  user-select: none;
+  text-indent: 0;
 }
 </style>
