@@ -242,10 +242,11 @@ onMounted(() => {
       class="add-popover"
       :style="{ top: addPopover.top + 'px', left: addPopover.left + 'px' }"
     >
-      <el-input placeholder="type" v-model="entityInfo.type" /><el-input
-        v-model="entityInfo.replaced_text"
-        placeholder="替换文本"
-      /><el-input v-model="entityInfo.confidence" placeholder="置信度" />
+      <div class="flex gap-10px w-100%">
+        <el-input placeholder="type" size="small" v-model="entityInfo.type" />
+        <el-input v-model="entityInfo.replaced_text" size="small" placeholder="替换文本" />
+        <el-input v-model="entityInfo.confidence" size="small" placeholder="置信度" />
+      </div>
     </div>
   </Teleport>
 </template>
@@ -331,7 +332,7 @@ onMounted(() => {
   z-index: 20;
   padding: 16px;
   cursor: pointer;
-  width: 260px;
+  width: 160px;
   background: #fff;
   border-radius: 4px;
   box-shadow:
@@ -339,7 +340,5 @@ onMounted(() => {
     0 6px 16px 4px rgb(0 0 0 / 9%),
     0 3px 6px -2px rgb(0 0 0 / 20%);
   user-select: none;
-  display: flex;
-  gap: 10px;
 }
 </style>
