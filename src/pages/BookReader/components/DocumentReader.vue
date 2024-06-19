@@ -1,5 +1,6 @@
 <script lang="ts" setup>
-import { ref, computed, watch, watchEffect, nextTick, onMounted } from 'vue'
+import { ref, computed, watch, watchEffect, nextTick, onMounted, reactive } from 'vue'
+import { useElementBounding, useMouseInElement } from '@vueuse/core'
 import { Splitpanes, Pane } from 'splitpanes'
 import { ElScrollbar } from 'element-plus'
 import { Promotion } from '@element-plus/icons-vue'
@@ -31,7 +32,7 @@ const isPdf = computed(() => {
   return props.document.identify?.endsWith('.pdf')
 })
 
-const operatePopover = ref({
+const addPopover = ref({
   visible: false,
   top: 0,
   left: 0
@@ -93,7 +94,7 @@ const url = computed(() => {
   return `/api/book/${props.bookIdentify}/download/${props.document?.doc_id}`
 })
 
-const operatePopoverRef = ref()
+const addPopoverRef = ref()
 
 const handleAdd = () => {
   // 添加
@@ -115,7 +116,7 @@ const popover = (element) => {
   const tmp = document.createDocumentFragment()
 
   wrap.className = 'popover-wrap'
-  wrap.setAttribute('hide', 1)
+  wrap.setAttribute('hide', '1')
 
   const confidence = document.createElement('div')
   confidence.innerText = '置信度: 100%'
@@ -175,6 +176,44 @@ const markText = () => {
   })
 }
 
+const { x: mouseX, y: mouseY, isOutside } = useMouseInElement(docContainer.value)
+
+const handleMouseUp = (e) => {
+  console.log(e.target, '==e.target')
+  const { x, y, width, height } = useElementBounding(e.target)
+  const selection = window.getSelection()
+  console.log(selection, '===selection')
+  if (!isOutside.value) {
+    console.log(mouseX.value, mouseY.value)
+  }
+
+  addPopover.value = {
+    visible: true,
+    top: mouseY.value,
+    left: mouseX.value
+  }
+  console.log(e.target)
+  console.log(addPopover.value, width.value, height.value, x.value, y.value)
+  // const target = e.target
+  // const popup = target.querySelector('.popover-wrap')
+  // if (popup) {
+  //   const hide = popup.getAttribute('hide')
+  //   if (hide === '0') {
+  //     popup.setAttribute('hide', 1)
+  //     popup.style.display = 'none'
+  //   } else {
+  //     popup.setAttribute('hide', 0)
+  //     popup.style.display = 'block'
+  //   }
+  // }
+}
+
+const entityInfo = reactive({
+  type: '',
+  replaced_text: '',
+  confidence: ''
+})
+
 onMounted(() => {
   setTimeout(() => {
     markText()
@@ -183,13 +222,13 @@ onMounted(() => {
 </script>
 
 <template>
-  <el-scrollbar v-if="isPdf" @scroll="() => (operatePopover.visible = false)">
-    <div ref="docContainer" class="wh-full">
+  <el-scrollbar v-if="isPdf" @scroll="() => (addPopover.visible = false)">
+    <div ref="docContainer" class="wh-full" @mouseup="handleMouseUp">
       <PdfView :url="url" />
     </div>
   </el-scrollbar>
-  <el-scrollbar v-else-if="isDocx" @scroll="() => (operatePopover.visible = false)">
-    <div ref="docContainer" />
+  <el-scrollbar v-else-if="isDocx" @scroll="() => (addPopover.visible = false)">
+    <div ref="docContainer" @mouseup="handleMouseUp" />
   </el-scrollbar>
   <el-empty
     v-else-if="document.markdown !== undefined && document.markdown === ''"
@@ -197,14 +236,16 @@ onMounted(() => {
   >
   </el-empty>
   <el-skeleton v-else :rows="20" animated />
-  <Teleport v-if="operatePopover.visible" to="body">
+  <Teleport v-if="addPopover.visible" to="body">
     <div
-      ref="operatePopoverRef"
-      class="operate-popover"
-      :style="{ top: operatePopover.top + 'px', left: operatePopover.left + 'px' }"
+      ref="addPopoverRef"
+      class="add-popover"
+      :style="{ top: addPopover.top + 'px', left: addPopover.left + 'px' }"
     >
-      <div class="py-1 bg-gray-100 text-center">编辑</div>
-      <div class="py-1 bg-gray-100 mt-2 text-center">删除</div>
+      <el-input placeholder="type" v-model="entityInfo.type" /><el-input
+        v-model="entityInfo.replaced_text"
+        placeholder="替换文本"
+      /><el-input v-model="entityInfo.confidence" placeholder="置信度" />
     </div>
   </Teleport>
 </template>
@@ -230,23 +271,9 @@ onMounted(() => {
   height: 100%;
 }
 :deep(.text-selected) {
-  background: #4a68d1 !important;
+  background: #d48a91 !important;
   cursor: pointer;
   position: relative;
-  user-select: none;
-}
-:deep(.operate-popover) {
-  position: absolute;
-  z-index: 20;
-  padding: 16px;
-  cursor: pointer;
-  width: 100px;
-  background: #fff;
-  border-radius: 4px;
-  box-shadow:
-    0 9px 28px 8px rgb(0 0 0 / 3%),
-    0 6px 16px 4px rgb(0 0 0 / 9%),
-    0 3px 6px -2px rgb(0 0 0 / 20%);
   user-select: none;
 }
 
@@ -296,5 +323,23 @@ onMounted(() => {
 }
 :deep(.hide) {
   display: none;
+}
+</style>
+<style>
+.add-popover {
+  position: absolute;
+  z-index: 20;
+  padding: 16px;
+  cursor: pointer;
+  width: 260px;
+  background: #fff;
+  border-radius: 4px;
+  box-shadow:
+    0 9px 28px 8px rgb(0 0 0 / 3%),
+    0 6px 16px 4px rgb(0 0 0 / 9%),
+    0 3px 6px -2px rgb(0 0 0 / 20%);
+  user-select: none;
+  display: flex;
+  gap: 10px;
 }
 </style>
