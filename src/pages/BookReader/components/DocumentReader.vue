@@ -1,5 +1,15 @@
 <script lang="ts" setup>
-import { ref, computed, watch, watchEffect, nextTick, onMounted, reactive } from 'vue'
+import {
+  ref,
+  computed,
+  watch,
+  watchEffect,
+  nextTick,
+  onMounted,
+  reactive,
+  resolveComponent,
+  h
+} from 'vue'
 import { useElementBounding, useMouseInElement } from '@vueuse/core'
 import { Splitpanes, Pane } from 'splitpanes'
 import { ElScrollbar } from 'element-plus'
@@ -11,8 +21,6 @@ import { defaultOptions, renderAsync } from 'docx-preview'
 import Mark from 'mark.js'
 import { ElMessage } from 'element-plus'
 import PdfView from './PdfView.vue'
-import { RefSymbol } from '@vue/reactivity'
-
 const props = defineProps({
   bookIdentify: {
     type: String,
@@ -96,82 +104,47 @@ const url = computed(() => {
 
 const addPopoverRef = ref()
 
-const handleAdd = () => {
-  // 添加
-  console.log('添加')
-}
+const tag = ref(0)
 
-const handleEdit = () => {
-  // 编辑
-  console.log('编辑')
-}
+const editPopovers = ref([])
 
-const handleDelete = () => {
-  // 删除
-  console.log('删除')
-}
+const isRenderPopover = ref(false)
 
-const popover = (element) => {
-  const wrap = document.createElement('div')
-  const tmp = document.createDocumentFragment()
 
-  wrap.className = 'popover-wrap'
-  wrap.setAttribute('hide', '1')
-
-  const confidence = document.createElement('div')
-  confidence.innerText = '置信度: 100%'
-  const replaceText = document.createElement('div')
-  replaceText.innerText = `替换文本：${'测试'}`
-  const type = document.createElement('div')
-  type.innerText = `类型：${'测试'}`
-  const action = document.createElement('div')
-  action.className = 'action-wrap'
-  const addButton = document.createElement('div')
-  addButton.innerText = '添加'
-  addButton.className = 'button add'
-  addButton.onclick = handleAdd
-  const editButton = document.createElement('div')
-  editButton.innerText = '编辑'
-  editButton.className = 'button edit'
-  editButton.onclick = handleEdit
-  const deleteButton = document.createElement('div')
-  deleteButton.innerText = '删除'
-  deleteButton.className = 'button delete'
-  deleteButton.onclick = handleDelete
-  action.appendChild(addButton)
-  action.appendChild(editButton)
-  action.appendChild(deleteButton)
-
-  tmp.appendChild(confidence)
-  tmp.appendChild(replaceText)
-  tmp.appendChild(type)
-  tmp.appendChild(action)
-  wrap.appendChild(tmp)
-
-  element.appendChild(wrap)
-}
 
 const markText = () => {
   new Mark(docContainer.value).mark(['中国', '银行'], {
     className: 'text-selected',
     each: (element) => {
       console.log(element)
-      popover(element)
+
+      element.setAttribute('id', `popoverId${tag.value}`)
+
+      editPopovers.value.push({
+        id: `popoverId${tag.value}`,
+        el: element,
+        show: true
+      })
+      tag.value++
 
       element.onclick = function (e) {
-        console.log(e.target)
-        const popup = e.target.querySelector('.popover-wrap')
-
-        const hide = popup.getAttribute('hide')
-        console.log(hide)
-        if (hide === '0') {
-          popup.setAttribute('hide', 1)
-          popup.style.display = 'none'
-        } else {
-          popup.setAttribute('hide', 0)
-          popup.style.display = 'block'
-        }
+        e.stopPropagation()
+        e.preventDefault()
+        const id = e.target.getAttribute('id')
+        editPopovers.value = editPopovers.value.map((item) => {
+          if (item.id === id) {
+            item.show = !item.show
+          }
+          return item
+        })
+        console.log(id)
       }
+    },
+    done: function () {
+      console.log(editPopovers.value, 'marked')
+      nextTick(() => {
+        isRenderPopover.value = true
+      })
     }
   })
 }
@@ -179,33 +152,20 @@ const markText = () => {
 const { x: mouseX, y: mouseY, isOutside } = useMouseInElement(docContainer.value)
 
 const handleMouseUp = (e) => {
-  console.log(e.target, '==e.target')
-  const { x, y, width, height } = useElementBounding(e.target)
   const selection = window.getSelection()
-  console.log(selection, '===selection')
-  if (!isOutside.value) {
-    console.log(mouseX.value, mouseY.value)
+  console.log(selection)
+  let selRange = selection.getRangeAt(0)
+  let selectedText = selection.toString()
+  if (selectedText) {
+    if (!isOutside.value) {
+      addPopover.value = {
+        visible: true,
+        top: mouseY.value,
+        left: mouseX.value
+      }
+    }
   }
-
-  addPopover.value = {
-    visible: true,
-    top: mouseY.value,
-    left: mouseX.value
-  }
-  console.log(e.target)
-  console.log(addPopover.value, width.value, height.value, x.value, y.value)
-  // const target = e.target
-  // const popup = target.querySelector('.popover-wrap')
-  // if (popup) {
-  //   const hide = popup.getAttribute('hide')
-  //   if (hide === '0') {
-  //     popup.setAttribute('hide', 1)
-  //     popup.style.display = 'none'
-  //   } else {
-  //     popup.setAttribute('hide', 0)
-  //     popup.style.display = 'block'
-  //   }
-  // }
+  console.log(selection, selRange, selectedText, '==selection')
 }
 
 const entityInfo = reactive({
@@ -214,6 +174,15 @@ const entityInfo = reactive({
   confidence: ''
 })
 
+const handleEdit = (item) => {
+  console.log(item)
+}
+const handleDelete = (item) => {
+  console.log(item)
+}
+const handleAdd = (item) => {
+  console.log(item)
+}
 onMounted(() => {
   setTimeout(() => {
     markText()
@@ -247,8 +216,31 @@ onMounted(() => {
         <el-input v-model="entityInfo.replaced_text" size="small" placeholder="替换文本" />
         <el-input v-model="entityInfo.confidence" size="small" placeholder="置信度" />
       </div>
+      <div class="flex w-100% m-t-8px">
+        <el-button class="flex-1" type="primary" size="small" @click="handleAdd(item)">
+          确定
+        </el-button>
+      </div>
     </div>
   </Teleport>
+  <!-- 编辑弹框 -->
+  <template v-if="isRenderPopover">
+    <Teleport v-for="item in editPopovers" :to="`#${item.id}`" :key="item.id">
+      <div v-show="item.show" class="edit-popover">
+        <div class="flex gap-10px w-100%">
+          <el-input placeholder="type" size="small" v-model="entityInfo.type" />
+          <el-input v-model="entityInfo.replaced_text" size="small" placeholder="替换文本" />
+          <el-input v-model="entityInfo.confidence" size="small" placeholder="置信度" />
+        </div>
+        <div class="flex w-100% m-t-8px">
+          <el-button class="flex-1" type="primary" size="small" @click="handleEdit(item)"
+            >编辑</el-button
+          >
+          <el-button class="flex-1" size="small" @click="handleDelete(item)">删除</el-button>
+        </div>
+      </div>
+    </Teleport>
+  </template>
 </template>
 
 <style scoped>
@@ -277,57 +269,13 @@ onMounted(() => {
   position: relative;
   user-select: none;
 }
-
-:deep(.popover-wrap) {
-  position: absolute;
-  z-index: 500;
-  padding: 8px;
-  font-size: 14px;
-  letter-spacing: unset;
-  width: 143px;
-  bottom: 18px;
+:deep(.edit-popover) {
   left: 0;
-  background: #fff;
-  border-radius: 4px;
-  color: #333 !important;
-  opacity: unset !important;
-  box-shadow:
-    0 9px 28px 8px rgb(0 0 0 / 3%),
-    0 6px 16px 4px rgb(0 0 0 / 9%),
-    0 3px 6px -2px rgb(0 0 0 / 20%);
-  user-select: none;
-  text-indent: 0;
-}
-:deep(.action-wrap) {
-  margin-top: 8px;
-  display: flex;
-}
-:deep(.button) {
-  padding: 4px 8px;
-  border-radius: 4px;
-  font-size: 12px;
-  border: 1px solid #ccc;
-  margin-right: 8px;
-  cursor: pointer;
-}
-:deep(.button:hover) {
-  background: #f5f5f5;
-}
-:deep(.button:active) {
-  background: #e5e5e5;
-}
-:deep(.button:focus) {
-  outline: none;
-}
-:deep(.button:last-child) {
-  margin-right: 0;
-}
-:deep(.hide) {
-  display: none;
 }
 </style>
 <style>
-.add-popover {
+.add-popover,
+.edit-popover {
   position: absolute;
   z-index: 20;
   padding: 16px;

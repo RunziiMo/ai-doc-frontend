@@ -1,5 +1,9 @@
 <template>
-    <el-button @click="docNameEntityRecognition">匿名实体识别</el-button>
+    <DocumentOperate
+        v-model:entityList="entityList"
+        @ai-pre-request="handleAiRequest"
+        @anonymous-processing="docNameEntityRecognition"
+    />
     <div class="flex-1 hide-scrobar flex flex-col items-stretch overflow-y-scroll mb-3"
         ref="scrollContainer"
         style="scrollbar-width: none; -ms-overflow-style: none;">
@@ -57,10 +61,13 @@
 
 <script lang="ts" setup>
 import { reactive, ref, computed, watch, onMounted, onUnmounted, nextTick, provide } from "vue"
-import { ElMessage } from 'element-plus'
+import { ElMessage, ElMessageBox } from 'element-plus'
 import { Promotion } from '@element-plus/icons-vue'
 import axios from 'axios'
 import ExportDialog from './ExportDialog.vue'
+import DocumentOperate from './DocumentOperate.vue';
+
+const entityList = ref([])
 
 const props = defineProps({
     bookIdentify: {
@@ -282,6 +289,30 @@ const handleDeleteMessage = async (id) => {
     if (messages.value.length <= 0) {
         messages.value = await loadChatMessages(props.document.doc_id)
     }
+}
+
+const handleAiRequest = () => {
+  if (entityList.value.length === 0) {
+    ElMessageBox.confirm('是否确认文档无需脱敏处理？', 'Warning', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+    return;
+  }
+
+  if (messages.value?.length === 0) {
+    ElMessageBox.confirm('您已经用过AI功能，确认需要重新发起预请求吗？', 'Warning', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    }).then(() => {
+      ElMessage({
+        type: 'success',
+        message: 'completed'
+      })
+    })
+  }
 }
 </script>
 
