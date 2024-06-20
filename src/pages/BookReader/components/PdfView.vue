@@ -55,11 +55,12 @@ const handlePasswordRequest = ({ callback, isWrongPassword }) => {
         @password-requested="handlePasswordRequest"
         @rendering-failed="handleDocumentRenderFailed"
         @loading-failed="handleDocumentLoadingFailed"
+        v-bind="$attrs"
       />
     </div>
   </div>
 </template>
-<style>
+<style scoped>
 .pdf-preview {
   position: relative;
   height: 100%;
@@ -83,7 +84,7 @@ const handlePasswordRequest = ({ callback, isWrongPassword }) => {
   margin: 0 auto;
   box-sizing: border-box;
 }
-.textLayer {
+:deep(.textLayer) {
   opacity: unset !important;
 }
 </style>

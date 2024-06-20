@@ -10,7 +10,7 @@ import {
   resolveComponent,
   h
 } from 'vue'
-import { useElementBounding, useMouseInElement } from '@vueuse/core'
+import { useMouseInElement } from '@vueuse/core'
 import { Splitpanes, Pane } from 'splitpanes'
 import { ElScrollbar } from 'element-plus'
 import { Promotion } from '@element-plus/icons-vue'
@@ -62,6 +62,88 @@ watch(
 )
 const docContainer = ref<HTMLDivElement>(null)
 
+const addPopoverRef = ref()
+
+const tag = ref(0)
+
+const editPopovers = ref([])
+
+const isRenderPopover = ref(false)
+
+const markText = () => {
+  new Mark(docContainer.value).mark(['中国', '银行'], {
+    className: 'text-selected',
+    each: (element) => {
+      console.log(element)
+
+      element.setAttribute('id', `popoverId${tag.value}`)
+
+      editPopovers.value.push({
+        id: `popoverId${tag.value}`,
+        el: element,
+        show: false,
+        type: '',
+        replaced_text: '',
+        confidence: ''
+      })
+      tag.value++
+
+      element.onmouseover = function (e) {
+        const id = e.target.getAttribute('id')
+        editPopovers.value = editPopovers.value.map((item) => {
+          if (item.id === id) {
+            item.show = true
+          }
+          return item
+        })
+      }
+      element.onmouseleave = function (e) {
+        const id = e.target.getAttribute('id')
+        editPopovers.value = editPopovers.value.map((item) => {
+          if (item.id === id) {
+            item.show = false
+          }
+          return item
+        })
+      }
+    },
+    done: async function () {
+      console.log(editPopovers.value, 'marked')
+      await nextTick()
+      isRenderPopover.value = true
+    }
+  })
+}
+
+const { x: mouseX, y: mouseY, isOutside } = useMouseInElement(docContainer.value)
+const { isOutside: isAddPopoverOutside } = useMouseInElement(addPopoverRef.value)
+
+const handleMouseUp = (e) => {
+  const selection = window.getSelection()
+  console.log(selection)
+  let selRange = selection.getRangeAt(0)
+  let selectedText = selection.toString()
+  if (selectedText) {
+    if (!isOutside.value) {
+      addPopover.value = {
+        visible: true,
+        top: mouseY.value,
+        left: mouseX.value
+      }
+    }
+  }
+  if (isAddPopoverOutside.value) {
+    addPopover.value.visible = false
+  }
+  console.log(selection, selRange, selectedText, '==selection')
+}
+
+const entityInfo = reactive({
+  type: '',
+  replaced_text: '',
+  confidence: ''
+})
+
 const loadDocument = async (bookIdentify, docId, docIdentify) => {
   const url = `/api/book/${bookIdentify}/download/${docId}`
   let response = await axios.get(url, {
@@ -72,7 +154,11 @@ const loadDocument = async (bookIdentify, docId, docIdentify) => {
     ignoreWidth: true,
     experimental: true
   })
-  await renderAsync(response.data, docContainer.value, null, docxOptions)
+  await renderAsync(response.data, docContainer.value, null, docxOptions).then(() => {
+    nextTick(() => {
+      markText()
+    })
+  })
 }
 
 const toast = (message) => {
@@ -102,98 +188,37 @@ const url = computed(() => {
   return `/api/book/${props.bookIdentify}/download/${props.document?.doc_id}`
 })
 
-const addPopoverRef = ref()
-
-const tag = ref(0)
-
-const editPopovers = ref([])
-
-const isRenderPopover = ref(false)
-
-
-
-const markText = () => {
-  new Mark(docContainer.value).mark(['中国', '银行'], {
-    className: 'text-selected',
-    each: (element) => {
-      console.log(element)
-
-      element.setAttribute('id', `popoverId${tag.value}`)
-
-      editPopovers.value.push({
-        id: `popoverId${tag.value}`,
-        el: element,
-        show: true
-      })
-      tag.value++
-
-      element.onclick = function (e) {
-        e.stopPropagation()
-        e.preventDefault()
-        const id = e.target.getAttribute('id')
-        editPopovers.value = editPopovers.value.map((item) => {
-          if (item.id === id) {
-            item.show = !item.show
-          }
-          return item
-        })
-        console.log(id)
-      }
-    },
-    done: function () {
-      console.log(editPopovers.value, 'marked')
-      nextTick(() => {
-        isRenderPopover.value = true
-      })
-    }
-  })
-}
-
-const { x: mouseX, y: mouseY, isOutside } = useMouseInElement(docContainer.value)
-
-const handleMouseUp = (e) => {
-  const selection = window.getSelection()
-  console.log(selection)
-  let selRange = selection.getRangeAt(0)
-  let selectedText = selection.toString()
-  if (selectedText) {
-    if (!isOutside.value) {
-      addPopover.value = {
-        visible: true,
-        top: mouseY.value,
-        left: mouseX.value
-      }
-    }
-  }
-  console.log(selection, selRange, selectedText, '==selection')
-}
-
-const entityInfo = reactive({
-  type: '',
-  replaced_text: '',
-  confidence: ''
-})
-
 const handleEdit = (item) => {
   console.log(item)
 }
 const handleDelete = (item) => {
   console.log(item)
 }
-const handleAdd = (item) => {
-  console.log(item)
-}
-onMounted(() => {
-  setTimeout(() => {
-    markText()
-  }, 1000)
-})
+const handleAdd = () => {}
+const typeList = [
+  {
+    label: '人名',
+    value: '人名'
+  },
+  {
+    label: '地名',
+    value: '地名'
+  },
+  {
+    label: '金额',
+    value: '金额'
+  },
+  {
+    label: '组织',
+    value: '组织'
+  }
+]
 </script>
 
 <template>
   <el-scrollbar v-if="isPdf" @scroll="() => (addPopover.visible = false)">
     <div ref="docContainer" class="wh-full" @mouseup="handleMouseUp">
-      <PdfView :url="url" />
+      <PdfView :url="url" @rendered="() => markText()" />
     </div>
   </el-scrollbar>
   <el-scrollbar v-else-if="isDocx" @scroll="() => (addPopover.visible = false)">
@@ -212,14 +237,19 @@ onMounted(() => {
       :style="{ top: addPopover.top + 'px', left: addPopover.left + 'px' }"
     >
       <div class="flex gap-10px w-100%">
-        <el-input placeholder="type" size="small" v-model="entityInfo.type" />
+        <el-select placeholder="type" size="small" v-model="entityInfo.type">
+          <el-option
+            v-for="item in typeList"
+            :key="item.value"
+            :label="item.label"
+            :value="item.value"
+          />
+        </el-select>
         <el-input v-model="entityInfo.replaced_text" size="small" placeholder="替换文本" />
         <el-input v-model="entityInfo.confidence" size="small" placeholder="置信度" />
       </div>
       <div class="flex w-100% m-t-8px">
-        <el-button class="flex-1" type="primary" size="small" @click="handleAdd(item)">
-          确定
-        </el-button>
+        <el-button class="flex-1" type="primary" size="small" @click="handleAdd"> 确定 </el-button>
       </div>
     </div>
   </Teleport>
@@ -228,14 +258,21 @@ onMounted(() => {
     <Teleport v-for="item in editPopovers" :to="`#${item.id}`" :key="item.id">
       <div v-show="item.show" class="edit-popover">
         <div class="flex gap-10px w-100%">
-          <el-input placeholder="type" size="small" v-model="entityInfo.type" />
-          <el-input v-model="entityInfo.replaced_text" size="small" placeholder="替换文本" />
-          <el-input v-model="entityInfo.confidence" size="small" placeholder="置信度" />
+          <el-select placeholder="type" size="small" v-model="item.type">
+            <el-option
+              v-for="item in typeList"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
+          </el-select>
+          <el-input v-model="item.replaced_text" size="small" placeholder="替换文本" />
+          <el-input v-model="item.confidence" size="small" placeholder="置信度" />
         </div>
         <div class="flex w-100% m-t-8px">
-          <el-button class="flex-1" type="primary" size="small" @click="handleEdit(item)"
-            >编辑</el-button
-          >
+          <el-button class="flex-1" type="primary" size="small" @click="handleEdit(item)">
+            编辑
+          </el-button>
           <el-button class="flex-1" size="small" @click="handleDelete(item)">删除</el-button>
         </div>
       </div>
@@ -277,10 +314,10 @@ onMounted(() => {
 .add-popover,
 .edit-popover {
   position: absolute;
-  z-index: 20;
+  z-index: 200;
   padding: 16px;
   cursor: pointer;
-  width: 160px;
+  width: 200px;
   background: #fff;
   border-radius: 4px;
   box-shadow:
@@ -288,5 +325,12 @@ onMounted(() => {
     0 6px 16px 4px rgb(0 0 0 / 9%),
     0 3px 6px -2px rgb(0 0 0 / 20%);
   user-select: none;
+}
+.edit-popover span {
+  color: #606266 !important;
+  position: unset !important;
+  white-space: unset !important;
+  cursor: unset !important;
+  transform-origin: unset !important;
 }
 </style>
