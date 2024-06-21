@@ -74,21 +74,22 @@ const markText = () => {
   new Mark(docContainer.value).mark(['中国', '银行'], {
     className: 'text-selected',
     each: (element) => {
-      console.log(element)
-
       element.setAttribute('id', `popoverId${tag.value}`)
-
+      element.parentNode.style.opacity = 1
       editPopovers.value.push({
         id: `popoverId${tag.value}`,
         el: element,
         show: false,
         type: '',
         replaced_text: '',
-        confidence: ''
+        confidence: '',
+        disabled: true
       })
       tag.value++
 
-      element.onmouseover = function (e) {
+      element.onmouseenter = function (e) {
+        e.stopPropagation()
+        console.log('+==========')
         const id = e.target.getAttribute('id')
         editPopovers.value = editPopovers.value.map((item) => {
           if (item.id === id) {
@@ -98,13 +99,7 @@ const markText = () => {
         })
       }
       element.onmouseleave = function (e) {
-        const id = e.target.getAttribute('id')
-        editPopovers.value = editPopovers.value.map((item) => {
-          if (item.id === id) {
-            item.show = false
-          }
-          return item
-        })
+        console.log(e, '=====dd===')
       }
     },
     done: async function () {
@@ -119,9 +114,10 @@ const { x: mouseX, y: mouseY, isOutside } = useMouseInElement(docContainer.value
 const { isOutside: isAddPopoverOutside } = useMouseInElement(addPopoverRef.value)
 
 const handleMouseUp = (e) => {
+  console.log(e.target, '====tager')
   const selection = window.getSelection()
   console.log(selection)
-  let selRange = selection.getRangeAt(0)
+  // let selRange = selection.getRangeAt(0)
   let selectedText = selection.toString()
   if (selectedText) {
     if (!isOutside.value) {
@@ -132,10 +128,10 @@ const handleMouseUp = (e) => {
       }
     }
   }
+  console.log(isAddPopoverOutside.value, '====isAddPopoverOutside.value')
   if (isAddPopoverOutside.value) {
     addPopover.value.visible = false
   }
-  console.log(selection, selRange, selectedText, '==selection')
 }
 
 const entityInfo = reactive({
@@ -217,12 +213,12 @@ const typeList = [
 
 <template>
   <el-scrollbar v-if="isPdf" @scroll="() => (addPopover.visible = false)">
-    <div ref="docContainer" class="wh-full" @mouseup="handleMouseUp">
+    <div ref="docContainer" class="wh-full" @mouseup.stop="handleMouseUp">
       <PdfView :url="url" @rendered="() => markText()" />
     </div>
   </el-scrollbar>
   <el-scrollbar v-else-if="isDocx" @scroll="() => (addPopover.visible = false)">
-    <div ref="docContainer" @mouseup="handleMouseUp" />
+    <div ref="docContainer" @mouseup.stop="handleMouseUp" />
   </el-scrollbar>
   <el-empty
     v-else-if="document.markdown !== undefined && document.markdown === ''"
@@ -237,7 +233,7 @@ const typeList = [
       :style="{ top: addPopover.top + 'px', left: addPopover.left + 'px' }"
     >
       <div class="flex gap-10px w-100%">
-        <el-select placeholder="type" size="small" v-model="entityInfo.type">
+        <el-select placeholder="type" size="small" :teleported="false" v-model="entityInfo.type">
           <el-option
             v-for="item in typeList"
             :key="item.value"
@@ -256,24 +252,68 @@ const typeList = [
   <!-- 编辑弹框 -->
   <template v-if="isRenderPopover">
     <Teleport v-for="item in editPopovers" :to="`#${item.id}`" :key="item.id">
-      <div v-show="item.show" class="edit-popover">
+      <div
+        v-show="item.show"
+        class="edit-popover"
+        @mouseup.stop
+      >
         <div class="flex gap-10px w-100%">
-          <el-select placeholder="type" size="small" v-model="item.type">
+          <el-select
+            placeholder="type"
+            size="small"
+            v-model="item.type"
+            :disabled="item.disabled"
+            :teleported="false"
+          >
             <el-option
-              v-for="item in typeList"
-              :key="item.value"
-              :label="item.label"
-              :value="item.value"
+              v-for="type in typeList"
+              :key="type.value"
+              :label="type.label"
+              :value="type.value"
             />
           </el-select>
-          <el-input v-model="item.replaced_text" size="small" placeholder="替换文本" />
-          <el-input v-model="item.confidence" size="small" placeholder="置信度" />
+          <el-input
+            v-model="item.replaced_text"
+            size="small"
+            placeholder="替换文本"
+            :disabled="item.disabled"
+          />
+          <el-input
+            v-model="item.confidence"
+            size="small"
+            placeholder="置信度"
+            :disabled="item.disabled"
+          />
         </div>
         <div class="flex w-100% m-t-8px">
-          <el-button class="flex-1" type="primary" size="small" @click="handleEdit(item)">
+          <el-button
+            v-if="item.disabled"
+            class="flex-1"
+            type="primary"
+            size="small"
+            @click="item.disabled = false"
+            @mouseenter.prevent
+            @mouseleave.prevent
+          >
             编辑
           </el-button>
-          <el-button class="flex-1" size="small" @click="handleDelete(item)">删除</el-button>
+          <template v-else>
+            <el-button class="flex-1" type="primary" size="small" @click="handleEdit(item)">
+              确定
+            </el-button>
+            <el-button class="flex-1" type="primary" size="small" @click="item.disabled = true">
+              取消
+            </el-button>
+          </template>
+
+          <el-button
+            class="flex-1"
+            size="small"
+            @click="handleDelete(item)"
+            @mouseenter.prevent
+            @mouseleave.prevent
+            >删除</el-button
+          >
         </div>
       </div>
     </Teleport>
@@ -332,5 +372,15 @@ const typeList = [
   white-space: unset !important;
   cursor: unset !important;
   transform-origin: unset !important;
+  -webkit-user-select: none !important; /* Chrome, Safari, Opera */
+  -moz-user-select: none !important; /* Firefox */
+  -ms-user-select: none !important; /* Internet Explorer/Edge */
+  user-select: none !important;
+}
+.edit-popover .el-button--primary span {
+  color: #fff !important;
+}
+.edit-popover .el-select {
+  text-indent: 0pt !important;
 }
 </style>
