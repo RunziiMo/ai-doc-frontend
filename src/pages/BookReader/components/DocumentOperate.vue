@@ -5,6 +5,10 @@ const entityList = defineModel('entityList', {
   type: Array,
   default: () => []
 })
+const entityRecognitionLoad = defineModel('entityRecognitionLoading', {
+  type: Boolean,
+  default: false
+})
 
 defineEmits(['anonymousProcessing', 'aiPreRequest'])
 const dialogTableVisible = ref(false)
@@ -21,14 +25,14 @@ const data = ref([
 
 <template>
   <div class="document-operate-wrapper flex justify-between p-t-16px p-b-16px">
-    <el-button class="flex-1" v-if="entityList.length !== 0" @click="$emit('anonymousProcessing')">
+    <el-button class="flex-1" v-if="entityList.length === 0" :loading="entityRecognitionLoad" @click="$emit('anonymousProcessing')">
       匿名实体识别
     </el-button>
     <el-button class="flex-1" v-else @click="dialogTableVisible = true"> 脱敏结果 </el-button>
-    <el-button class="flex-1" @click="$emit('aiPreRequest')"> AI预请求 </el-button>
+    <el-button class="flex-1" @click="$emit('aiPreRequest')" :disabled="entityRecognitionLoad"> AI预请求 </el-button>
   </div>
   <el-dialog v-model="dialogTableVisible" title="脱敏结果" width="800">
-    <el-table :data="data">
+    <el-table :data="entityList">
       <el-table-column property="date" label="实体" />
       <el-table-column property="origin_text" label="原文" />
       <el-table-column property="replaced_text" label="替换文本" />
