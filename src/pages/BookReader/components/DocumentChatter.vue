@@ -70,7 +70,10 @@ import axios from 'axios'
 import ExportDialog from './ExportDialog.vue'
 import DocumentOperate from './DocumentOperate.vue'
 
-const entityList = ref([])
+const entityList = defineModel('entityList', {
+  type: Array,
+  default: []
+})
 
 const props = defineProps({
   bookIdentify: {
@@ -86,14 +89,9 @@ const props = defineProps({
     required: true
   }
 })
-const getEntityList = async (docId: string) => {
-  const { data } = await axios.post(`/api/document/${docId}/entity`)
- if(data.errcode !== 0) {
-    entityList.value = [];
- } else {
-    entityList.value = data.data || [];
- }
-}
+
+const emit = defineEmits(['textSelected', 'entityResults'])
+
 
 let intervalId
 onMounted(async () => {
@@ -128,7 +126,6 @@ onUnmounted(() => {
 watch(
   () => props.document,
   async (newValue, oldValue) => {
-    await getEntityList(newValue.doc_id)
     messages.value = await loadChatMessages(newValue.doc_id)
   }
 )
@@ -224,11 +221,9 @@ const docNameEntityRecognition = async () => {
   formData.append('book_identify', props.bookIdentify)
   formData.append('doc_id', props.document.doc_id)
   const response = await axios.post('/aigc/ner', formData)
-
-  console.log(response2, '==response2')
   const data = response.data
-  console.log(data.data?.page?.List || [], '===data.data')
   entityList.value = data.data?.page?.List || []
+  emit('entityResults', data.data?.page?.List || [])
   // if (data.errcode !== 0) {
   //     ElMessage({
   //         message: data.message,
@@ -290,7 +285,6 @@ const scrollToBottom = () => {
     viewAnchor.value.scrollIntoView()
   })
 }
-const emit = defineEmits(['textSelected'])
 
 const updateMessege = (messageId, data) => {
   messages.value = messages.value.filter((el) => {

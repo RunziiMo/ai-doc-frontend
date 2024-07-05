@@ -36,6 +36,8 @@ const props = defineProps({
   }
 })
 
+const emit = defineEmits(['fileRenderFinished'])
+
 const isPdf = computed(() => {
   return props.document.identify?.endsWith('.pdf')
 })
@@ -46,9 +48,34 @@ const addPopover = ref({
   left: 0
 })
 
+const loadDocument = async (bookIdentify, docId, docIdentify) => {
+  const url = `/api/book/${bookIdentify}/download/${docId}`
+  let response = await axios.get(url, {
+    responseType: 'blob' // 设置响应类型为 blob
+  })
+  const docxOptions = Object.assign(defaultOptions, {
+    inWrapper: false,
+    ignoreWidth: true,
+    experimental: true
+  })
+  await renderAsync(response.data, docContainer.value, null, docxOptions).then(() => {
+    handleRendered()
+  })
+}
+
+const getEntityList = async (docId: string) => {
+  const { data } = await axios.get(`/api/document/${docId}/entity`)
+  if (data.errcode !== 0) {
+    entityList.value = []
+  } else {
+    entityList.value = data.data.page.List || []
+  }
+}
+
 watch(
   () => props.document,
   (newValue, oldValue) => {
+    getEntityList(newValue.doc_id)
     if (isPdf.value) return
     loadDocument(props.bookIdentify, newValue.doc_id, newValue.identify)
   }
@@ -70,8 +97,18 @@ const editPopovers = ref([])
 
 const isRenderPopover = ref(false)
 
-const markText = () => {
-  new Mark(docContainer.value).mark(['中国', '银行'], {
+const markEntitys = defineModel('markEntitys', {
+  type: Function,
+  default: () => {}
+})
+
+markEntitys.value = (entitys) => {
+  const mark = new Mark(docContainer.value)
+  const ranges = entitys?.map((el) => ({
+    start: el.start_index,
+    length: el.end_index - el.start_index
+  }))
+  const options = {
     className: 'text-selected',
     each: (element) => {
       element.setAttribute('id', `popoverId${tag.value}`)
@@ -107,7 +144,46 @@ const markText = () => {
       await nextTick()
       isRenderPopover.value = true
     }
-  })
+  }
+  mark.markRanges(ranges, options)
+
+  // new Mark(docContainer.value).mark(['中国', '银行'], {
+  //   className: 'text-selected',
+  //   each: (element) => {
+  //     element.setAttribute('id', `popoverId${tag.value}`)
+  //     element.parentNode.style.opacity = 1
+  //     editPopovers.value.push({
+  //       id: `popoverId${tag.value}`,
+  //       el: element,
+  //       show: false,
+  //       type: '',
+  //       replaced_text: '',
+  //       confidence: '',
+  //       disabled: true
+  //     })
+  //     tag.value++
+
+  //     element.onmouseenter = function (e) {
+  //       e.stopPropagation()
+  //       console.log('+==========')
+  //       const id = e.target.getAttribute('id')
+  //       editPopovers.value = editPopovers.value.map((item) => {
+  //         if (item.id === id) {
+  //           item.show = true
+  //         }
+  //         return item
+  //       })
+  //     }
+  //     element.onmouseleave = function (e) {
+  //       console.log(e, '=====dd===')
+  //     }
+  //   },
+  //   done: async function () {
+  //     console.log(editPopovers.value, 'marked')
+  //     await nextTick()
+  //     isRenderPopover.value = true
+  //   }
+  // })
 }
 
 const { x: mouseX, y: mouseY, isOutside } = useMouseInElement(docContainer.value)
@@ -139,22 +215,18 @@ const entityInfo = reactive({
   replaced_text: '',
   confidence: ''
 })
+const entityList = defineModel('entityList', {
+  type: Array,
+  default: () => []
+})
+entityList.value = []
 
-const loadDocument = async (bookIdentify, docId, docIdentify) => {
-  const url = `/api/book/${bookIdentify}/download/${docId}`
-  let response = await axios.get(url, {
-    responseType: 'blob' // 设置响应类型为 blob
-  })
-  const docxOptions = Object.assign(defaultOptions, {
-    inWrapper: false,
-    ignoreWidth: true,
-    experimental: true
-  })
-  await renderAsync(response.data, docContainer.value, null, docxOptions).then(() => {
-    nextTick(() => {
-      markText()
-    })
-  })
+const handleRendered = () => {
+  console.log(entityList.value, '===entityList.value')
+  if (entityList.value.length !== 0) {
+    markEntitys.value?.(entityList.value)
+  }
+  emit('fileRenderFinished')
 }
 
 const toast = (message) => {
@@ -214,7 +286,7 @@ const typeList = [
 <template>
   <el-scrollbar v-if="isPdf" @scroll="() => (addPopover.visible = false)">
     <div ref="docContainer" class="wh-full" @mouseup.stop="handleMouseUp">
-      <PdfView :url="url" @rendered="() => markText()" />
+      <PdfView :url="url" @rendered="handleRendered" />
     </div>
   </el-scrollbar>
   <el-scrollbar v-else-if="isDocx" @scroll="() => (addPopover.visible = false)">
@@ -252,11 +324,7 @@ const typeList = [
   <!-- 编辑弹框 -->
   <template v-if="isRenderPopover">
     <Teleport v-for="item in editPopovers" :to="`#${item.id}`" :key="item.id">
-      <div
-        v-show="item.show"
-        class="edit-popover"
-        @mouseup.stop
-      >
+      <div v-show="item.show" class="edit-popover" @mouseup.stop>
         <div class="flex gap-10px w-100%">
           <el-select
             placeholder="type"
