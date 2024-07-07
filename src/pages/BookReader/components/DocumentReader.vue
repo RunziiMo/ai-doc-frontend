@@ -169,7 +169,6 @@ const entityList = defineModel('entityList', {
 entityList.value = []
 
 const handleRendered = () => {
-  console.log(entityList.value, '===entityList.value')
   if (entityList.value.length !== 0) {
     markEntitys.value?.(entityList.value)
   }
