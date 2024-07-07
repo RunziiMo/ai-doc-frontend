@@ -223,7 +223,7 @@ const typeList = [
   },
   {
     label: '地名',
-    value: '地名'
+    value: 'LOCATION'
   },
   {
     label: '金额',
@@ -232,6 +232,10 @@ const typeList = [
   {
     label: '组织',
     value: '组织'
+  },
+  {
+    label: '日期',
+    value: 'DATE_TIME'
   }
 ]
 </script>
