@@ -12,15 +12,6 @@ const entityRecognitionLoad = defineModel('entityRecognitionLoading', {
 
 defineEmits(['anonymousProcessing', 'aiPreRequest'])
 const dialogTableVisible = ref(false)
-const data = ref([
-  {
-    origin_text: '1',
-    replaced_text: '3',
-    type: '1',
-    position: '1',
-    confidence: 'ww'
-  }
-])
 const result = ref([])
 
 const handleCurrentChange = () => {
