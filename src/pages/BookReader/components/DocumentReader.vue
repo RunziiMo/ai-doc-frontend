@@ -91,11 +91,19 @@ const docContainer = ref<HTMLDivElement>(null)
 
 const addPopoverRef = ref()
 
-const tag = ref(0)
+const editEntitysModel = reactive({
+  type: '',
+  replaced_text: '',
+  confidence: ''
+})
 
-const editPopovers = ref([])
+const editPopover = ref({
+  visible: false,
+  top: 0,
+  left: 0
+})
 
-const isRenderPopover = ref(false)
+const disabledEditEntity = ref(true)
 
 const markEntitys = defineModel('markEntitys', {
   type: Function,
@@ -106,84 +114,29 @@ markEntitys.value = (entitys) => {
   const mark = new Mark(docContainer.value)
   const ranges = entitys?.map((el) => ({
     start: el.start_index,
-    length: el.end_index - el.start_index
+    length: el.end_index - el.start_index,
+    data: el
   }))
   const options = {
     className: 'text-selected',
-    each: (element) => {
-      element.setAttribute('id', `popoverId${tag.value}`)
-      element.parentNode.style.opacity = 1
-      editPopovers.value.push({
-        id: `popoverId${tag.value}`,
-        el: element,
-        show: false,
-        type: '',
-        replaced_text: '',
-        confidence: '',
-        disabled: true
-      })
-      tag.value++
-
-      element.onmouseenter = function (e) {
-        e.stopPropagation()
-        console.log('+==========')
-        const id = e.target.getAttribute('id')
-        editPopovers.value = editPopovers.value.map((item) => {
-          if (item.id === id) {
-            item.show = true
-          }
-          return item
+    each: (element, range) => {
+      element.onmouseenter = function () {
+        const data = range.data
+        Object.assign(editEntitysModel, {
+          type: data.type,
+          replaced_text: data.replaced_text,
+          confidence: data.confidence
         })
-      }
-      element.onmouseleave = function (e) {
-        console.log(e, '=====dd===')
+        const { left, bottom } = element.getBoundingClientRect()
+        console.log(left, bottom)
+        editPopover.value.top = bottom
+        editPopover.value.left = left
+        editPopover.value.visible = true
       }
     },
-    done: async function () {
-      console.log(editPopovers.value, 'marked')
-      await nextTick()
-      isRenderPopover.value = true
-    }
+    done: async function () {}
   }
   mark.markRanges(ranges, options)
-
-  // new Mark(docContainer.value).mark(['中国', '银行'], {
-  //   className: 'text-selected',
-  //   each: (element) => {
-  //     element.setAttribute('id', `popoverId${tag.value}`)
-  //     element.parentNode.style.opacity = 1
-  //     editPopovers.value.push({
-  //       id: `popoverId${tag.value}`,
-  //       el: element,
-  //       show: false,
-  //       type: '',
-  //       replaced_text: '',
-  //       confidence: '',
-  //       disabled: true
-  //     })
-  //     tag.value++
-
-  //     element.onmouseenter = function (e) {
-  //       e.stopPropagation()
-  //       console.log('+==========')
-  //       const id = e.target.getAttribute('id')
-  //       editPopovers.value = editPopovers.value.map((item) => {
-  //         if (item.id === id) {
-  //           item.show = true
-  //         }
-  //         return item
-  //       })
-  //     }
-  //     element.onmouseleave = function (e) {
-  //       console.log(e, '=====dd===')
-  //     }
-  //   },
-  //   done: async function () {
-  //     console.log(editPopovers.value, 'marked')
-  //     await nextTick()
-  //     isRenderPopover.value = true
-  //   }
-  // })
 }
 
 const { x: mouseX, y: mouseY, isOutside } = useMouseInElement(docContainer.value)
@@ -266,7 +219,7 @@ const handleAdd = () => {}
 const typeList = [
   {
     label: '人名',
-    value: '人名'
+    value: 'PERSON'
   },
   {
     label: '地名',
@@ -284,12 +237,18 @@ const typeList = [
 </script>
 
 <template>
-  <el-scrollbar v-if="isPdf" @scroll="() => (addPopover.visible = false)">
+  <el-scrollbar
+    v-if="isPdf"
+    @scroll="() => ((addPopover.visible = false), (editPopover.visible = false))"
+  >
     <div ref="docContainer" class="wh-full" @mouseup.stop="handleMouseUp">
       <PdfView :url="url" @rendered="handleRendered" />
     </div>
   </el-scrollbar>
-  <el-scrollbar v-else-if="isDocx" @scroll="() => (addPopover.visible = false)">
+  <el-scrollbar
+    v-else-if="isDocx"
+    @scroll="() => ((addPopover.visible = false), (editPopover.visible = false))"
+  >
     <div ref="docContainer" @mouseup.stop="handleMouseUp" />
   </el-scrollbar>
   <el-empty
@@ -321,71 +280,72 @@ const typeList = [
       </div>
     </div>
   </Teleport>
-  <!-- 编辑弹框 -->
-  <template v-if="isRenderPopover">
-    <Teleport v-for="item in editPopovers" :to="`#${item.id}`" :key="item.id">
-      <div v-show="item.show" class="edit-popover" @mouseup.stop>
-        <div class="flex gap-10px w-100%">
-          <el-select
-            placeholder="type"
-            size="small"
-            v-model="item.type"
-            :disabled="item.disabled"
-            :teleported="false"
-          >
-            <el-option
-              v-for="type in typeList"
-              :key="type.value"
-              :label="type.label"
-              :value="type.value"
-            />
-          </el-select>
-          <el-input
-            v-model="item.replaced_text"
-            size="small"
-            placeholder="替换文本"
-            :disabled="item.disabled"
+  <Teleport v-if="editPopover.visible" to="body">
+    <div
+      class="edit-popover"
+      :style="{ top: editPopover.top + 'px', left: editPopover.left + 'px' }"
+      @mouseup.stop
+    >
+      <div class="flex gap-10px w-100%">
+        <el-select
+          placeholder="type"
+          size="small"
+          v-model="editEntitysModel.type"
+          :disabled="disabledEditEntity"
+          :teleported="false"
+        >
+          <el-option
+            v-for="type in typeList"
+            :key="type.value"
+            :label="type.label"
+            :value="type.value"
           />
-          <el-input
-            v-model="item.confidence"
-            size="small"
-            placeholder="置信度"
-            :disabled="item.disabled"
-          />
-        </div>
-        <div class="flex w-100% m-t-8px">
-          <el-button
-            v-if="item.disabled"
-            class="flex-1"
-            type="primary"
-            size="small"
-            @click="item.disabled = false"
-            @mouseenter.prevent
-            @mouseleave.prevent
-          >
-            编辑
-          </el-button>
-          <template v-else>
-            <el-button class="flex-1" type="primary" size="small" @click="handleEdit(item)">
-              确定
-            </el-button>
-            <el-button class="flex-1" type="primary" size="small" @click="item.disabled = true">
-              取消
-            </el-button>
-          </template>
-
-          <el-button
-            class="flex-1"
-            size="small"
-            @click="handleDelete(item)"
-            @mouseenter.prevent
-            @mouseleave.prevent
-            >删除</el-button
-          >
-        </div>
+        </el-select>
+        <el-input
+          v-model="editEntitysModel.replaced_text"
+          size="small"
+          placeholder="替换文本"
+          :disabled="disabledEditEntity"
+        />
+        <el-input
+          v-model="editEntitysModel.confidence"
+          size="small"
+          placeholder="置信度"
+          :disabled="disabledEditEntity"
+        />
       </div>
-    </Teleport>
-  </template>
+      <div class="flex w-100% m-t-8px">
+        <el-button
+          v-if="disabledEditEntity"
+          class="flex-1"
+          type="primary"
+          size="small"
+          @click="disabledEditEntity = false"
+          @mouseenter.prevent
+          @mouseleave.prevent
+        >
+          编辑
+        </el-button>
+        <template v-else>
+          <el-button class="flex-1" type="primary" size="small" @click="handleEdit">
+            确定
+          </el-button>
+          <el-button class="flex-1" type="primary" size="small" @click="disabledEditEntity = true">
+            取消
+          </el-button>
+        </template>
+
+        <el-button
+          class="flex-1"
+          size="small"
+          @click="handleDelete"
+          @mouseenter.prevent
+          @mouseleave.prevent
+          >删除</el-button
+        >
+      </div>
+    </div>
+  </Teleport>
 </template>
 
 <style scoped>
