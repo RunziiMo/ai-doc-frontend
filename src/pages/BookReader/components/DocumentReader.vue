@@ -12,7 +12,7 @@ import {
 } from 'vue'
 import { useMouseInElement } from '@vueuse/core'
 import { Splitpanes, Pane } from 'splitpanes'
-import { ElScrollbar } from 'element-plus'
+import { ElMessageBox, ElScrollbar } from 'element-plus'
 import { Promotion } from '@element-plus/icons-vue'
 import { marked } from 'marked'
 import 'splitpanes/dist/splitpanes.css'
@@ -94,7 +94,8 @@ const addPopoverRef = ref()
 const editEntitysModel = reactive({
   type: '',
   replaced_text: '',
-  confidence: ''
+  confidence: '',
+  entity_id: ''
 })
 
 const editPopover = ref({
@@ -122,11 +123,7 @@ markEntitys.value = (entitys) => {
     each: (element, range) => {
       element.onmouseenter = function () {
         const data = range.data
-        Object.assign(editEntitysModel, {
-          type: data.type,
-          replaced_text: data.replaced_text,
-          confidence: data.confidence
-        })
+        Object.assign(editEntitysModel, data)
         const { left, bottom } = element.getBoundingClientRect()
         console.log(left, bottom)
         editPopover.value.top = bottom
@@ -206,13 +203,29 @@ const url = computed(() => {
   return `/api/book/${props.bookIdentify}/download/${props.document?.doc_id}`
 })
 
-const handleEdit = (item) => {
-  console.log(item)
+const handleEdit = async () => {
+  await axios.put(
+    `/api/document/${props.document?.doc_id}/entity/${editEntitysModel.entity_id}`,
+    editEntitysModel
+  )
+  ElMessage.success('修改成功')
+  editPopover.value.visible = false
 }
-const handleDelete = (item) => {
-  console.log(item)
+const handleDelete = async (item) => {
+  await ElMessageBox.confirm('确定要删除吗?', 'Warning', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning'
+  })
+  await axios.delete(`/api/document/${props.document?.doc_id}/entity/${editEntitysModel.entity_id}`)
+  ElMessage.success('删除成功')
+  editPopover.value.visible = false
 }
-const handleAdd = () => {}
+const handleAdd = async () => {
+  await axios.post(`/api/document/${props.document?.doc_id}/entity`, editEntitysModel)
+  ElMessage.success('添加成功')
+  addPopover.value.visible = false
+}
 const typeList = [
   {
     label: '人名',
