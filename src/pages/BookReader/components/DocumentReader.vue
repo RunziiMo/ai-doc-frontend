@@ -143,13 +143,11 @@ const { x: mouseX, y: mouseY, isOutside } = useMouseInElement(docContainer.value
 const { isOutside: isAddPopoverOutside } = useMouseInElement(addPopoverRef.value)
 
 const handleMouseUp = (e) => {
-  console.log(e.target, '====tager')
   const selection = window.getSelection()
-  console.log(selection)
-  // let selRange = selection.getRangeAt(0)
   let selectedText = selection.toString()
   if (selectedText) {
     if (!isOutside.value) {
+      editPopover.value.visible = false
       addPopover.value = {
         visible: true,
         top: mouseY.value,
@@ -157,7 +155,6 @@ const handleMouseUp = (e) => {
       }
     }
   }
-  console.log(isAddPopoverOutside.value, '====isAddPopoverOutside.value')
   if (isAddPopoverOutside.value) {
     addPopover.value.visible = false
   }
