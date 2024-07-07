@@ -95,7 +95,9 @@ const editEntitysModel = reactive({
   type: '',
   replaced_text: '',
   confidence: '',
-  entity_id: ''
+  entity_id: '',
+  start_index: 0,
+  end_index: 0
 })
 
 const editPopover = ref({
@@ -125,7 +127,6 @@ markEntitys.value = (entitys) => {
         const data = range.data
         Object.assign(editEntitysModel, data)
         const { left, bottom } = element.getBoundingClientRect()
-        console.log(left, bottom)
         editPopover.value.top = bottom
         editPopover.value.left = left
         editPopover.value.visible = true
@@ -218,9 +219,15 @@ const handleDelete = async (item) => {
   })
   await axios.delete(`/api/document/${props.document?.doc_id}/entity/${editEntitysModel.entity_id}`)
   ElMessage.success('删除成功')
+  const index = entityList.value?.findIndex((el) => {
+    return (el.entity_id = editEntitysModel.entity_id)
+  })
+  entityList.value.splice(index, 1)
   editPopover.value.visible = false
 }
 const handleAdd = async () => {
+  editEntitysModel.start_index = 1
+  editEntitysModel.end_index = 1
   await axios.post(`/api/document/${props.document?.doc_id}/entity`, editEntitysModel)
   ElMessage.success('添加成功')
   addPopover.value.visible = false
