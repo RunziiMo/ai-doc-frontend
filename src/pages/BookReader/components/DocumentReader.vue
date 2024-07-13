@@ -10,7 +10,7 @@ import {
   resolveComponent,
   h
 } from 'vue'
-import { useMouseInElement } from '@vueuse/core'
+import { useMouseInElement, useTextSelection } from '@vueuse/core'
 import { Splitpanes, Pane } from 'splitpanes'
 import { ElMessageBox, ElScrollbar } from 'element-plus'
 import { Promotion } from '@element-plus/icons-vue'
@@ -21,6 +21,7 @@ import { defaultOptions, renderAsync } from 'docx-preview'
 import Mark from 'mark.js'
 import { ElMessage } from 'element-plus'
 import PdfView from './PdfView.vue'
+import { el } from 'element-plus/es/locale'
 const props = defineProps({
   bookIdentify: {
     type: String,
@@ -115,6 +116,7 @@ const markEntitys = defineModel('markEntitys', {
 
 markEntitys.value = (entitys) => {
   const mark = new Mark(docContainer.value)
+
   const ranges = entitys?.map((el) => ({
     start: el.start_index,
     length: el.end_index - el.start_index,
@@ -134,15 +136,25 @@ markEntitys.value = (entitys) => {
     },
     done: async function () {}
   }
+  mark.unmark(options)
   mark.markRanges(ranges, options)
 }
 
 const { x: mouseX, y: mouseY, isOutside } = useMouseInElement(docContainer.value)
 const { isOutside: isAddPopoverOutside } = useMouseInElement(addPopoverRef.value)
 
+const state = useTextSelection()
+
 const handleMouseUp = (e) => {
   const selection = window.getSelection()
   let selectedText = selection.toString()
+  console.log(
+    state.ranges.value,
+    state.rects.value,
+    state.selection.value,
+    state.text.value,
+    '==selection'
+  )
   if (selectedText) {
     if (!isOutside.value) {
       editPopover.value.visible = false
@@ -169,8 +181,9 @@ const entityList = defineModel('entityList', {
 })
 entityList.value = []
 
-const handleRendered = () => {
+const handleRendered = async () => {
   if (entityList.value.length !== 0) {
+    await nextTick()
     markEntitys.value?.(entityList.value)
   }
   emit('fileRenderFinished')
@@ -203,11 +216,48 @@ const url = computed(() => {
   return `/api/book/${props.bookIdentify}/download/${props.document?.doc_id}`
 })
 
+const objToFormData = (obj) => {
+  const formData = new FormData()
+
+  for (const key in obj) {
+    if (obj.hasOwnProperty(key)) {
+      formData.append(key, obj[key])
+    }
+  }
+
+  return formData
+}
+const getSelectedPosition = () => {
+  const selection = window.getSelection()
+  console.log(selection)
+  if (selection.rangeCount > 0) {
+    const range = selection.getRangeAt(0)
+  
+    const startOffset = range.startOffset
+    const endOffset = range.endOffset
+    const allText = docContainer.value.innerText
+    console.log(range,startOffset,endOffset,allText,selection,allText.slice(0, startOffset))
+    // 计算选中文本之前的字符数（包含空格）
+    return [
+      allText.slice(0, startOffset).split('').length,
+      allText.slice(0, startOffset).split('').length + endOffset
+    ]
+  }
+}
+
 const handleEdit = async () => {
   await axios.put(
     `/api/document/${props.document?.doc_id}/entity/${editEntitysModel.entity_id}`,
-    editEntitysModel
+    objToFormData(editEntitysModel)
   )
+  entityList.value = entityList.value.map((el) => {
+    if (el.entity_id === editEntitysModel.entity_id) {
+      return editEntitysModel
+    }
+    return el
+  })
+  await nextTick()
+  markEntitys.value(entityList.value)
   ElMessage.success('修改成功')
   editPopover.value.visible = false
 }
@@ -218,14 +268,17 @@ const handleDelete = async (item) => {
     type: 'warning'
   })
   await axios.delete(`/api/document/${props.document?.doc_id}/entity/${editEntitysModel.entity_id}`)
-  ElMessage.success('删除成功')
-  const index = entityList.value?.findIndex((el) => {
-    return (el.entity_id = editEntitysModel.entity_id)
-  })
-  entityList.value.splice(index, 1)
+
+  entityList.value = entityList.value.filter((el) => el.entity_id !== editEntitysModel.entity_id)
+  console.log(entityList.value.length)
+
+  await nextTick()
+  markEntitys.value(entityList.value)
   editPopover.value.visible = false
+  ElMessage.success('删除成功')
 }
 const handleAdd = async () => {
+  console.log(getSelectedPosition(), '===docContainer.value.textContent')
   editEntitysModel.start_index = 1
   editEntitysModel.end_index = 1
   await axios.post(`/api/document/${props.document?.doc_id}/entity`, editEntitysModel)
