@@ -21,7 +21,7 @@ import { defaultOptions, renderAsync } from 'docx-preview'
 import Mark from 'mark.js'
 import { ElMessage } from 'element-plus'
 import PdfView from './PdfView.vue'
-import { el } from 'element-plus/es/locale'
+
 const props = defineProps({
   bookIdentify: {
     type: String,
@@ -148,13 +148,6 @@ const state = useTextSelection()
 const handleMouseUp = (e) => {
   const selection = window.getSelection()
   let selectedText = selection.toString()
-  console.log(
-    state.ranges.value,
-    state.rects.value,
-    state.selection.value,
-    state.text.value,
-    '==selection'
-  )
   if (selectedText) {
     if (!isOutside.value) {
       editPopover.value.visible = false
@@ -170,10 +163,12 @@ const handleMouseUp = (e) => {
   }
 }
 
-const entityInfo = reactive({
+const addEntitysModel = reactive({
   type: '',
   replaced_text: '',
-  confidence: ''
+  confidence: '',
+  start_index: 0,
+  end_index: 0
 })
 const entityList = defineModel('entityList', {
   type: Array,
@@ -229,19 +224,15 @@ const objToFormData = (obj) => {
 }
 const getSelectedPosition = () => {
   const selection = window.getSelection()
-  console.log(selection)
   if (selection.rangeCount > 0) {
     const range = selection.getRangeAt(0)
-  
-    const startOffset = range.startOffset
+
     const endOffset = range.endOffset
     const allText = docContainer.value.innerText
-    console.log(range,startOffset,endOffset,allText,selection,allText.slice(0, startOffset))
+    let selectedText = range.toString()
+
     // 计算选中文本之前的字符数（包含空格）
-    return [
-      allText.slice(0, startOffset).split('').length,
-      allText.slice(0, startOffset).split('').length + endOffset
-    ]
+    return [allText.indexOf(selectedText), allText.indexOf(selectedText) + endOffset]
   }
 }
 
@@ -270,7 +261,6 @@ const handleDelete = async (item) => {
   await axios.delete(`/api/document/${props.document?.doc_id}/entity/${editEntitysModel.entity_id}`)
 
   entityList.value = entityList.value.filter((el) => el.entity_id !== editEntitysModel.entity_id)
-  console.log(entityList.value.length)
 
   await nextTick()
   markEntitys.value(entityList.value)
@@ -278,11 +268,17 @@ const handleDelete = async (item) => {
   ElMessage.success('删除成功')
 }
 const handleAdd = async () => {
-  console.log(getSelectedPosition(), '===docContainer.value.textContent')
-  editEntitysModel.start_index = 1
-  editEntitysModel.end_index = 1
-  await axios.post(`/api/document/${props.document?.doc_id}/entity`, editEntitysModel)
+  const position = getSelectedPosition()
+  addEntitysModel.start_index = position[0]
+  addEntitysModel.end_index = position[1]
+  await axios.post(`/api/document/${props.document?.doc_id}/entity`, objToFormData(addEntitysModel))
   ElMessage.success('添加成功')
+  // new Mark(docContainer.value).mark(selectedText, {
+  //     className: 'text-selected',
+  //     each: (element, range) => {
+  //       console.log(element, range)
+  //     }
+  //   })
   addPopover.value.visible = false
 }
 const typeList = [
@@ -337,7 +333,12 @@ const typeList = [
       :style="{ top: addPopover.top + 'px', left: addPopover.left + 'px' }"
     >
       <div class="flex gap-10px w-100%">
-        <el-select placeholder="type" size="small" :teleported="false" v-model="entityInfo.type">
+        <el-select
+          placeholder="type"
+          size="small"
+          :teleported="false"
+          v-model="addEntitysModel.type"
+        >
           <el-option
             v-for="item in typeList"
             :key="item.value"
@@ -345,8 +346,8 @@ const typeList = [
             :value="item.value"
           />
         </el-select>
-        <el-input v-model="entityInfo.replaced_text" size="small" placeholder="替换文本" />
-        <el-input v-model="entityInfo.confidence" size="small" placeholder="置信度" />
+        <el-input v-model="addEntitysModel.replaced_text" size="small" placeholder="替换文本" />
+        <el-input v-model="addEntitysModel.confidence" size="small" placeholder="置信度" />
       </div>
       <div class="flex w-100% m-t-8px">
         <el-button class="flex-1" type="primary" size="small" @click="handleAdd"> 确定 </el-button>
