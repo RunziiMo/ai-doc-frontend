@@ -302,7 +302,8 @@ const handleDeleteMessage = async (id) => {
   }
 }
 
-const handleAiRequest = () => {
+const handleAiRequest = async() => {
+
   if (entityList.value.length === 0) {
     ElMessageBox.confirm('是否确认文档无需脱敏处理？', 'Warning', {
       confirmButtonText: '确定',
@@ -312,7 +313,7 @@ const handleAiRequest = () => {
     return
   }
 
-  if (messages.value?.length === 0) {
+  if (messages.value?.length !== 0) {
     ElMessageBox.confirm('您已经用过AI功能，确认需要重新发起预请求吗？', 'Warning', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',

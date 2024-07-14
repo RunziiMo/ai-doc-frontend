@@ -45,11 +45,16 @@ const handleView = async () => {
     </el-button>
   </div>
   <el-dialog v-model="dialogTableVisible" title="脱敏结果" width="800">
+    <el-select>
+
+    </el-select>
     <el-table :data="result">
       <el-table-column property="entity_id" label="实体" />
       <el-table-column property="origin_text" label="原文" />
       <el-table-column property="replaced_text" label="替换文本" />
-      <el-table-column property="type" label="类型" />
+      <el-table-column property="type" label="类型" >
+        <template #default="{ row }"> {{ row.start_index }} ~ {{ row.end_index }} </template>
+        </el-table-column>
       <el-table-column property="start_index" label="在文档中位置">
         <template #default="{ row }"> {{ row.start_index }} ~ {{ row.end_index }} </template>
       </el-table-column>

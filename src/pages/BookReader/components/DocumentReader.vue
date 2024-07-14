@@ -149,6 +149,7 @@ const handleMouseUp = (e) => {
   const selection = window.getSelection()
   let selectedText = selection.toString()
   if (selectedText) {
+    console.log(getSelectedPosition())
     if (!isOutside.value) {
       editPopover.value.visible = false
       addPopover.value = {
@@ -229,8 +230,8 @@ const getSelectedPosition = () => {
 
     const endOffset = range.endOffset
     const allText = docContainer.value.innerText
+    console.log(allText)
     let selectedText = range.toString()
-
     // 计算选中文本之前的字符数（包含空格）
     return [allText.indexOf(selectedText), allText.indexOf(selectedText) + endOffset]
   }
