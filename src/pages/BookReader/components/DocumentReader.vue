@@ -10,7 +10,7 @@ import {
   resolveComponent,
   h
 } from 'vue'
-import { useMouseInElement, useTextSelection } from '@vueuse/core'
+import { useMouseInElement } from '@vueuse/core'
 import { Splitpanes, Pane } from 'splitpanes'
 import { ElMessageBox, ElScrollbar } from 'element-plus'
 import { Promotion } from '@element-plus/icons-vue'
@@ -64,19 +64,9 @@ const loadDocument = async (bookIdentify, docId, docIdentify) => {
   })
 }
 
-const getEntityList = async (docId: string) => {
-  const { data } = await axios.get(`/api/document/${docId}/entity`)
-  if (data.errcode !== 0) {
-    entityList.value = []
-  } else {
-    entityList.value = data.data.page.List || []
-  }
-}
-
 watch(
   () => props.document,
   (newValue, oldValue) => {
-    getEntityList(newValue.doc_id)
     if (isPdf.value) return
     loadDocument(props.bookIdentify, newValue.doc_id, newValue.identify)
   }
@@ -115,6 +105,7 @@ const markEntitys = defineModel('markEntitys', {
 })
 
 markEntitys.value = (entitys) => {
+  console.log(entitys, '==entitys')
   const mark = new Mark(docContainer.value)
 
   const ranges = entitys?.map((el) => ({
@@ -143,27 +134,6 @@ markEntitys.value = (entitys) => {
 const { x: mouseX, y: mouseY, isOutside } = useMouseInElement(docContainer.value)
 const { isOutside: isAddPopoverOutside } = useMouseInElement(addPopoverRef.value)
 
-const state = useTextSelection()
-
-const handleMouseUp = (e) => {
-  const selection = window.getSelection()
-  let selectedText = selection.toString()
-  if (selectedText) {
-    console.log(getSelectedPosition())
-    if (!isOutside.value) {
-      editPopover.value.visible = false
-      addPopover.value = {
-        visible: true,
-        top: mouseY.value,
-        left: mouseX.value
-      }
-    }
-  }
-  if (isAddPopoverOutside.value) {
-    addPopover.value.visible = false
-  }
-}
-
 const addEntitysModel = reactive({
   type: '',
   replaced_text: '',
@@ -171,13 +141,53 @@ const addEntitysModel = reactive({
   start_index: 0,
   end_index: 0
 })
+
+const getSelectedTextData = () => {
+  const select = window.getSelection()
+  const allText = docContainer.value.innerText
+  const nodeValue = select.focusNode?.nodeValue
+  const anchorOffset = select.anchorOffset
+  const focusOffset = select.focusOffset
+  const nodeValueSatrtIndex = allText?.indexOf(nodeValue)
+  addEntitysModel.replaced_text = select.toString()
+  if (anchorOffset < focusOffset) {
+    //从左到右标注
+    addEntitysModel.start_index = nodeValueSatrtIndex + anchorOffset
+    addEntitysModel.end_index = nodeValueSatrtIndex + focusOffset
+  } else {
+    //从右到左
+    addEntitysModel.start_index = nodeValueSatrtIndex + focusOffset
+    addEntitysModel.end_index = nodeValueSatrtIndex + anchorOffset
+  }
+}
+
+const handleMouseUp = (e) => {
+  const selection = window.getSelection()
+  let selectedText = selection.toString()
+  if (selectedText) {
+    if (!isOutside.value) {
+      editPopover.value.visible = false
+      addPopover.value = {
+        visible: true,
+        top: mouseY.value,
+        left: mouseX.value
+      }
+      getSelectedTextData()
+    }
+  }
+  if (isAddPopoverOutside.value) {
+    addPopover.value.visible = false
+  }
+}
+
 const entityList = defineModel('entityList', {
   type: Array,
   default: () => []
 })
-entityList.value = []
+
 
 const handleRendered = async () => {
+  console.log(entityList.value,"===eeee===")
   if (entityList.value.length !== 0) {
     await nextTick()
     markEntitys.value?.(entityList.value)
@@ -223,19 +233,6 @@ const objToFormData = (obj) => {
 
   return formData
 }
-const getSelectedPosition = () => {
-  const selection = window.getSelection()
-  if (selection.rangeCount > 0) {
-    const range = selection.getRangeAt(0)
-
-    const endOffset = range.endOffset
-    const allText = docContainer.value.innerText
-    console.log(allText)
-    let selectedText = range.toString()
-    // 计算选中文本之前的字符数（包含空格）
-    return [allText.indexOf(selectedText), allText.indexOf(selectedText) + endOffset]
-  }
-}
 
 const handleEdit = async () => {
   await axios.put(
@@ -269,9 +266,6 @@ const handleDelete = async (item) => {
   ElMessage.success('删除成功')
 }
 const handleAdd = async () => {
-  const position = getSelectedPosition()
-  addEntitysModel.start_index = position[0]
-  addEntitysModel.end_index = position[1]
   await axios.post(`/api/document/${props.document?.doc_id}/entity`, objToFormData(addEntitysModel))
   ElMessage.success('添加成功')
   // new Mark(docContainer.value).mark(selectedText, {

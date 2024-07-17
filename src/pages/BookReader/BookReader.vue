@@ -25,6 +25,15 @@ const uploadDialogVisible = ref(false)
 const docTreeVisible = ref(false)
 const isShowSide = ref(true)
 
+const getEntityList = async (docId) => {
+  const { data } = await axios.get(`/api/document/${docId}/entity`)
+  if (data.errcode !== 0) {
+    entityList.value = []
+  } else {
+    entityList.value = data.data.page.List || []
+  }
+}
+
 const loadDoc = async (bookIdentify, docId) => {
   if (docId === undefined) {
     docId = 0
@@ -38,6 +47,7 @@ const loadDoc = async (bookIdentify, docId) => {
     var data = response.data.data
     document.value = data
     content.value = data.markdown
+    getEntityList(document.value.doc_id)
   }
 }
 
@@ -85,6 +95,7 @@ function deleteDocId(docIdTmp) {
   console.log(`deleteDocId docId is:${docIdTmp}`)
   book.value.document_trees = book.value.document_trees.filter((item) => item.id !== docIdTmp)
 }
+
 const markEntitys = ref()
 const entityList = ref([]);
 
@@ -95,6 +106,7 @@ const handleEntityResults = (entitys) => {
     ElMessage.warning('暂无可标记的实体')
   }
 }
+
 </script>
 
 <template>
