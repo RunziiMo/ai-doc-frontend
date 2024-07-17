@@ -1,5 +1,5 @@
 <script setup>
-import { onMounted, reactive, computed, ref } from 'vue'
+import { onMounted, reactive, ref } from 'vue'
 import VuePdfEmbed from 'vue-pdf-embed'
 import { createLoadingTask } from 'vue3-pdfjs'
 
@@ -17,28 +17,6 @@ const state = reactive({
   numPages: 0 // 总页数
 })
 
-const scale = computed(() => `transform:scale(${state.scale})`)
-
-const lastPage = () => {
-  if (state.pageNum > 1) {
-    state.pageNum -= 1
-  }
-}
-const nextPage = () => {
-  if (state.pageNum < state.numPages) {
-    state.pageNum += 1
-  }
-}
-const pageZoomOut = () => {
-  if (state.scale < 2) {
-    state.scale += 0.1
-  }
-}
-const pageZoomIn = () => {
-  if (state.scale > 1) {
-    state.scale -= 0.1
-  }
-}
 const isLoading = ref(true)
 
 onMounted(() => {
@@ -71,18 +49,18 @@ const handlePasswordRequest = ({ callback, isWrongPassword }) => {
       <template v-if="isLoading"> pdf File Loading... </template>
       <vue-pdf-embed
         :source="url"
-        :style="scale"
         class="vue-pdf-embed"
         @loaded="handleDocumentLoad"
         @rendered="handleDocumentRender"
         @password-requested="handlePasswordRequest"
         @rendering-failed="handleDocumentRenderFailed"
         @loading-failed="handleDocumentLoadingFailed"
+        v-bind="$attrs"
       />
     </div>
   </div>
 </template>
-<style>
+<style scoped>
 .pdf-preview {
   position: relative;
   height: 100%;
@@ -98,11 +76,18 @@ const handlePasswordRequest = ({ callback, isWrongPassword }) => {
 }
 
 .vue-pdf-embed {
+  position: relative;
   text-align: center;
   height: 100%;
+  width: 100%;
   border: 1px solid #e5e5e5;
   margin: 0 auto;
   box-sizing: border-box;
 }
-
+:deep(.textLayer) {
+  opacity: unset !important;
+}
+:deep(.textLayer ::selection) {
+  background: rgba(0, 0, 255, 0.1);
+}
 </style>
