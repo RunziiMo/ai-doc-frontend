@@ -28,23 +28,23 @@ const current = ref(1)
 const type = ref()
 const typeList = ref([
   {
-    label: '人名',
+    text: '人名',
     value: 'PERSON'
   },
   {
-    label: '地名',
+    text: '地名',
     value: 'LOCATION'
   },
   {
-    label: '金额',
+    text: '金额',
     value: '金额'
   },
   {
-    label: '组织',
+    text: '组织',
     value: '组织'
   },
   {
-    label: '日期',
+    text: '日期',
     value: 'DATE_TIME'
   }
 ])
@@ -59,17 +59,13 @@ const handleView = async () => {
   result.value = data.value.slice(current.value - 1, pageSize.value)
 }
 const getType = (type) => {
-  return typeList.value.find((el) => el.value === type)?.label
+  return typeList.value.find((el) => el.value === type)?.text
 }
 
-const handleChange = (val) => {
-  if (!!val) {
-    data.value = entityList.value.filter((el) => el.type.includes(val))
-    result.value = data.value.slice(current.value - 1, pageSize.value)
-  } else {
-    data.value = entityList.value
-    result.value = data.value.slice(current.value - 1, pageSize.value)
-  }
+const filterHandler = (value, row, column) => {
+  const property = column['property']
+
+  return row[property] === value
 }
 </script>
 
@@ -89,14 +85,17 @@ const handleChange = (val) => {
     </el-button>
   </div>
   <el-dialog v-model="dialogTableVisible" title="脱敏结果" top="0" width="800">
-    <el-select class="!w-200px" clearable v-model="type" @change="handleChange">
-      <el-option v-for="item in typeList" :label="item.label" :value="item.value"></el-option>
-    </el-select>
     <el-table :data="result">
       <el-table-column property="entity_id" label="实体" />
       <el-table-column property="origin_text" label="原文" />
       <el-table-column property="replaced_text" label="替换文本" />
-      <el-table-column property="type" label="类型">
+      <el-table-column
+        property="type"
+        label="类型"
+        :filters="typeList"
+        :filter-multiple="false"
+        :filter-method="filterHandler"
+      >
         <template #default="{ row }"> {{ getType(row.type) }} </template>
       </el-table-column>
       <el-table-column property="start_index" label="在文档中位置">
