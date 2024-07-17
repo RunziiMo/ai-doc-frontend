@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref } from 'vue'
+import { computed, ref } from 'vue'
 
 const entityList = defineModel('entityList', {
   type: Array,
@@ -10,22 +10,66 @@ const entityRecognitionLoad = defineModel('entityRecognitionLoading', {
   default: false
 })
 
+const data = ref([])
+const pageSize = ref(50)
+
 defineEmits(['anonymousProcessing', 'aiPreRequest'])
 const dialogTableVisible = ref(false)
 const result = ref([])
 
-const handleCurrentChange = () => {
-  result.value = entityList.value.slice((current.value - 1) * 10, current.value * 10)
+const handleCurrentChange = (val) => {
+  result.value = data.value.slice(
+    (current.value - 1) * pageSize.value,
+    current.value * pageSize.value
+  )
 }
 
 const current = ref(1)
-const total = ref(0)
+const type = ref()
+const typeList = ref([
+  {
+    label: '人名',
+    value: 'PERSON'
+  },
+  {
+    label: '地名',
+    value: 'LOCATION'
+  },
+  {
+    label: '金额',
+    value: '金额'
+  },
+  {
+    label: '组织',
+    value: '组织'
+  },
+  {
+    label: '日期',
+    value: 'DATE_TIME'
+  }
+])
+
+const total = computed(() => {
+  return data.value.length || 0
+})
 
 const handleView = async () => {
   dialogTableVisible.value = true
+  data.value = entityList.value
+  result.value = data.value.slice(current.value - 1, pageSize.value)
+}
+const getType = (type) => {
+  return typeList.value.find((el) => el.value === type)?.label
+}
 
-  total.value = entityList.value.length
-  result.value = entityList.value.slice(current.value - 1, 10)
+const handleChange = (val) => {
+  if (!!val) {
+    data.value = entityList.value.filter((el) => el.type.includes(val))
+    result.value = data.value.slice(current.value - 1, pageSize.value)
+  } else {
+    data.value = entityList.value
+    result.value = data.value.slice(current.value - 1, pageSize.value)
+  }
 }
 </script>
 
@@ -44,17 +88,17 @@ const handleView = async () => {
       AI预请求
     </el-button>
   </div>
-  <el-dialog v-model="dialogTableVisible" title="脱敏结果" width="800">
-    <el-select>
-
+  <el-dialog v-model="dialogTableVisible" title="脱敏结果" top="0" width="800">
+    <el-select class="!w-200px" clearable v-model="type" @change="handleChange">
+      <el-option v-for="item in typeList" :label="item.label" :value="item.value"></el-option>
     </el-select>
     <el-table :data="result">
       <el-table-column property="entity_id" label="实体" />
       <el-table-column property="origin_text" label="原文" />
       <el-table-column property="replaced_text" label="替换文本" />
-      <el-table-column property="type" label="类型" >
-        <template #default="{ row }"> {{ row.start_index }} ~ {{ row.end_index }} </template>
-        </el-table-column>
+      <el-table-column property="type" label="类型">
+        <template #default="{ row }"> {{ getType(row.type) }} </template>
+      </el-table-column>
       <el-table-column property="start_index" label="在文档中位置">
         <template #default="{ row }"> {{ row.start_index }} ~ {{ row.end_index }} </template>
       </el-table-column>
@@ -62,10 +106,15 @@ const handleView = async () => {
     </el-table>
     <el-pagination
       v-model:current-page="current"
-      :page-size="10"
+      :page-size="pageSize"
       layout="total, prev, pager, next"
       :total="total"
       @current-change="handleCurrentChange"
     />
   </el-dialog>
 </template>
+<style scoped>
+.el-table--fit {
+  height: 600px;
+}
+</style>

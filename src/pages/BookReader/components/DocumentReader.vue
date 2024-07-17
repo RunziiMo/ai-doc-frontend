@@ -19,6 +19,7 @@ import 'splitpanes/dist/splitpanes.css'
 import axios from 'axios'
 import { defaultOptions, renderAsync } from 'docx-preview'
 import Mark from 'mark.js'
+import MarkJs from '../../../../node_modules/mark.js/src/lib/mark.js'
 import { ElMessage } from 'element-plus'
 import PdfView from './PdfView.vue'
 
@@ -105,7 +106,6 @@ const markEntitys = defineModel('markEntitys', {
 })
 
 markEntitys.value = (entitys) => {
-  console.log(entitys, '==entitys')
   const mark = new Mark(docContainer.value)
 
   const ranges = entitys?.map((el) => ({
@@ -113,6 +113,7 @@ markEntitys.value = (entitys) => {
     length: el.end_index - el.start_index,
     data: el
   }))
+
   const options = {
     className: 'text-selected',
     each: (element, range) => {
@@ -143,27 +144,19 @@ const addEntitysModel = reactive({
 })
 
 const getSelectedTextData = () => {
-  const select = window.getSelection()
+  const selection = window.getSelection()
+  const selectedText = selection.toString()
   const allText = docContainer.value.innerText
-  const nodeValue = select.focusNode?.nodeValue
-  const anchorOffset = select.anchorOffset
-  const focusOffset = select.focusOffset
-  const nodeValueSatrtIndex = allText?.indexOf(nodeValue)
-  addEntitysModel.replaced_text = select.toString()
-  if (anchorOffset < focusOffset) {
-    //从左到右标注
-    addEntitysModel.start_index = nodeValueSatrtIndex + anchorOffset
-    addEntitysModel.end_index = nodeValueSatrtIndex + focusOffset
-  } else {
-    //从右到左
-    addEntitysModel.start_index = nodeValueSatrtIndex + focusOffset
-    addEntitysModel.end_index = nodeValueSatrtIndex + anchorOffset
-  }
+
+  const nodeValueSatrtIndex = allText?.indexOf(selectedText)
+  addEntitysModel.replaced_text = selection.toString()
+  addEntitysModel.start_index = nodeValueSatrtIndex
+  addEntitysModel.end_index = nodeValueSatrtIndex + selectedText.length
 }
 
 const handleMouseUp = (e) => {
   const selection = window.getSelection()
-  let selectedText = selection.toString()
+  const selectedText = selection.toString()
   if (selectedText) {
     if (!isOutside.value) {
       editPopover.value.visible = false
@@ -185,12 +178,12 @@ const entityList = defineModel('entityList', {
   default: () => []
 })
 
-
 const handleRendered = async () => {
-  console.log(entityList.value,"===eeee===")
   if (entityList.value.length !== 0) {
     await nextTick()
-    markEntitys.value?.(entityList.value)
+    setTimeout(() => {
+      markEntitys.value?.(entityList.value)
+    }, 1000)
   }
   emit('fileRenderFinished')
 }
@@ -250,7 +243,7 @@ const handleEdit = async () => {
   ElMessage.success('修改成功')
   editPopover.value.visible = false
 }
-const handleDelete = async (item) => {
+const handleDelete = async () => {
   await ElMessageBox.confirm('确定要删除吗?', 'Warning', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
@@ -265,15 +258,10 @@ const handleDelete = async (item) => {
   editPopover.value.visible = false
   ElMessage.success('删除成功')
 }
+
 const handleAdd = async () => {
   await axios.post(`/api/document/${props.document?.doc_id}/entity`, objToFormData(addEntitysModel))
   ElMessage.success('添加成功')
-  // new Mark(docContainer.value).mark(selectedText, {
-  //     className: 'text-selected',
-  //     each: (element, range) => {
-  //       console.log(element, range)
-  //     }
-  //   })
   addPopover.value.visible = false
 }
 const typeList = [
@@ -326,6 +314,7 @@ const typeList = [
       ref="addPopoverRef"
       class="add-popover"
       :style="{ top: addPopover.top + 'px', left: addPopover.left + 'px' }"
+      @mouseup.stop
     >
       <div class="flex gap-10px w-100%">
         <el-select
@@ -423,6 +412,7 @@ const typeList = [
   overflow-y: auto;
   padding: 10px;
 }
+
 .right-sidebar {
   width: 200px;
   background-color: #f9f9f9;
@@ -430,19 +420,23 @@ const typeList = [
   padding: 10px;
   overflow: hidden;
 }
+
 .no-scroll {
   overflow: hidden;
 }
+
 .el-scrollbar {
   width: 100%;
   height: 100%;
 }
+
 :deep(.text-selected) {
   background: #d48a91 !important;
   cursor: pointer;
   position: relative;
   user-select: none;
 }
+
 :deep(.edit-popover) {
   left: 0;
 }
@@ -463,20 +457,26 @@ const typeList = [
     0 3px 6px -2px rgb(0 0 0 / 20%);
   user-select: none;
 }
+
 .edit-popover span {
   color: #606266 !important;
   position: unset !important;
   white-space: unset !important;
   cursor: unset !important;
   transform-origin: unset !important;
-  -webkit-user-select: none !important; /* Chrome, Safari, Opera */
-  -moz-user-select: none !important; /* Firefox */
-  -ms-user-select: none !important; /* Internet Explorer/Edge */
+  -webkit-user-select: none !important;
+  /* Chrome, Safari, Opera */
+  -moz-user-select: none !important;
+  /* Firefox */
+  -ms-user-select: none !important;
+  /* Internet Explorer/Edge */
   user-select: none !important;
 }
+
 .edit-popover .el-button--primary span {
   color: #fff !important;
 }
+
 .edit-popover .el-select {
   text-indent: 0pt !important;
 }

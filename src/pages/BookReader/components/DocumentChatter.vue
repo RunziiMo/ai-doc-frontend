@@ -92,7 +92,6 @@ const props = defineProps({
 
 const emit = defineEmits(['textSelected', 'entityResults'])
 
-
 let intervalId
 onMounted(async () => {
   if (props.document.doc_id) {
@@ -112,7 +111,6 @@ onMounted(async () => {
           (message) => message.message_id === updatedMessage.message_id
         )
         if (index !== -1 && messages.value[index].approved === 0) {
-          console.log(updatedMessage)
           messages.value[index] = updatedMessage
         }
       })
@@ -193,9 +191,6 @@ const createFilter = (queryString: string) => {
     return api.toLowerCase().indexOf(queryString.toLowerCase()) === 0
   }
 }
-const handleSelect = (api: string) => {
-  console.log(api)
-}
 
 const loadChatMessages = async (documentId) => {
   const params = {
@@ -238,7 +233,7 @@ const docNameEntityRecognition = async () => {
   entityRecognitionLoading.value = false
 }
 
-const docAnalyze = async () => {
+const docAnalyze = async (promptParams) => {
   if (!('EventSource' in window)) {
     ElMessage.warning('您的浏览器不支持该功能')
     return
@@ -248,8 +243,8 @@ const docAnalyze = async () => {
     role: role.value,
     book_identify: props.bookIdentify,
     doc_id: props.document.doc_id,
-    prompt: prompt.value,
-    action: props.functions.includes(prompt.value) ? 'analyze' : 'chat'
+    prompt: promptParams || prompt.value,
+    action: props.functions.includes(promptParams || prompt.value) ? 'analyze' : 'chat'
   }
   const filteredParams = Object.fromEntries(
     Object.entries(params).filter(([_, v]) => v != null && v !== '')
@@ -266,11 +261,9 @@ const docAnalyze = async () => {
   })
   eventSource.addEventListener('warning', (event) => {
     ElMessage.warning(event.data)
-    console.log(event.data)
   })
   eventSource.addEventListener('close', (event) => {
     ElMessage.warning(event.data)
-    console.log(event.data)
     messages.value[messages.value.length - 1].approved = 1
   })
   eventSource.onerror = (event) => {
@@ -302,10 +295,9 @@ const handleDeleteMessage = async (id) => {
   }
 }
 
-const handleAiRequest = async() => {
-
+const handleAiRequest = async () => {
   if (entityList.value.length === 0) {
-    ElMessageBox.confirm('是否确认文档无需脱敏处理？', 'Warning', {
+    await ElMessageBox.confirm('是否确认文档无需脱敏处理？', 'Warning', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning'
@@ -314,7 +306,7 @@ const handleAiRequest = async() => {
   }
 
   if (messages.value?.length !== 0) {
-    ElMessageBox.confirm('您已经用过AI功能，确认需要重新发起预请求吗？', 'Warning', {
+    await ElMessageBox.confirm('您已经用过AI功能，确认需要重新发起预请求吗？', 'Warning', {
       confirmButtonText: '确定',
       cancelButtonText: '取消',
       type: 'warning'
@@ -325,6 +317,11 @@ const handleAiRequest = async() => {
       })
     })
   }
+  props.functions.forEach(async (functions) => {
+    await docAnalyze(functions)
+  })
+
+  ElMessage.success('操作成功')
 }
 </script>
 
