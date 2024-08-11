@@ -38,7 +38,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['fileRenderFinished'])
+const emit = defineEmits(['fileRenderFinished', 'refreshEntity'])
 
 const isPdf = computed(() => {
   return props.document.identify?.endsWith('.pdf')
@@ -105,20 +105,16 @@ const markEntitys = defineModel('markEntitys', {
   default: () => {}
 })
 
-markEntitys.value = (entitys) => {
-  const mark = new Mark(docContainer.value)
-
-  const ranges = entitys?.map((el) => ({
-    start: el.start_index,
-    length: el.end_index - el.start_index,
-    data: el
-  }))
-
-  const options = {
+markEntitys.value = async (entitys) => {
+  await nextTick()
+  const instance = new Mark(docContainer.value)
+  instance.unmark();
+  const options = (data) => ({
+    acrossElements: true,
     className: 'text-selected',
-    each: (element, range) => {
+    each: (element) => {
+      element.setAttribute('id', data.entity_id)
       element.onmouseenter = function () {
-        const data = range.data
         Object.assign(editEntitysModel, data)
         const { left, bottom } = element.getBoundingClientRect()
         editPopover.value.top = bottom
@@ -127,9 +123,13 @@ markEntitys.value = (entitys) => {
       }
     },
     done: async function () {}
-  }
-  mark.unmark(options)
-  mark.markRanges(ranges, options)
+  })
+  entitys?.forEach((el) => {
+    const texts = el.window_text.split(el.replaced_text)
+    const regexStr = `(?<=${texts[0]})${el.replaced_text}(?=${texts[1]})`
+    const regex = new RegExp(regexStr, 'gim')
+    instance.markRegExp(regex, options(el))
+  })
 }
 
 const { x: mouseX, y: mouseY, isOutside } = useMouseInElement(docContainer.value)
@@ -140,18 +140,19 @@ const addEntitysModel = reactive({
   replaced_text: '',
   confidence: '',
   start_index: 0,
-  end_index: 0
+  end_index: 0,
+  window_text: ''
 })
 
 const getSelectedTextData = () => {
   const selection = window.getSelection()
   const selectedText = selection.toString()
   const allText = docContainer.value.innerText
-
   const nodeValueSatrtIndex = allText?.indexOf(selectedText)
   addEntitysModel.replaced_text = selection.toString()
   addEntitysModel.start_index = nodeValueSatrtIndex
   addEntitysModel.end_index = nodeValueSatrtIndex + selectedText.length
+  addEntitysModel.window_text = (selection as any).baseNode.data
 }
 
 const handleMouseUp = (e) => {
@@ -232,14 +233,7 @@ const handleEdit = async () => {
     `/api/document/${props.document?.doc_id}/entity/${editEntitysModel.entity_id}`,
     objToFormData(editEntitysModel)
   )
-  entityList.value = entityList.value.map((el) => {
-    if (el.entity_id === editEntitysModel.entity_id) {
-      return editEntitysModel
-    }
-    return el
-  })
-  await nextTick()
-  markEntitys.value(entityList.value)
+  emit('refreshEntity')
   ElMessage.success('修改成功')
   editPopover.value.visible = false
 }
@@ -250,18 +244,15 @@ const handleDelete = async () => {
     type: 'warning'
   })
   await axios.delete(`/api/document/${props.document?.doc_id}/entity/${editEntitysModel.entity_id}`)
-
-  entityList.value = entityList.value.filter((el) => el.entity_id !== editEntitysModel.entity_id)
-
-  await nextTick()
-  markEntitys.value(entityList.value)
-  editPopover.value.visible = false
+  emit('refreshEntity')
+  editPopover.value.visible = false;
   ElMessage.success('删除成功')
 }
 
 const handleAdd = async () => {
   await axios.post(`/api/document/${props.document?.doc_id}/entity`, objToFormData(addEntitysModel))
   ElMessage.success('添加成功')
+  emit('refreshEntity')
   addPopover.value.visible = false
 }
 const typeList = [

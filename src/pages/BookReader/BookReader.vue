@@ -34,6 +34,7 @@ const getEntityList = async (docId) => {
     entityList.value = []
   } else {
     entityList.value = data.data.page.List || []
+    markEntitys.value(entityList.value)
   }
 }
 
@@ -149,6 +150,7 @@ const handleEntityResults = (entitys) => {
               :searchString="selectedText"
               v-model:mark-entitys="markEntitys"
               v-model:entity-list="entityList"
+              @refreshEntity="getEntityList(document?.doc_id)"
             />
           </pane>
           <pane
