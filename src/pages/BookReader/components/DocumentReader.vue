@@ -108,7 +108,7 @@ const markEntitys = defineModel('markEntitys', {
 markEntitys.value = async (entitys) => {
   await nextTick()
   const instance = new Mark(docContainer.value)
-  instance.unmark();
+  instance.unmark()
   const options = (data) => ({
     acrossElements: true,
     className: 'text-selected',
@@ -245,7 +245,7 @@ const handleDelete = async () => {
   })
   await axios.delete(`/api/document/${props.document?.doc_id}/entity/${editEntitysModel.entity_id}`)
   emit('refreshEntity')
-  editPopover.value.visible = false;
+  editPopover.value.visible = false
   ElMessage.success('删除成功')
 }
 
@@ -322,7 +322,7 @@ const typeList = [
           />
         </el-select>
         <el-input v-model="addEntitysModel.replaced_text" size="small" placeholder="替换文本" />
-        <el-input v-model="addEntitysModel.confidence" size="small" placeholder="置信度" />
+        <el-input v-model="addEntitysModel.confidence" size="small" disabled placeholder="置信度" />
       </div>
       <div class="flex w-100% m-t-8px">
         <el-button class="flex-1" type="primary" size="small" @click="handleAdd"> 确定 </el-button>
@@ -359,8 +359,8 @@ const typeList = [
         <el-input
           v-model="editEntitysModel.confidence"
           size="small"
+          disabled
           placeholder="置信度"
-          :disabled="disabledEditEntity"
         />
       </div>
       <div class="flex w-100% m-t-8px">
