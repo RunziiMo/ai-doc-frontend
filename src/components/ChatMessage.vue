@@ -131,27 +131,6 @@ const props = defineProps({
     },
 });
 
-const renderer = {
-    text(text) {
-        if (!text.includes("【依据】")) {
-            return false
-        }
-        const replacedText = text.replace(/(.*)【依据】(.*)/, (match, before, after) => {
-            return `<a style="cursor: pointer;" title="${after}">${before}</a>`;
-        });
-        return replacedText;
-    }
-};
-
-marked.use({ renderer });
-const options = {
-    gfm: true, // 开启 GitHub Flavored Markdown（GFM）
-    breaks: true,
-    headerIds: false // 禁止为标题自动生成 ID
-    // 还可以添加其他自定义参数...
-};
-marked.use(options);
-
 const response = ref(marked(props.message.response));
 const cloneResponse = ref(props.message.response);
 
