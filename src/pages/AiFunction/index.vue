@@ -147,7 +147,6 @@ import axios from 'axios'
 import { marked } from 'marked'
 import { ElMessage } from 'element-plus'
 import Banner from '../Home/components/Banner.vue';
-import FunctionModel from './components/FunctionModel.vue';
 import {
   Delete,
 } from '@element-plus/icons-vue'
