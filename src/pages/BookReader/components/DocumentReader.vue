@@ -19,6 +19,7 @@ import 'splitpanes/dist/splitpanes.css'
 import axios from 'axios'
 import { defaultOptions, renderAsync } from 'docx-preview'
 import Mark from 'mark.js'
+import MarkJs from '../../../../node_modules/mark.js/src/lib/mark.js'
 import { ElMessage } from 'element-plus'
 import PdfView from './PdfView.vue'
 
@@ -37,7 +38,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['fileRenderFinished'])
+const emit = defineEmits(['fileRenderFinished', 'refreshEntity'])
 
 const isPdf = computed(() => {
   return props.document.identify?.endsWith('.pdf')
@@ -104,20 +105,16 @@ const markEntitys = defineModel('markEntitys', {
   default: () => {}
 })
 
-markEntitys.value = (entitys) => {
-  console.log(entitys, '==entitys')
-  const mark = new Mark(docContainer.value)
-
-  const ranges = entitys?.map((el) => ({
-    start: el.start_index,
-    length: el.end_index - el.start_index,
-    data: el
-  }))
-  const options = {
+markEntitys.value = async (entitys) => {
+  await nextTick()
+  const instance = new Mark(docContainer.value)
+  instance.unmark()
+  const options = (data) => ({
+    acrossElements: true,
     className: 'text-selected',
-    each: (element, range) => {
+    each: (element) => {
+      element.setAttribute('id', data.entity_id)
       element.onmouseenter = function () {
-        const data = range.data
         Object.assign(editEntitysModel, data)
         const { left, bottom } = element.getBoundingClientRect()
         editPopover.value.top = bottom
@@ -126,9 +123,13 @@ markEntitys.value = (entitys) => {
       }
     },
     done: async function () {}
-  }
-  mark.unmark(options)
-  mark.markRanges(ranges, options)
+  })
+  entitys?.forEach((el) => {
+    const texts = el.window_text.split(el.replaced_text)
+    const regexStr = `(?<=${texts[0]})${el.replaced_text}(?=${texts[1]})`
+    const regex = new RegExp(regexStr, 'gim')
+    instance.markRegExp(regex, options(el))
+  })
 }
 
 const { x: mouseX, y: mouseY, isOutside } = useMouseInElement(docContainer.value)
@@ -139,31 +140,24 @@ const addEntitysModel = reactive({
   replaced_text: '',
   confidence: '',
   start_index: 0,
-  end_index: 0
+  end_index: 0,
+  window_text: ''
 })
 
 const getSelectedTextData = () => {
-  const select = window.getSelection()
+  const selection = window.getSelection()
+  const selectedText = selection.toString()
   const allText = docContainer.value.innerText
-  const nodeValue = select.focusNode?.nodeValue
-  const anchorOffset = select.anchorOffset
-  const focusOffset = select.focusOffset
-  const nodeValueSatrtIndex = allText?.indexOf(nodeValue)
-  addEntitysModel.replaced_text = select.toString()
-  if (anchorOffset < focusOffset) {
-    //从左到右标注
-    addEntitysModel.start_index = nodeValueSatrtIndex + anchorOffset
-    addEntitysModel.end_index = nodeValueSatrtIndex + focusOffset
-  } else {
-    //从右到左
-    addEntitysModel.start_index = nodeValueSatrtIndex + focusOffset
-    addEntitysModel.end_index = nodeValueSatrtIndex + anchorOffset
-  }
+  const nodeValueSatrtIndex = allText?.indexOf(selectedText)
+  addEntitysModel.replaced_text = selection.toString()
+  addEntitysModel.start_index = nodeValueSatrtIndex
+  addEntitysModel.end_index = nodeValueSatrtIndex + selectedText.length
+  addEntitysModel.window_text = (selection as any).baseNode.data
 }
 
 const handleMouseUp = (e) => {
   const selection = window.getSelection()
-  let selectedText = selection.toString()
+  const selectedText = selection.toString()
   if (selectedText) {
     if (!isOutside.value) {
       editPopover.value.visible = false
@@ -185,12 +179,12 @@ const entityList = defineModel('entityList', {
   default: () => []
 })
 
-
 const handleRendered = async () => {
-  console.log(entityList.value,"===eeee===")
   if (entityList.value.length !== 0) {
     await nextTick()
-    markEntitys.value?.(entityList.value)
+    setTimeout(() => {
+      markEntitys.value?.(entityList.value)
+    }, 1000)
   }
   emit('fileRenderFinished')
 }
@@ -239,41 +233,26 @@ const handleEdit = async () => {
     `/api/document/${props.document?.doc_id}/entity/${editEntitysModel.entity_id}`,
     objToFormData(editEntitysModel)
   )
-  entityList.value = entityList.value.map((el) => {
-    if (el.entity_id === editEntitysModel.entity_id) {
-      return editEntitysModel
-    }
-    return el
-  })
-  await nextTick()
-  markEntitys.value(entityList.value)
+  emit('refreshEntity')
   ElMessage.success('修改成功')
   editPopover.value.visible = false
 }
-const handleDelete = async (item) => {
+const handleDelete = async () => {
   await ElMessageBox.confirm('确定要删除吗?', 'Warning', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
   })
   await axios.delete(`/api/document/${props.document?.doc_id}/entity/${editEntitysModel.entity_id}`)
-
-  entityList.value = entityList.value.filter((el) => el.entity_id !== editEntitysModel.entity_id)
-
-  await nextTick()
-  markEntitys.value(entityList.value)
+  emit('refreshEntity')
   editPopover.value.visible = false
   ElMessage.success('删除成功')
 }
+
 const handleAdd = async () => {
   await axios.post(`/api/document/${props.document?.doc_id}/entity`, objToFormData(addEntitysModel))
   ElMessage.success('添加成功')
-  // new Mark(docContainer.value).mark(selectedText, {
-  //     className: 'text-selected',
-  //     each: (element, range) => {
-  //       console.log(element, range)
-  //     }
-  //   })
+  emit('refreshEntity')
   addPopover.value.visible = false
 }
 const typeList = [
@@ -326,6 +305,7 @@ const typeList = [
       ref="addPopoverRef"
       class="add-popover"
       :style="{ top: addPopover.top + 'px', left: addPopover.left + 'px' }"
+      @mouseup.stop
     >
       <div class="flex gap-10px w-100%">
         <el-select
@@ -342,7 +322,7 @@ const typeList = [
           />
         </el-select>
         <el-input v-model="addEntitysModel.replaced_text" size="small" placeholder="替换文本" />
-        <el-input v-model="addEntitysModel.confidence" size="small" placeholder="置信度" />
+        <el-input v-model="addEntitysModel.confidence" size="small" disabled placeholder="置信度" />
       </div>
       <div class="flex w-100% m-t-8px">
         <el-button class="flex-1" type="primary" size="small" @click="handleAdd"> 确定 </el-button>
@@ -379,8 +359,8 @@ const typeList = [
         <el-input
           v-model="editEntitysModel.confidence"
           size="small"
+          disabled
           placeholder="置信度"
-          :disabled="disabledEditEntity"
         />
       </div>
       <div class="flex w-100% m-t-8px">
@@ -423,6 +403,7 @@ const typeList = [
   overflow-y: auto;
   padding: 10px;
 }
+
 .right-sidebar {
   width: 200px;
   background-color: #f9f9f9;
@@ -430,19 +411,23 @@ const typeList = [
   padding: 10px;
   overflow: hidden;
 }
+
 .no-scroll {
   overflow: hidden;
 }
+
 .el-scrollbar {
   width: 100%;
   height: 100%;
 }
+
 :deep(.text-selected) {
   background: #d48a91 !important;
   cursor: pointer;
   position: relative;
   user-select: none;
 }
+
 :deep(.edit-popover) {
   left: 0;
 }
@@ -463,20 +448,26 @@ const typeList = [
     0 3px 6px -2px rgb(0 0 0 / 20%);
   user-select: none;
 }
+
 .edit-popover span {
   color: #606266 !important;
   position: unset !important;
   white-space: unset !important;
   cursor: unset !important;
   transform-origin: unset !important;
-  -webkit-user-select: none !important; /* Chrome, Safari, Opera */
-  -moz-user-select: none !important; /* Firefox */
-  -ms-user-select: none !important; /* Internet Explorer/Edge */
+  -webkit-user-select: none !important;
+  /* Chrome, Safari, Opera */
+  -moz-user-select: none !important;
+  /* Firefox */
+  -ms-user-select: none !important;
+  /* Internet Explorer/Edge */
   user-select: none !important;
 }
+
 .edit-popover .el-button--primary span {
   color: #fff !important;
 }
+
 .edit-popover .el-select {
   text-indent: 0pt !important;
 }

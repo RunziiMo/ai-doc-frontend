@@ -25,12 +25,16 @@ const uploadDialogVisible = ref(false)
 const docTreeVisible = ref(false)
 const isShowSide = ref(true)
 
+const markEntitys = ref()
+const entityList = ref([])
+
 const getEntityList = async (docId) => {
   const { data } = await axios.get(`/api/document/${docId}/entity`)
   if (data.errcode !== 0) {
     entityList.value = []
   } else {
     entityList.value = data.data.page.List || []
+    markEntitys.value(entityList.value)
   }
 }
 
@@ -39,8 +43,6 @@ const loadDoc = async (bookIdentify, docId) => {
     docId = 0
   }
   let response = await axios.get(`/api/${bookIdentify}/content/${docId}`)
-  console.log('document response:')
-  console.log(response)
   if (response.data.errcode !== 0) {
     ElMessage.warning(response.data.message)
   } else {
@@ -55,17 +57,11 @@ const getBook = async () => {
   if (bookIdentify.value === '' || docId.value === '') {
     return
   }
-  console.log('watchEffect:')
-  console.log(`bookIdentify is ${bookIdentify.value}`)
-  console.log(`docId is ${docId.value}`)
   await loadDoc(bookIdentify.value, docId.value)
   let params = {
     identify: bookIdentify.value
   }
   const bookResponse = await axios.get(`/api/book/${bookIdentify.value}`, { params })
-  console.log('bookResponse:')
-  console.log(bookResponse)
-
   if (bookResponse.data.errcode !== 0) {
     ElMessage.warning(bookResponse.data.message)
   } else {
@@ -73,11 +69,10 @@ const getBook = async () => {
   }
 }
 
-onMounted(async () => {
-  bookIdentify.value = window.location.pathname.split('/')[2]
-  docId.value = window.location.pathname.split('/')[3]
-  await getBook()
-})
+bookIdentify.value = window.location.pathname.split('/')[2]
+
+docId.value = window.location.pathname.split('/')[3]
+getBook()
 
 function handleBatchAppendTag(data) {
   console.log('add-tree-tag')
@@ -96,9 +91,6 @@ function deleteDocId(docIdTmp) {
   book.value.document_trees = book.value.document_trees.filter((item) => item.id !== docIdTmp)
 }
 
-const markEntitys = ref()
-const entityList = ref([]);
-
 const handleEntityResults = (entitys) => {
   if (entitys.length !== 0) {
     markEntitys.value(entitys)
@@ -106,7 +98,6 @@ const handleEntityResults = (entitys) => {
     ElMessage.warning('暂无可标记的实体')
   }
 }
-
 </script>
 
 <template>
@@ -159,6 +150,7 @@ const handleEntityResults = (entitys) => {
               :searchString="selectedText"
               v-model:mark-entitys="markEntitys"
               v-model:entity-list="entityList"
+              @refreshEntity="getEntityList(document?.doc_id)"
             />
           </pane>
           <pane
