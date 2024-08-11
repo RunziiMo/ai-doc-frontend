@@ -1,26 +1,32 @@
 <template>
-    <div class="home-content">
-        <banner :search-handle="searchHandle" :create-project="createProject"></banner>
-        <div class="doc-list">
-            <project-item
-                v-for="book in homeData.bookList"
-                :key="book"
-                :book-id="book.book_id"
-                :book="book">
-            </project-item>
-            <el-card class="add-doc" @click="addDocHandle">
-                <el-icon :size="30">
-                    <Plus />
-                </el-icon>
-            </el-card>
-        </div>
-        <el-dialog v-model="dialogVisible" title="项目空间">
-            <add-project
-                v-model:dialog-visible="dialogVisible"
-            >
-            </add-project>
-        </el-dialog>
-    </div>
+    <el-container>
+        <el-header>
+            <banner
+                active-index="home"
+                :search-handle="searchHandle"
+                :switch-page="createProject">
+            </banner>
+        </el-header>
+        <el-main>
+            <div class="doc-list">
+                <project-item
+                    v-for="book in homeData.bookList"
+                    :key="book"
+                    :book-id="book.book_id"
+                    :book="book">
+                </project-item>
+                <el-card class="add-doc" @click="addDocHandle">
+                    <el-icon :size="30">
+                        <Plus />
+                    </el-icon>
+                </el-card>
+            </div>
+        </el-main>
+    </el-container>
+    <el-dialog v-model="dialogVisible" title="项目空间">
+        <add-project v-model:dialog-visible="dialogVisible">
+        </add-project>
+    </el-dialog>
 </template>
 <script setup>
 import Banner from './components/Banner.vue';
@@ -45,6 +51,7 @@ watch(
 function addDocHandle() {
     dialogVisible.value = true;
 }
+
 function searchHandle(searchText) {
     // homeData.bookList = [...mockData]
 
@@ -60,8 +67,8 @@ function createProject() {
 // 初始化请求  
 async function fetchInitialData() {
     try {
-        const response = await axios.get('/api/book/home'); // 替换为你的API地址
-        homeData.bookList = response.data.data; // 假设返回的数据结构与你定义的homeData.bookList一致
+        const response = await axios.get('/api/book/home');
+        homeData.bookList = response.data.data;
         homeDataTemp.value = [...(response.data.data || [])];
         console.log("bookList", homeData.bookList)
     } catch (error) {
@@ -74,8 +81,6 @@ async function fetchInitialData() {
 fetchInitialData()
 </script>
 <style>
-.home-content {}
-
 .doc-list {
     display: flex;
     /* justify-content: center; */
