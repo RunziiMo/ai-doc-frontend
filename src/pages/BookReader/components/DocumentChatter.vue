@@ -39,7 +39,7 @@
     >
     </el-autocomplete>
     <el-button
-      @click="docAnalyze"
+      @click="docAnalyze(prompt)"
       :loading="loading"
       class="ml-3"
       type="success"
@@ -233,7 +233,7 @@ const docNameEntityRecognition = async () => {
   entityRecognitionLoading.value = false
 }
 
-const docAnalyze = async (promptParams) => {
+const docAnalyze = async (promptName) => {
   if (!('EventSource' in window)) {
     ElMessage.warning('您的浏览器不支持该功能')
     return
@@ -243,8 +243,8 @@ const docAnalyze = async (promptParams) => {
     role: role.value,
     book_identify: props.bookIdentify,
     doc_id: props.document.doc_id,
-    prompt: promptParams || prompt.value,
-    action: props.functions.includes(promptParams || prompt.value) ? 'analyze' : 'chat'
+    prompt: promptName,
+    action: props.functions.includes(promptName) ? 'analyze' : 'chat'
   }
   const filteredParams = Object.fromEntries(
     Object.entries(params).filter(([_, v]) => v != null && v !== '')
