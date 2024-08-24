@@ -260,15 +260,14 @@ const checkRequestParam = async (prompt) => {
 }
 
 const customizeChat = async (event) => {
-  if (!isProxy(event)) {
-    ElMessage.warning('访问方式错误')
-    return
+  let func = event
+  if (isProxy(event)) {
+    func = toRaw(event)
   }
   if (!('EventSource' in window)) {
     ElMessage.warning('您的浏览器不支持该功能')
     return
   }
-  const func = toRaw(event)
   console.log(func)
   loading.value = true
   const params = {
@@ -390,32 +389,49 @@ const handleDeleteMessage = async (id) => {
   }
 }
 
-const handleAiRequest = async () => {
-  if (entityList.value.length === 0) {
-    await ElMessageBox.confirm('是否确认文档无需脱敏处理？', 'Warning', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    })
-    return
-  }
-
-  if (messages.value?.length !== 0) {
-    await ElMessageBox.confirm('您已经用过AI功能，确认需要重新发起预请求吗？', 'Warning', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    }).then(() => {
-      ElMessage({
-        type: 'success',
-        message: 'completed'
+const handleAiRequest = async (values) => {
+  console.log(values)
+  try {
+    if (entityList.value.length === 0) {
+      const value = await ElMessageBox.confirm('是否确认文档无需脱敏处理？', 'Warning', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
       })
-    })
-  }
-  props.functions.forEach(async (functions) => {
-    await docAnalyze(functions)
-  })
+      if (value !== 'confirm') {
+        return
+      }
+    }
 
+    if (messages.value?.length !== 0) {
+      const value = await ElMessageBox.confirm('您已经用过AI功能，确认需要重新发起预请求吗？', 'Warning', {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      })
+      if (value !== 'confirm') {
+        return
+      }
+    }
+  } catch (error) {
+    if (error === 'cancel') {
+      ElMessage.warning('请求取消')
+      return
+    }
+  }
+  const response = await axios.get('/api/ai/function')
+  if (response.data.errcode !== 0) {
+    ElMessage.warning(response.data.message)
+    reutrn
+  }
+  const data = response.data.data
+  const functions = Object.values(values)
+    ? data.page.List.filter((item) => {
+      return Object.values(values).includes(item.id)
+    }) : []
+  functions.forEach(async (item) => {
+    await customizeChat(item)
+  })
   ElMessage.success('操作成功')
 }
 </script>

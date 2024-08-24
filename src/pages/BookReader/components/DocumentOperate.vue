@@ -1,5 +1,6 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
+import axios from 'axios'
 
 const entityList = defineModel('entityList', {
   type: Array,
@@ -12,10 +13,17 @@ const entityRecognitionLoad = defineModel('entityRecognitionLoading', {
 
 const data = ref([])
 const pageSize = ref(50)
-
-defineEmits(['anonymousProcessing', 'aiPreRequest'])
 const dialogTableVisible = ref(false)
 const result = ref([])
+const current = ref(1)
+const type = ref()
+
+const loading = ref(false)
+const functions = ref([])
+const selectValue = ref([])
+const popoverVisible = ref(false)
+
+defineEmits(['anonymousProcessing', 'aiPreRequest'])
 
 const handleCurrentChange = (val) => {
   result.value = data.value.slice(
@@ -24,8 +32,6 @@ const handleCurrentChange = (val) => {
   )
 }
 
-const current = ref(1)
-const type = ref()
 const typeList = ref([
   {
     text: '人名',
@@ -64,9 +70,28 @@ const getType = (type) => {
 
 const filterHandler = (value, row, column) => {
   const property = column['property']
-
   return row[property] === value
 }
+
+const fetchFunctions = async (query: string) => {
+  loading.value = true
+  const response = await axios.get('/api/ai/function')
+  if (response.data.errcode !== 0) {
+    ElMessage.warning(response.data.message)
+    reutrn
+  }
+  const data = response.data.data
+  if (query) {
+    functions.value = data.page.List.filter((item) => {
+      return (item.template_name.toLowerCase().indexOf(query.toLowerCase()) !== -1) ||
+        (item.template.toLowerCase().indexOf(query.toLowerCase()) !== -1)
+    })
+  } else {
+    functions.value = data.page.List
+  }
+  loading.value = false
+}
+
 </script>
 
 <template>
@@ -80,9 +105,45 @@ const filterHandler = (value, row, column) => {
       匿名实体识别
     </el-button>
     <el-button class="flex-1" v-else @click="handleView"> 脱敏结果 </el-button>
-    <el-button class="flex-1" @click="$emit('aiPreRequest')" :disabled="entityRecognitionLoad">
-      AI预请求
-    </el-button>
+    
+    <el-popover
+      :visible="popoverVisible"
+      placement="bottom"
+      :width="300"
+    >
+      <template #reference>
+        <el-button
+          @click="popoverVisible = !popoverVisible"
+          class="flex-1" :disabled="entityRecognitionLoad">
+          AI预请求
+        </el-button>
+      </template>
+      <el-select
+        v-model="selectValue"
+        multiple
+        filterable
+        remote
+        collapse-tags
+        remote-show-suffix
+        :remote-method="fetchFunctions"
+        :loading="entityRecognitionLoad"
+        placeholder="点击或者输入选择AI能力"
+        style="width: 240px"
+      >
+        <el-option
+          v-for="item in functions"
+          :key="item.id"
+          :label="item.template_name"
+          :value="item.id"
+        />
+      </el-select>
+      <div class="mt-2 flex items-end">
+        <el-button size="small" text @click="popoverVisible = false">取消</el-button>
+        <el-button size="small" type="primary" @click="popoverVisible = false; $emit('aiPreRequest', selectValue)">
+          确认
+        </el-button>
+      </div>
+    </el-popover>
   </div>
   <el-dialog v-model="dialogTableVisible" title="脱敏结果" top="0" width="800">
     <el-table :data="result">
