@@ -31,12 +31,32 @@
     <el-autocomplete
       class="flex-1 inline-input"
       v-model="prompt"
+      @select="customizeChat"
       :fetch-suggestions="querySearch"
+      :highlight-first-item="true"
       :trigger-on-focus="false"
+      :fit-input-width="true"
       clearable
       placeholder="输入 / 选择或者直接提问"
       :disabled="entityRecognitionLoading"
     >
+      <template #default="{ item }">
+        <div class="flex justify-between  ">
+          <div class="flex flex-col">
+            <el-text class="self-start">{{ item.template_name }}</el-text>
+          </div>
+          <el-text truncated>{{ item.template}}</el-text>
+          <div class="flex items-center slef-end">
+            <el-text>
+              作者：{{ item.author }}
+              <el-icon class="el-input__icon">
+                <StarFilled />
+              </el-icon>
+              {{ item.agree_count }}
+            </el-text>
+          </div>
+        </div>
+      </template>
     </el-autocomplete>
     <el-button
       @click="docAnalyze(prompt)"
@@ -64,8 +84,10 @@
 
 <script lang="ts" setup>
 import { reactive, ref, computed, watch, onMounted, onUnmounted, nextTick, provide } from 'vue'
+import { isProxy, toRaw } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Promotion } from '@element-plus/icons-vue'
+import { Edit } from '@element-plus/icons-vue'
 import axios from 'axios'
 import ExportDialog from './ExportDialog.vue'
 import DocumentOperate from './DocumentOperate.vue'
@@ -173,22 +195,29 @@ watch(
 )
 const scrollContainer = ref<HTMLDivElement>()
 
-const querySearch = (queryString: string, cb: any) => {
+const querySearch = async (queryString: string, cb: any) => {
   if (!queryString.startsWith('/')) {
     cb([])
     return
   }
   // 如果是，使用 substring 方法删除第一个斜杠
   queryString = queryString.substring(1)
+  const response = await axios.get('/api/ai/function')
+  if (response.data.errcode !== 0) {
+    ElMessage.warning(response.data.message)
+    cb([])
+    reutrn
+  }
+  const data = response.data.data
   const functions = queryString
-    ? props.functions.filter(createFilter(queryString))
-    : props.functions
-  const results = functions.map((api) => ({ value: api }))
-  cb(results)
+    ? data.page.List.filter(createFilter(queryString))
+    : data.page.List
+  cb(functions)
 }
 const createFilter = (queryString: string) => {
-  return (api: string) => {
-    return api.toLowerCase().indexOf(queryString.toLowerCase()) === 0
+  return (item: Object) => {
+    return (item.template_name.toLowerCase().indexOf(queryString.toLowerCase()) !== -1) ||
+      (item.template.toLowerCase().indexOf(queryString.toLowerCase()) !== -1)
   }
 }
 
@@ -219,18 +248,84 @@ const docNameEntityRecognition = async () => {
   const data = response.data
   entityList.value = data.data?.page?.List || []
   emit('entityResults', data.data?.page?.List || [])
-  // if (data.errcode !== 0) {
-  //     ElMessage({
-  //         message: data.message,
-  //         type: 'warning',
-  //     });
-  // } else {
-  //     ElMessage({
-  //         message: data.data,
-  //         type: 'success',
-  //     });
-  // }
   entityRecognitionLoading.value = false
+}
+
+const checkRequestParam = async (prompt) => {
+  const value = await ElMessageBox.prompt(prompt, '必填参数', {
+    confirmButtonText: '确认',
+    cancelButtonText: '取消',
+  })
+  return value
+}
+
+const customizeChat = async (event) => {
+  if (!isProxy(event)) {
+    ElMessage.warning('访问方式错误')
+    return
+  }
+  if (!('EventSource' in window)) {
+    ElMessage.warning('您的浏览器不支持该功能')
+    return
+  }
+  const func = toRaw(event)
+  console.log(func)
+  loading.value = true
+  const params = {
+    book_identify: props.bookIdentify,
+    doc_id: props.document.doc_id,
+    role: role.value,
+    law: '',
+    function_id: func.id,
+  }
+  // 必填利益方参数
+  if (func.template.includes('{{ role }}') && (params.role || params.role === '')) {
+    try {
+      const value = await checkRequestParam('请输入利益方')
+      params.role = value.value
+    } catch (error) {
+      if (error === 'cancel') {
+        ElMessage.warning('请求取消')
+        return
+      }
+    }
+  }
+  if (func.template.includes('{{ law }}') && (params.law || params.law === '')) {
+    try {
+      const value = await checkRequestParam('请输入参考法律')
+      params.law = value.value
+    } catch (error) {
+      if (error === 'cancel') {
+        ElMessage.warning('请求取消')
+        return
+      }
+    }
+  }
+  const filteredParams = Object.fromEntries(
+    Object.entries(params).filter(([_, v]) => v != null && v !== '')
+  )
+  console.log(filteredParams)
+  const queryString = new URLSearchParams(filteredParams).toString()
+  const url = `/aigc/customize_chat?${queryString}`
+  const eventSource = new EventSource(url)
+  eventSource.onmessage = (event) => {
+    messages.value[messages.value.length - 1].response += event.data
+  }
+  eventSource.addEventListener('start', async (event) => {
+    const message = JSON.parse(event.data)
+    messages.value.push(message)
+  })
+  eventSource.addEventListener('warning', (event) => {
+    ElMessage.warning(event.data)
+  })
+  eventSource.addEventListener('close', (event) => {
+    ElMessage.warning(event.data)
+    messages.value[messages.value.length - 1].approved = 1
+  })
+  eventSource.onerror = (event) => {
+    eventSource.close()
+    loading.value = false
+  }
 }
 
 const docAnalyze = async (promptName) => {
