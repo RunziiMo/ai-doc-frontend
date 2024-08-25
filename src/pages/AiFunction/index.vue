@@ -202,7 +202,7 @@ const rules = reactive({
     ],
     template: [
         { required: true, message: '请输入Prompt', trigger: 'blur' },
-        { min: 1, max: 512, message: '长度在 1 到 512 个字符', trigger: 'blur' }
+        { min: 1, max: 2048, message: '长度在 1 到 2048 个字符', trigger: 'blur' }
     ],
     model_name: [
         { required: true, message: '请选择模型', trigger: 'blur' },
