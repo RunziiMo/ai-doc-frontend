@@ -31,15 +31,38 @@
 <script setup>
 import Banner from './components/Banner.vue';
 import ProjectItem from './components/ProjectItem.vue';
-import { reactive, ref, watch } from 'vue';
+import { reactive, ref, watch, onMounted, onUnmounted } from 'vue';
 import AddProject from './components/AddProject.vue';
 import axios from 'axios'
 
+let intervalId
 const homeData = reactive({
     bookList: []
 })
+const homeDataTemp = ref([]);
 
-const homeDataTemp = ref();
+onMounted(async () => {
+    intervalId = setInterval(async () => {
+        if (homeDataTemp.value.length === 0) {
+            await fetchInitialData()
+        } else {
+            homeDataTemp.value.forEach(async (book) => {
+                if (book.status !== 2) {
+                    return
+                }
+                const bookResponse = await axios.get(`/api/book/${book.identify}`)
+                if (bookResponse.data.errcode !== 0) {
+                    ElMessage.warning(bookResponse.data.message)
+                } else {
+                    book.status = bookResponse.data.data.status
+                }
+            })
+        }
+    }, 1000) // 每 1 秒请求一次
+})
+onUnmounted(() => {
+    clearInterval(intervalId)
+})
 
 const dialogVisible = ref(false)
 watch(
@@ -76,9 +99,6 @@ async function fetchInitialData() {
         // 可以在这里处理错误，比如显示错误消息等  
     }
 }
-
-// 接口请求
-fetchInitialData()
 </script>
 <style>
 .doc-list {
