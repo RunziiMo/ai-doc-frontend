@@ -35,7 +35,7 @@
                     </el-form-item>
                     <el-form-item label="Prompt" prop="template">
                         <el-input v-model="editableFunction.template"
-                            :autosize="{ minRows: 4, maxRows: 20 }"
+                            :autosize="{ minRows: 4, maxRows: 40 }"
                             type="textarea" />
                     </el-form-item>
                     <el-alert type="info" show-icon :closable="false">
@@ -202,7 +202,7 @@ const rules = reactive({
     ],
     template: [
         { required: true, message: '请输入Prompt', trigger: 'blur' },
-        { min: 1, max: 2048, message: '长度在 1 到 2048 个字符', trigger: 'blur' }
+        { min: 1, max: 8192, message: '长度在 1 到 8192 个字符', trigger: 'blur' }
     ],
     model_name: [
         { required: true, message: '请选择模型', trigger: 'blur' },
