@@ -15,6 +15,15 @@
                 <el-button type="primary" @click="copyToClipboard">
                     复制
                 </el-button>
+                <el-button type="primary" @click="handleExportWord">
+                    word导出
+                </el-button>
+                <el-button type="primary" @click="handleExportPdf">
+                    pdf导出
+                </el-button>
+                <el-button type="primary" @click="handleExportTxt">
+                    txt导出
+                </el-button>
             </div>
         </template>
     </el-dialog>
@@ -24,8 +33,10 @@
 import { reactive, ref, computed, inject } from 'vue'
 import { marked } from 'marked'
 import hljs from 'highlight.js'
+import jsPDF from 'jspdf';
 import 'highlight.js/styles/github-dark.css'
 import { ElMessage } from 'element-plus'
+import { exportToTxt, exportWord } from '@/utils/file'
 import ExportMessage from './ExportMessage.vue'
 
 const props = defineProps({  
@@ -157,6 +168,27 @@ const dialogFormVisible = computed({
         emit('update:showDialog', newValue);
     },
 });
+
+const handleExportWord = () => {
+    exportWord(contentToCopy.value, props.document.doc_name)
+}
+
+const handleExportPdf = () => {
+    // 创建一个新的PDF文档
+    const pdf = new jsPDF();
+    // 添加中文字体支持（需要额外的字体文件，例如Base4）
+    pdf.addFont('/font/simhei.ttf', 'simheii', 'normal');
+    // 使用中文字体
+    pdf.setFont('simheii');
+    // 添加文本到PDF文档
+    pdf.text(contentToCopy.value.textContent, 5, 5);
+    // 保存PDF（默认下载）
+    pdf.save(`${props.document.doc_name}.pdf`);
+}
+
+const handleExportTxt = () => {
+    exportToTxt(contentToCopy.value.textContent, `${props.document.doc_name}.txt`)
+}
 </script>
 
 <style>
