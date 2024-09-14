@@ -138,7 +138,7 @@ const { isOutside: isAddPopoverOutside } = useMouseInElement(addPopoverRef.value
 const addEntitysModel = reactive({
   type: '',
   replaced_text: '',
-  confidence: '',
+  confidence: 1,
   start_index: 0,
   end_index: 0,
   window_text: ''
@@ -250,7 +250,7 @@ const handleDelete = async () => {
 }
 
 const handleAdd = async () => {
-  await axios.post(`/api/document/${props.document?.doc_id}/entity`, objToFormData(addEntitysModel))
+  await axios.post(`/api/document/${props.document?.doc_id}/entity`, [addEntitysModel])
   ElMessage.success('添加成功')
   emit('refreshEntity')
   addPopover.value.visible = false
