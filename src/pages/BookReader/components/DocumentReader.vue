@@ -19,6 +19,7 @@ import 'splitpanes/dist/splitpanes.css'
 import axios from 'axios'
 import { defaultOptions, renderAsync } from 'docx-preview'
 import Mark from 'mark.js'
+import { getSelectedTextInfos } from '@/utils/text'
 import MarkJs from '../../../../node_modules/mark.js/src/lib/mark.js'
 import { ElMessage } from 'element-plus'
 import PdfView from './PdfView.vue'
@@ -144,6 +145,8 @@ const addEntitysModel = reactive({
   window_text: ''
 })
 
+const selectedTextInfos = ref([])
+
 const getSelectedTextData = () => {
   const selection = window.getSelection()
   const selectedText = selection.toString()
@@ -166,7 +169,7 @@ const handleMouseUp = (e) => {
         top: mouseY.value,
         left: mouseX.value
       }
-      getSelectedTextData()
+      selectedTextInfos.value = getSelectedTextInfos(selectedText,docContainer.value.innerText)
     }
   }
   if (isAddPopoverOutside.value) {
@@ -229,31 +232,74 @@ const objToFormData = (obj) => {
 }
 
 const handleEdit = async () => {
-  await axios.put(
+  const response = await axios.put(
     `/api/document/${props.document?.doc_id}/entity/${editEntitysModel.entity_id}`,
     objToFormData(editEntitysModel)
   )
-  emit('refreshEntity')
-  ElMessage.success('修改成功')
-  editPopover.value.visible = false
+  const { errcode, message } = response.data;
+  if (errcode === 0) {
+    emit('refreshEntity')
+    ElMessage.success('修改成功')
+    editPopover.value.visible = false
+  } else {
+    ElMessage.error(message);
+  } 
 }
 const handleDelete = async () => {
+  const entityInfo = entityList.value.find(el => {
+    return el.entity_id === editEntitysModel.entity_id;
+  });
+  const entityIds = entityList.value.filter(el => {
+    return el.replaced_text === entityInfo.replaced_text
+  }).map(el => el.entity_id);
+  if(entityIds.length > 1) {
+    await ElMessageBox.confirm(`当前文章共有${entityIds.length}个相同实体，确定后将全部删除，确定删除吗?`, 'Warning', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    });
+  }
+  
   await ElMessageBox.confirm('确定要删除吗?', 'Warning', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
   })
-  await axios.delete(`/api/document/${props.document?.doc_id}/entity/${editEntitysModel.entity_id}`)
-  emit('refreshEntity')
-  editPopover.value.visible = false
-  ElMessage.success('删除成功')
+
+  entityIds.forEach(async el => {
+    const response =  await axios.delete(`/api/document/${props.document?.doc_id}/entity/${el}`);
+    const { errcode, message } = response.data;
+    if (errcode === 0) {
+      emit('refreshEntity');
+      editPopover.value.visible = false;
+      ElMessage.success('删除成功');
+    } else {
+      ElMessage.error(message);
+    }
+  });
 }
 
 const handleAdd = async () => {
-  await axios.post(`/api/document/${props.document?.doc_id}/entity`, objToFormData(addEntitysModel))
-  ElMessage.success('添加成功')
-  emit('refreshEntity')
-  addPopover.value.visible = false
+  if(selectedTextInfos.value.length > 1) {
+    await ElMessageBox.confirm(`当前文章共有${selectedTextInfos.value.length}个相同实体，确定后将全部添加，确定添加吗?`, 'Warning', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+  }
+  selectedTextInfos.value.forEach(async el => {
+    const response = await axios.post(`/api/document/${props.document?.doc_id}/entity`, objToFormData({...addEntitysModel, ...el}));
+    const { errcode, message } = response.data;
+    if (errcode === 0) {
+      ElMessage.success('添加成功');
+      emit('refreshEntity');
+      addPopover.value.visible = false;
+    } else {
+      ElMessage.error(message);
+    }
+  })
+  
+  
 }
 const typeList = [
   {
