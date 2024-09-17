@@ -272,7 +272,7 @@ const handleDelete = async () => {
     if (errcode === 0) {
       emit('refreshEntity');
       editPopover.value.visible = false;
-      ElMessage.success('删除成功');
+      // ElMessage.success('删除成功');
     } else {
       ElMessage.error(message);
     }
@@ -291,7 +291,7 @@ const handleAdd = async () => {
     const response = await axios.post(`/api/document/${props.document?.doc_id}/entity`, objToFormData({...addEntitysModel, ...el}));
     const { errcode, message } = response.data;
     if (errcode === 0) {
-      ElMessage.success('添加成功');
+      // ElMessage.success('添加成功');
       emit('refreshEntity');
       addPopover.value.visible = false;
     } else {
