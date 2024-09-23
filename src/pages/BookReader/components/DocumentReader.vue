@@ -138,7 +138,7 @@ const { isOutside: isAddPopoverOutside } = useMouseInElement(addPopoverRef.value
 const addEntitysModel = reactive({
   type: '',
   replaced_text: '',
-  confidence: '',
+  confidence: 1,
   start_index: 0,
   end_index: 0,
   window_text: ''
@@ -229,13 +229,18 @@ const objToFormData = (obj) => {
 }
 
 const handleEdit = async () => {
-  await axios.put(
-    `/api/document/${props.document?.doc_id}/entity/${editEntitysModel.entity_id}`,
-    objToFormData(editEntitysModel)
-  )
-  emit('refreshEntity')
-  ElMessage.success('修改成功')
-  editPopover.value.visible = false
+  const form = objToFormData(editEntitysModel)
+  const response = await axios.put(
+    `/api/document/${props.document?.doc_id}/entity/${editEntitysModel.entity_id}`, form)
+  const { errcode, message } = response.data
+  if (errcode === 0) {
+    ElMessage.success(message)
+    emit('refreshEntity')
+    editPopover.value.visible = false
+  } else {
+    // 表单提交失败，处理错误
+    ElMessage.warning(message)
+  }
 }
 const handleDelete = async () => {
   await ElMessageBox.confirm('确定要删除吗?', 'Warning', {
@@ -243,17 +248,29 @@ const handleDelete = async () => {
     cancelButtonText: '取消',
     type: 'warning'
   })
-  await axios.delete(`/api/document/${props.document?.doc_id}/entity/${editEntitysModel.entity_id}`)
-  emit('refreshEntity')
-  editPopover.value.visible = false
-  ElMessage.success('删除成功')
+  const response = await axios.delete(`/api/document/${props.document?.doc_id}/entity?text=${editEntitysModel.replaced_text}`)
+  const { errcode, message } = response.data
+  if (errcode === 0) {
+    ElMessage.success(message)
+    emit('refreshEntity')
+    editPopover.value.visible = false
+  } else {
+    // 表单提交失败，处理错误
+    ElMessage.warning(message)
+  }
 }
 
 const handleAdd = async () => {
-  await axios.post(`/api/document/${props.document?.doc_id}/entity`, objToFormData(addEntitysModel))
-  ElMessage.success('添加成功')
-  emit('refreshEntity')
-  addPopover.value.visible = false
+  const response = await axios.post(`/api/document/${props.document?.doc_id}/entity`, [addEntitysModel])
+  const { errcode, message } = response.data
+  if (errcode === 0) {
+    ElMessage.success(message)
+    emit('refreshEntity')
+    addPopover.value.visible = false
+  } else {
+    // 表单提交失败，处理错误
+    ElMessage.warning(message)
+  }
 }
 const typeList = [
   {
