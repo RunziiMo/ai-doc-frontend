@@ -1,25 +1,29 @@
 <template>
-    <div style="height: 100%">
-        <banner></banner>
-        <el-tabs :tab-position="tabPosition" style="height: 100%" class="demo-tabs">
-            <el-tab-pane label="个人信息">
-                <div>
-                    <personal-info></personal-info>
-                </div>
-            </el-tab-pane>
-            <el-tab-pane label="我的项目">
-                <div>
-                    <my-project></my-project>
-                </div>
-            </el-tab-pane>
-            <el-tab-pane label="我的团队">
-                <my-team></my-team>
-            </el-tab-pane>
-            <el-tab-pane label="修改密码">
-                <edit-secret></edit-secret>
-            </el-tab-pane>
-        </el-tabs>
-    </div>
+    <el-container>
+        <el-header>
+            <banner active-index="myspace"></banner>
+        </el-header>
+        <el-main>
+            <el-tabs :tab-position="tabPosition" style="height: 100%" class="demo-tabs">
+                <el-tab-pane label="个人信息">
+                    <div>
+                        <personal-info></personal-info>
+                    </div>
+                </el-tab-pane>
+                <el-tab-pane label="我的项目">
+                    <div>
+                        <my-project></my-project>
+                    </div>
+                </el-tab-pane>
+                <el-tab-pane label="我的团队">
+                    <my-team></my-team>
+                </el-tab-pane>
+                <el-tab-pane label="修改密码">
+                    <edit-secret></edit-secret>
+                </el-tab-pane>
+            </el-tabs>
+        </el-main>
+    </el-container>
 </template>
 <script setup>
 import Banner from '../Home/components/Banner.vue';

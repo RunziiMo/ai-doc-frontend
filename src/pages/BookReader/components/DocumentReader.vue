@@ -139,7 +139,7 @@ const { isOutside: isAddPopoverOutside } = useMouseInElement(addPopoverRef.value
 const addEntitysModel = reactive({
   type: '',
   replaced_text: '',
-  confidence: '',
+  confidence: 1,
   start_index: 0,
   end_index: 0,
   window_text: ''
@@ -232,18 +232,18 @@ const objToFormData = (obj) => {
 }
 
 const handleEdit = async () => {
+  const form = objToFormData(editEntitysModel)
   const response = await axios.put(
-    `/api/document/${props.document?.doc_id}/entity/${editEntitysModel.entity_id}`,
-    objToFormData(editEntitysModel)
-  )
-  const { errcode, message } = response.data;
+    `/api/document/${props.document?.doc_id}/entity/${editEntitysModel.entity_id}`, form)
+  const { errcode, message } = response.data
   if (errcode === 0) {
+    ElMessage.success(message)
     emit('refreshEntity')
-    ElMessage.success('修改成功')
     editPopover.value.visible = false
   } else {
-    ElMessage.error(message);
-  } 
+    // 表单提交失败，处理错误
+    ElMessage.warning(message)
+  }
 }
 const handleDelete = async () => {
   const entityInfo = entityList.value.find(el => {
@@ -265,18 +265,16 @@ const handleDelete = async () => {
     cancelButtonText: '取消',
     type: 'warning'
   })
-
-  entityIds.forEach(async el => {
-    const response =  await axios.delete(`/api/document/${props.document?.doc_id}/entity/${el}`);
-    const { errcode, message } = response.data;
-    if (errcode === 0) {
-      emit('refreshEntity');
-      editPopover.value.visible = false;
-      // ElMessage.success('删除成功');
-    } else {
-      ElMessage.error(message);
-    }
-  });
+  const response = await axios.delete(`/api/document/${props.document?.doc_id}/entity?text=${entityInfo.replaced_text}`)
+  const { errcode, message } = response.data
+  if (errcode === 0) {
+    ElMessage.success(message)
+    emit('refreshEntity')
+    editPopover.value.visible = false
+  } else {
+    // 表单提交失败，处理错误
+    ElMessage.warning(message)
+  }
 }
 
 const handleAdd = async () => {
@@ -287,19 +285,16 @@ const handleAdd = async () => {
       type: 'warning'
     })
   }
-  selectedTextInfos.value.forEach(async el => {
-    const response = await axios.post(`/api/document/${props.document?.doc_id}/entity`, objToFormData({...addEntitysModel, ...el}));
-    const { errcode, message } = response.data;
-    if (errcode === 0) {
-      // ElMessage.success('添加成功');
-      emit('refreshEntity');
-      addPopover.value.visible = false;
-    } else {
-      ElMessage.error(message);
-    }
-  })
-  
-  
+  const response = await axios.post(`/api/document/${props.document?.doc_id}/entity`, [addEntitysModel])
+  const { errcode, message } = response.data
+  if (errcode === 0) {
+    ElMessage.success(message)
+    emit('refreshEntity')
+    addPopover.value.visible = false
+  } else {
+    // 表单提交失败，处理错误
+    ElMessage.warning(message)
+  }
 }
 const typeList = [
   {

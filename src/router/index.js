@@ -2,15 +2,18 @@ import { createRouter, createWebHistory } from 'vue-router'
 import axios from 'axios'
 import App from '../App.vue'
 
-import Home from '../pages/Home/Home.vue';
-import BookReader from '../pages/BookReader/BookReader.vue';
+import Home from '../pages/Home/index.vue';
+import BookReader from '../pages/BookReader/index.vue';
+import AiFunction from '../pages/AiFunction/index.vue';
 import Myspace from '../pages/Myspace/index.vue';
 import Login from '../pages/Login/index.vue';
 import Register from '../pages/Login/components/RegisterPage.vue';
 
 const routes = [  
     // { path: '/docs/:identify', component: App }  
-    { path: '/', component: Home, name: 'Home' },
+    { path: '/home', component: Home, name: 'Home' },
+    { path: '/', component: Home, name: 'Index' },
+    { path: '/function', component: AiFunction, name: 'function' },
     { path: '/docs/:identify', component: BookReader, name: 'BookReader' },
     { path: '/myspace', component: Myspace, name: 'Myspace' },
     { path: '/login', component: Login, name: 'Login' },
