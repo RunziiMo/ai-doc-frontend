@@ -19,6 +19,7 @@ import 'splitpanes/dist/splitpanes.css'
 import axios from 'axios'
 import { defaultOptions, renderAsync } from 'docx-preview'
 import Mark from 'mark.js'
+import { getSelectedTextInfos } from '@/utils/text'
 import MarkJs from '../../../../node_modules/mark.js/src/lib/mark.js'
 import { ElMessage } from 'element-plus'
 import PdfView from './PdfView.vue'
@@ -144,6 +145,8 @@ const addEntitysModel = reactive({
   window_text: ''
 })
 
+const selectedTextInfos = ref([])
+
 const getSelectedTextData = () => {
   const selection = window.getSelection()
   const selectedText = selection.toString()
@@ -166,7 +169,7 @@ const handleMouseUp = (e) => {
         top: mouseY.value,
         left: mouseX.value
       }
-      getSelectedTextData()
+      selectedTextInfos.value = getSelectedTextInfos(selectedText,docContainer.value.innerText)
     }
   }
   if (isAddPopoverOutside.value) {
@@ -243,12 +246,26 @@ const handleEdit = async () => {
   }
 }
 const handleDelete = async () => {
+  const entityInfo = entityList.value.find(el => {
+    return el.entity_id === editEntitysModel.entity_id;
+  });
+  const entityIds = entityList.value.filter(el => {
+    return el.replaced_text === entityInfo.replaced_text
+  }).map(el => el.entity_id);
+  if(entityIds.length > 1) {
+    await ElMessageBox.confirm(`当前文章共有${entityIds.length}个相同实体，确定后将全部删除，确定删除吗?`, 'Warning', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    });
+  }
+  
   await ElMessageBox.confirm('确定要删除吗?', 'Warning', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
   })
-  const response = await axios.delete(`/api/document/${props.document?.doc_id}/entity?text=${editEntitysModel.replaced_text}`)
+  const response = await axios.delete(`/api/document/${props.document?.doc_id}/entity?text=${entityInfo.replaced_text}`)
   const { errcode, message } = response.data
   if (errcode === 0) {
     ElMessage.success(message)
@@ -261,6 +278,13 @@ const handleDelete = async () => {
 }
 
 const handleAdd = async () => {
+  if(selectedTextInfos.value.length > 1) {
+    await ElMessageBox.confirm(`当前文章共有${selectedTextInfos.value.length}个相同实体，确定后将全部添加，确定添加吗?`, 'Warning', {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning'
+    })
+  }
   const response = await axios.post(`/api/document/${props.document?.doc_id}/entity`, [addEntitysModel])
   const { errcode, message } = response.data
   if (errcode === 0) {
