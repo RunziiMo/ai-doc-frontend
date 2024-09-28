@@ -169,7 +169,7 @@ const handleMouseUp = (e) => {
         top: mouseY.value,
         left: mouseX.value
       }
-      selectedTextInfos.value = getSelectedTextInfos(selectedText,docContainer.value.innerText)
+      selectedTextInfos.value = getSelectedTextInfos(selectedText, docContainer.value.innerText)
     }
   }
   if (isAddPopoverOutside.value) {
@@ -285,7 +285,7 @@ const handleAdd = async () => {
       type: 'warning'
     })
   }
-  const response = await axios.post(`/api/document/${props.document?.doc_id}/entity`, [addEntitysModel])
+  const response = await axios.post(`/api/document/${props.document?.doc_id}/entity`, addEntitysModel)
   const { errcode, message } = response.data
   if (errcode === 0) {
     ElMessage.success(message)
