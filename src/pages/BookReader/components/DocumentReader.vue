@@ -265,7 +265,7 @@ const handleDelete = async () => {
     cancelButtonText: '取消',
     type: 'warning'
   })
-  const response = await axios.delete(`/api/document/${props.document?.doc_id}/entity?text=${entityInfo.replaced_text}`)
+  const response = await axios.delete(`/api/document/${props.document?.doc_id}/entity?text=${entityInfo.replaced_text}&type=${entityInfo.type}`)
   const { errcode, message } = response.data
   if (errcode === 0) {
     ElMessage.success(message)
