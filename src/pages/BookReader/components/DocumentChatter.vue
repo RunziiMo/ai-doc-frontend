@@ -306,25 +306,29 @@ const customizeChat = async (event) => {
   console.log(filteredParams)
   const queryString = new URLSearchParams(filteredParams).toString()
   const url = `/aigc/customize_chat?${queryString}`
-  const eventSource = new EventSource(url)
-  eventSource.onmessage = (event) => {
-    messages.value[messages.value.length - 1].response += event.data
-  }
-  eventSource.addEventListener('start', async (event) => {
-    const message = JSON.parse(event.data)
-    messages.value.push(message)
-  })
-  eventSource.addEventListener('warning', (event) => {
-    ElMessage.warning(event.data)
-  })
-  eventSource.addEventListener('close', (event) => {
-    ElMessage.warning(event.data)
-    messages.value[messages.value.length - 1].approved = 1
-  })
-  eventSource.onerror = (event) => {
-    eventSource.close()
-    loading.value = false
-  }
+
+  return new Promise((resolve, reject) => {
+    const eventSource = new EventSource(url)
+    eventSource.onmessage = (event) => {
+      messages.value[messages.value.length - 1].response += event.data
+    }
+    eventSource.addEventListener('start', async (event) => {
+      const message = JSON.parse(event.data)
+      messages.value.push(message)
+    })
+    eventSource.addEventListener('warning', (event) => {
+      ElMessage.warning(event.data)
+    })
+    eventSource.addEventListener('close', (event) => {
+      ElMessage.warning(event.data)
+      messages.value[messages.value.length - 1].approved = 1
+    })
+    eventSource.onerror = (event) => {
+      eventSource.close()
+      loading.value = false
+      resolve();
+    }
+  });
 }
 
 const docAnalyze = async (promptName) => {
@@ -425,13 +429,14 @@ const handleAiRequest = async (values) => {
     reutrn
   }
   const data = response.data.data
-  const functions = Object.values(values)
+  const valuesArray = Object.values(values);
+  const functions = valuesArray.length > 0
     ? data.page.List.filter((item) => {
       return Object.values(values).includes(item.id)
     }) : []
-  functions.forEach(async (item) => {
-    await customizeChat(item)
-  })
+  for (const item of functions) {
+    await customizeChat(item);
+  }
   ElMessage.success('操作成功')
 }
 </script>
