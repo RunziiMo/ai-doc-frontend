@@ -26,7 +26,6 @@ import 'highlight.js/styles/github-dark.css'
 import { ElMessage } from 'element-plus'
 import { exportToTxt, exportWord } from '@/utils/file'
 import ExportMessage from './ExportMessage.vue'
-import html2canvas from 'html2canvas';
 
 const props = defineProps({
   showDialog: {
@@ -166,14 +165,16 @@ const handleExportWord = () => {
 }
 
 const handleExportPdf = () => {
-    html2canvas(messagesRef.value).then(canvas => {
-        const imgData = canvas.toDataURL('image/png');
-        const pdf = new jsPDF();
-        const width = pdf.internal.pageSize.getWidth();
-        const height = pdf.internal.pageSize.getHeight(); // 减去页眉和页脚的高度
-        pdf.addImage(imgData, 'PNG', 4, 4, width, height);
-        pdf.save(`${props.document.doc_name}.pdf`)
-    });
+    const pdf = new jsPDF();
+    pdf.addFont('/font/SIMHEI.ttf', 'SIMHEI', 'normal');
+    pdf.setFont('SIMHEI');
+    const splitText = pdf.splitTextToSize(contentToCopy.value.textContent, pdf.internal.pageSize.width - 20);
+    console.log(splitText)
+    for (let i = 0; i < splitText.length; i++) {
+      pdf.text(splitText[i],10, 10 + (i * 10));
+    }
+    pdf.save(`${props.document.doc_name}.pdf`)
+
 }
 
 const handleExportTxt = () => {
