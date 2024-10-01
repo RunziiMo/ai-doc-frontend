@@ -150,7 +150,7 @@ const handleEntityResults = (entitys) => {
               :searchString="selectedText"
               v-model:mark-entitys="markEntitys"
               v-model:entity-list="entityList"
-              @refreshEntity="getEntityList(document?.doc_id)"
+              @refresh-entity="getEntityList(document?.doc_id)"
             />
           </pane>
           <pane

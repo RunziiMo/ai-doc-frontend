@@ -169,7 +169,6 @@ const handleExportPdf = () => {
     pdf.addFont('/font/SIMHEI.ttf', 'SIMHEI', 'normal');
     pdf.setFont('SIMHEI');
     const splitText = pdf.splitTextToSize(contentToCopy.value.textContent, pdf.internal.pageSize.width - 20);
-    console.log(splitText)
     for (let i = 0; i < splitText.length; i++) {
       pdf.text(splitText[i],10, 10 + (i * 10));
     }

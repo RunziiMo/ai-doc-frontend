@@ -3,12 +3,8 @@ import {
   ref,
   computed,
   watch,
-  watchEffect,
   nextTick,
-  onMounted,
   reactive,
-  resolveComponent,
-  h
 } from 'vue'
 import { useMouseInElement } from '@vueuse/core'
 import { Splitpanes, Pane } from 'splitpanes'
@@ -20,7 +16,6 @@ import axios from 'axios'
 import { defaultOptions, renderAsync } from 'docx-preview'
 import Mark from 'mark.js'
 import { getSelectedTextInfos } from '@/utils/text'
-import MarkJs from '../../../../node_modules/mark.js/src/lib/mark.js'
 import { ElMessage } from 'element-plus'
 import PdfView from './PdfView.vue'
 
@@ -50,6 +45,7 @@ const addPopover = ref({
   top: 0,
   left: 0
 })
+
 
 const loadDocument = async (bookIdentify, docId, docIdentify) => {
   const url = `/api/book/${bookIdentify}/download/${docId}`
@@ -141,7 +137,8 @@ const addEntitysModel = reactive({
   confidence: 1,
   start_index: 0,
   end_index: 0,
-  window_text: ''
+  window_text: '',
+  replaced_text: '',
 })
 
 const selectedTextInfos = ref([])
@@ -157,6 +154,7 @@ const handleMouseUp = (e) => {
         top: mouseY.value,
         left: mouseX.value
       }
+      addEntitysModel.replaced_text = selectedText;
       selectedTextInfos.value = getSelectedTextInfos(selectedText, docContainer.value.innerText)
     }
   }
@@ -169,6 +167,17 @@ const entityList = defineModel('entityList', {
   type: Array,
   default: () => []
 })
+
+const getEntityList = async () => {
+  const { data } = await axios.get(`/api/document/${props.document?.doc_id}/entity`)
+  if (data.errcode !== 0) {
+    entityList.value = []
+  } else {
+    entityList.value = data.data.page.List || []
+    markEntitys.value(entityList.value)
+  }
+}
+
 
 const handleRendered = async () => {
   if (entityList.value.length !== 0) {
@@ -226,7 +235,7 @@ const handleEdit = async () => {
   const { errcode, message } = response.data
   if (errcode === 0) {
     ElMessage.success(message)
-    emit('refreshEntity')
+    getEntityList()
     editPopover.value.visible = false
   } else {
     // 表单提交失败，处理错误
@@ -257,7 +266,7 @@ const handleDelete = async () => {
   const { errcode, message } = response.data
   if (errcode === 0) {
     ElMessage.success(message)
-    emit('refreshEntity')
+    getEntityList()
     editPopover.value.visible = false
   } else {
     // 表单提交失败，处理错误
@@ -273,11 +282,13 @@ const handleAdd = async () => {
       type: 'warning'
     })
   }
-  const response = await axios.post(`/api/document/${props.document?.doc_id}/entity`, selectedTextInfos.value)
+  const response = await axios.post(`/api/document/${props.document?.doc_id}/entity`, addEntitysModel)
+  console.log(response.data)
   const { errcode, message } = response.data
   if (errcode === 0) {
+    console.log("=======")
     ElMessage.success(message)
-    emit('refreshEntity')
+    getEntityList()
     addPopover.value.visible = false
   } else {
     // 表单提交失败，处理错误
