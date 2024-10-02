@@ -83,7 +83,7 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, ref, computed, watch, onMounted, onUnmounted, nextTick, provide } from 'vue'
+import { reactive, h, ref, computed, watch, onMounted, onUnmounted, nextTick, provide } from 'vue'
 import { isProxy, toRaw } from 'vue';
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Promotion } from '@element-plus/icons-vue'
@@ -251,12 +251,56 @@ const docNameEntityRecognition = async () => {
   entityRecognitionLoading.value = false
 }
 
-const checkRequestParam = async (prompt) => {
-  const value = await ElMessageBox.prompt(prompt, '必填参数', {
-    confirmButtonText: '确认',
-    cancelButtonText: '取消',
-  })
-  return value
+const checkRequestParam = async (prompt, options) => {
+  const selectedOption = ref(null);
+  if (options !== undefined && options.length > 0) {
+    options = options.map((option, index) => ({
+      value: option,
+      label: option,
+    }));
+    return new Promise((resolve, reject) => {
+      ElMessageBox({
+        title: prompt,
+        // Should pass a function if VNode contains dynamic props
+        message: () =>
+          h(ElSelect, {
+            modelValue: selectedOption.value,
+            placeholder: '请选择选项',
+            'onUpdate:modelValue': (val) => {
+              selectedOption.value = val;
+            },
+            style: {
+              width: '200px', // 设置宽度为 100%
+            },
+          },
+          options.map((option) =>
+            h(ElOption, {
+              key: option.value,
+              label: option.label,  
+              value: option.value,  
+            })
+          )
+        ),
+        confirmButtonText: 'OK',
+        cancelButtonText: 'Cancel',
+        showCancelButton: true,
+        beforeClose: (action, instance, done) => {
+          if (action === 'confirm') {
+            console.log('Selected option:', selectedOption.value);
+            resolve(selectedOption.value);
+          } else {
+            reject(new Error('User cancelled the operation'));
+          }
+          done();
+        },
+      });
+    });
+  } else {
+    return ElMessageBox.prompt(prompt, '必填参数', {  
+      confirmButtonText: '确认',  
+      cancelButtonText: '取消',  
+    });
+  }
 }
 
 const customizeChat = async (event) => {
@@ -283,21 +327,23 @@ const customizeChat = async (event) => {
       const value = await checkRequestParam('请输入利益方')
       params.role = value.value
     } catch (error) {
-      if (error === 'cancel') {
-        ElMessage.warning('请求取消')
-        return
-      }
+      ElMessage.warning('请求取消')
+      return
     }
   }
   if (func.template.includes('{{ law }}') && (params.law || params.law === '')) {
     try {
-      const value = await checkRequestParam('请输入参考法律')
-      params.law = value.value
-    } catch (error) {
-      if (error === 'cancel') {
-        ElMessage.warning('请求取消')
+      const response = await axios.get('/api/ai/law')
+      if (response.data.errcode !== 0) {
+        ElMessage.warning(response.data.message)
         return
       }
+      const data = response.data.data
+      const value = await checkRequestParam('请输入参考法律', data)
+      params.law = value
+    } catch (error) {
+      ElMessage.warning('请求取消')
+      return
     }
   }
   const filteredParams = Object.fromEntries(
