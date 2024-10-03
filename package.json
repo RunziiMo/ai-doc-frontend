@@ -17,7 +17,6 @@
     "docx-preview": "^0.3.0",
     "element-plus": "^2.6.1",
     "highlight.js": "^11.9.0",
-    "html2canvas": "^1.4.1",
     "jspdf": "^2.5.1",
     "mark.js": "^8.11.1",
     "marked": "^12.0.1",

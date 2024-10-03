@@ -13,8 +13,6 @@ export const getSelectedTextInfos = (text: string, article: string) => {
             window_text: el
         }
     });
-    filteredSentences.forEach
-   
-  
+
     return filteredSentences;  
 }

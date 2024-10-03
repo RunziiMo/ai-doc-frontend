@@ -43,15 +43,15 @@ const typeList = ref([
   },
   {
     text: '金额',
-    value: '金额'
+    value: 'MONEY'
   },
   {
     text: '组织',
-    value: '组织'
+    value: 'LOC_ORG'
   },
   {
     text: '日期',
-    value: 'DATE_TIME'
+    value: 'DATE'
   }
 ])
 

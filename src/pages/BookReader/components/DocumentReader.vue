@@ -3,12 +3,8 @@ import {
   ref,
   computed,
   watch,
-  watchEffect,
   nextTick,
-  onMounted,
   reactive,
-  resolveComponent,
-  h
 } from 'vue'
 import { useMouseInElement } from '@vueuse/core'
 import { Splitpanes, Pane } from 'splitpanes'
@@ -20,7 +16,6 @@ import axios from 'axios'
 import { defaultOptions, renderAsync } from 'docx-preview'
 import Mark from 'mark.js'
 import { getSelectedTextInfos } from '@/utils/text'
-import MarkJs from '../../../../node_modules/mark.js/src/lib/mark.js'
 import { ElMessage } from 'element-plus'
 import PdfView from './PdfView.vue'
 
@@ -50,6 +45,7 @@ const addPopover = ref({
   top: 0,
   left: 0
 })
+
 
 const loadDocument = async (bookIdentify, docId, docIdentify) => {
   const url = `/api/book/${bookIdentify}/download/${docId}`
@@ -138,25 +134,14 @@ const { isOutside: isAddPopoverOutside } = useMouseInElement(addPopoverRef.value
 
 const addEntitysModel = reactive({
   type: '',
-  replaced_text: '',
   confidence: 1,
   start_index: 0,
   end_index: 0,
-  window_text: ''
+  window_text: '',
+  replaced_text: '',
 })
 
 const selectedTextInfos = ref([])
-
-const getSelectedTextData = () => {
-  const selection = window.getSelection()
-  const selectedText = selection.toString()
-  const allText = docContainer.value.innerText
-  const nodeValueSatrtIndex = allText?.indexOf(selectedText)
-  addEntitysModel.replaced_text = selection.toString()
-  addEntitysModel.start_index = nodeValueSatrtIndex
-  addEntitysModel.end_index = nodeValueSatrtIndex + selectedText.length
-  addEntitysModel.window_text = (selection as any).baseNode.data
-}
 
 const handleMouseUp = (e) => {
   const selection = window.getSelection()
@@ -169,6 +154,7 @@ const handleMouseUp = (e) => {
         top: mouseY.value,
         left: mouseX.value
       }
+      addEntitysModel.replaced_text = selectedText;
       selectedTextInfos.value = getSelectedTextInfos(selectedText, docContainer.value.innerText)
     }
   }
@@ -181,6 +167,17 @@ const entityList = defineModel('entityList', {
   type: Array,
   default: () => []
 })
+
+const getEntityList = async () => {
+  const { data } = await axios.get(`/api/document/${props.document?.doc_id}/entity`)
+  if (data.errcode !== 0) {
+    entityList.value = []
+  } else {
+    entityList.value = data.data.page.List || []
+    markEntitys.value(entityList.value)
+  }
+}
+
 
 const handleRendered = async () => {
   if (entityList.value.length !== 0) {
@@ -238,7 +235,7 @@ const handleEdit = async () => {
   const { errcode, message } = response.data
   if (errcode === 0) {
     ElMessage.success(message)
-    emit('refreshEntity')
+    getEntityList()
     editPopover.value.visible = false
   } else {
     // 表单提交失败，处理错误
@@ -265,11 +262,11 @@ const handleDelete = async () => {
     cancelButtonText: '取消',
     type: 'warning'
   })
-  const response = await axios.delete(`/api/document/${props.document?.doc_id}/entity?text=${entityInfo.replaced_text}&type=${entityInfo.type}`)
+  const response = await axios.delete(`/api/document/${props.document?.doc_id}/entity?&type=${entityInfo.type}`)
   const { errcode, message } = response.data
   if (errcode === 0) {
     ElMessage.success(message)
-    emit('refreshEntity')
+    getEntityList()
     editPopover.value.visible = false
   } else {
     // 表单提交失败，处理错误
@@ -286,10 +283,12 @@ const handleAdd = async () => {
     })
   }
   const response = await axios.post(`/api/document/${props.document?.doc_id}/entity`, addEntitysModel)
+  console.log(response.data)
   const { errcode, message } = response.data
   if (errcode === 0) {
+    console.log("=======")
     ElMessage.success(message)
-    emit('refreshEntity')
+    getEntityList()
     addPopover.value.visible = false
   } else {
     // 表单提交失败，处理错误
@@ -348,10 +347,12 @@ const typeList = [
       :style="{ top: addPopover.top + 'px', left: addPopover.left + 'px' }"
       @mouseup.stop
     >
-      <div class="flex gap-10px w-100%">
+    <el-form :model="addEntitysModel" class="flex gap-10px w-100%" inline>
+      <el-form-item class="!m-r-0 !m-b-0" label="类别">
         <el-select
           placeholder="type"
           size="small"
+          class="!w-74px"
           :teleported="false"
           v-model="addEntitysModel.type"
         >
@@ -362,12 +363,14 @@ const typeList = [
             :value="item.value"
           />
         </el-select>
-        <el-input v-model="addEntitysModel.replaced_text" size="small" placeholder="替换文本" />
-        <el-input v-model="addEntitysModel.confidence" size="small" disabled placeholder="置信度" />
-      </div>
-      <div class="flex w-100% m-t-8px">
-        <el-button class="flex-1" type="primary" size="small" @click="handleAdd"> 确定 </el-button>
-      </div>
+      </el-form-item>
+      <el-form-item class="!m-r-0 !m-b-0" label="置信度">
+        <el-input v-model="addEntitysModel.confidence" size="small" class="!w-60px" disabled placeholder="置信度" />
+      </el-form-item>
+    </el-form>
+    <div class="flex w-100% m-t-8px">
+      <el-button class="flex-1" type="primary" size="small" @click="handleAdd"> 确定 </el-button>
+    </div>
     </div>
   </Teleport>
   <Teleport v-if="editPopover.visible" to="body">
@@ -391,12 +394,6 @@ const typeList = [
             :value="type.value"
           />
         </el-select>
-        <el-input
-          v-model="editEntitysModel.replaced_text"
-          size="small"
-          placeholder="替换文本"
-          :disabled="disabledEditEntity"
-        />
         <el-input
           v-model="editEntitysModel.confidence"
           size="small"
