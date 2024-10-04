@@ -156,6 +156,7 @@ const handleMouseUp = (e) => {
       }
       addEntitysModel.replaced_text = selectedText;
       selectedTextInfos.value = getSelectedTextInfos(selectedText, docContainer.value.innerText)
+      console.log(selectedTextInfos.value)
     }
   }
   if (isAddPopoverOutside.value) {
@@ -168,15 +169,27 @@ const entityList = defineModel('entityList', {
   default: () => []
 })
 
-const getEntityList = async () => {
+const getEntityListByApi = async () => {
   const { data } = await axios.get(`/api/document/${props.document?.doc_id}/entity`)
   if (data.errcode !== 0) {
     entityList.value = []
   } else {
     entityList.value = data.data.page.List || []
+    await nextTick() // 等待DOM更新
     markEntitys.value(entityList.value)
   }
 }
+
+const getEntityList = async (data) => {
+  if (data.errcode !== 0) {
+    entityList.value = []
+  } else {
+    entityList.value = data.data.page.List || []
+    await nextTick() // 等待DOM更新
+    markEntitys.value(entityList.value)
+  }
+}
+
 
 
 const handleRendered = async () => {
@@ -235,7 +248,7 @@ const handleEdit = async () => {
   const { errcode, message } = response.data
   if (errcode === 0) {
     ElMessage.success(message)
-    getEntityList()
+    getEntityListByApi()
     editPopover.value.visible = false
   } else {
     // 表单提交失败，处理错误
@@ -262,11 +275,11 @@ const handleDelete = async () => {
     cancelButtonText: '取消',
     type: 'warning'
   })
-  const response = await axios.delete(`/api/document/${props.document?.doc_id}/entity?&type=${entityInfo.type}`)
+  const response = await axios.delete(`/api/document/${props.document?.doc_id}/entity?&type=${entityInfo.type}&text=${entityInfo.replaced_text}`)
   const { errcode, message } = response.data
   if (errcode === 0) {
     ElMessage.success(message)
-    getEntityList()
+    getEntityList(response.data)
     editPopover.value.visible = false
   } else {
     // 表单提交失败，处理错误
@@ -283,12 +296,11 @@ const handleAdd = async () => {
     })
   }
   const response = await axios.post(`/api/document/${props.document?.doc_id}/entity`, addEntitysModel)
-  console.log(response.data)
-  const { errcode, message } = response.data
+  console.log(response,"======")
+  const { errcode, message, data } = response.data
   if (errcode === 0) {
-    console.log("=======")
     ElMessage.success(message)
-    getEntityList()
+    getEntityList(response.data)
     addPopover.value.visible = false
   } else {
     // 表单提交失败，处理错误
