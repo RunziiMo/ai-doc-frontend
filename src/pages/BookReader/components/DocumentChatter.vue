@@ -22,11 +22,6 @@
     </ChatMessage>
     <div ref="viewAnchor" />
   </div>
-  <el-form v-if="!exportMode" label-position="right" label-width="auto">
-    <el-form-item label="利益方">
-      <el-input v-model="role" placeholder="ex. 甲方，张三" :disabled="entityRecognitionLoading" />
-    </el-form-item>
-  </el-form>
   <div v-if="!exportMode" class="self-stretch flex mb-3 justify-between">
     <el-autocomplete
       class="flex-1 inline-input"
@@ -150,7 +145,6 @@ watch(
   }
 )
 
-const role = ref('')
 const prompt = ref('')
 const loading = ref(false)
 const entityRecognitionLoading = ref(false)
@@ -317,7 +311,7 @@ const customizeChat = async (event) => {
   const params = {
     book_identify: props.bookIdentify,
     doc_id: props.document.doc_id,
-    role: role.value,
+    role: '',
     law: '',
     function_id: func.id,
   }
@@ -384,7 +378,7 @@ const docAnalyze = async (promptName) => {
   }
   loading.value = true
   const params = {
-    role: role.value,
+    role: '',
     book_identify: props.bookIdentify,
     doc_id: props.document.doc_id,
     prompt: promptName,

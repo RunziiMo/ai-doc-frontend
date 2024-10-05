@@ -126,7 +126,18 @@
                     <el-form-item
                         v-if="editableFunction.template && editableFunction.template.includes('{{ law }}')"
                         label="参考法律">
-                        <el-input v-model="promptForm.law" placeholder="ex. 公司法" :disabled="loading" />
+                        <el-select
+                            v-model="promptForm.law"
+                            filterable
+                            remote
+                            reserve-keyword
+                            placeholder="可选参考法律由运营人员在后台维护"
+                            remote-show-suffix
+                            :remote-method="listLaws"
+                            :loading="loading"
+                        >
+                            <el-option v-for="item in laws" :key="item" :label="item" :value="item" />
+                        </el-select>
                     </el-form-item>
                     <el-button
                         class="mt-3"
@@ -158,6 +169,7 @@ const loading = ref(false)
 const projects = ref([])
 const editableFunction = ref({})
 const options = ref([])
+const laws = ref([])
 const message = ref({
     response: ""
 })
@@ -192,6 +204,16 @@ const listModels = async () => {
         ElMessage.warning(response.data.message)
     } else {
         options.value = response.data.data
+    }
+    loading.value = false
+}
+const listLaws = async () => {
+    loading.value = true
+    const response = await axios.get('/api/ai/law')
+    if (response.data.errcode !== 0) {
+        ElMessage.warning(response.data.message)
+    } else {
+        laws.value = response.data.data
     }
     loading.value = false
 }
