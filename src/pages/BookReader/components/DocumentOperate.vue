@@ -148,8 +148,7 @@ const fetchFunctions = async (query: string) => {
   <el-dialog v-model="dialogTableVisible" title="脱敏结果" top="0" width="800">
     <el-table :data="result">
       <el-table-column property="entity_id" label="实体" />
-      <el-table-column property="origin_text" label="原文" />
-      <el-table-column property="replaced_text" label="替换文本" />
+      <el-table-column property="replaced_text" label="原文" />
       <el-table-column
         property="type"
         label="类型"
