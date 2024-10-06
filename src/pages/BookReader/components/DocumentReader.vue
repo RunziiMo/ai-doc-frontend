@@ -391,28 +391,28 @@ const typeList = [
       :style="{ top: editPopover.top + 'px', left: editPopover.left + 'px' }"
       @mouseup.stop
     >
-      <div class="flex gap-10px w-100%">
-        <el-select
-          placeholder="type"
-          size="small"
-          v-model="editEntitysModel.type"
-          :disabled="disabledEditEntity"
-          :teleported="false"
-        >
-          <el-option
-            v-for="type in typeList"
-            :key="type.value"
-            :label="type.label"
-            :value="type.value"
-          />
-        </el-select>
-        <el-input
-          v-model="editEntitysModel.confidence"
-          size="small"
-          disabled
-          placeholder="置信度"
-        />
-      </div>
+      <el-form :model="editEntitysModel" class="flex gap-10px w-100%" inline>
+        <el-form-item class="!m-r-0 !m-b-0" label="类别">
+          <el-select
+            placeholder="type"
+            size="small"
+            class="!w-74px"
+            :teleported="false"
+            :disabled="disabledEditEntity"
+            v-model="editEntitysModel.type"
+          >
+            <el-option
+              v-for="item in typeList"
+              :key="item.value"
+              :label="item.label"
+              :value="item.value"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item class="!m-r-0 !m-b-0" label="置信度">
+          <el-input v-model="editEntitysModel.confidence" size="small" class="!w-60px" disabled placeholder="置信度" />
+        </el-form-item>
+      </el-form>
       <div class="flex w-100% m-t-8px">
         <el-button
           v-if="disabledEditEntity"
