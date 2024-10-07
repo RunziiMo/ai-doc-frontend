@@ -325,6 +325,10 @@ const typeList = [
   {
     label: '日期',
     value: 'DATE_TIME'
+  },
+  {
+    text: '数字',
+    value: 'NUM',
   }
 ]
 </script>
