@@ -86,8 +86,7 @@
                         :rows="3" animated />
                     <el-text
                         v-else
-                        class="flex-1"
-                        line-clamp="100">
+                        class="flex-1">
                         <div v-html="response"/>
                     </el-text>
                     <el-form-item label="测试项目">
@@ -131,7 +130,6 @@
                             filterable
                             remote
                             reserve-keyword
-                            default-first-option
                             placeholder="可选参考法律由运营人员在后台维护"
                             remote-show-suffix
                             :remote-method="listLaws"
