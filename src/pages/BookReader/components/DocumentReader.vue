@@ -156,7 +156,6 @@ const handleMouseUp = (e) => {
       }
       addEntitysModel.replaced_text = selectedText;
       selectedTextInfos.value = getSelectedTextInfos(selectedText, docContainer.value.innerText)
-      console.log(selectedTextInfos.value)
     }
   }
   if (isAddPopoverOutside.value) {
@@ -296,7 +295,6 @@ const handleAdd = async () => {
     })
   }
   const response = await axios.post(`/api/document/${props.document?.doc_id}/entity`, addEntitysModel)
-  console.log(response,"======")
   const { errcode, message, data } = response.data
   if (errcode === 0) {
     ElMessage.success(message)
@@ -327,6 +325,10 @@ const typeList = [
   {
     label: '日期',
     value: 'DATE_TIME'
+  },
+  {
+    text: '数字',
+    value: 'NUM',
   }
 ]
 </script>

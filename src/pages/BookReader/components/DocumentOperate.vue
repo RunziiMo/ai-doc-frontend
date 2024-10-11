@@ -52,6 +52,10 @@ const typeList = ref([
   {
     text: '日期',
     value: 'DATE'
+  },
+  {
+    text: '数字',
+    value: 'NUM',
   }
 ])
 
