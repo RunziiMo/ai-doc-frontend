@@ -131,6 +131,7 @@
                             filterable
                             remote
                             reserve-keyword
+                            default-first-option
                             placeholder="可选参考法律由运营人员在后台维护"
                             remote-show-suffix
                             :remote-method="listLaws"

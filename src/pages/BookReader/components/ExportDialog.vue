@@ -166,7 +166,7 @@ const handleExportWord = () => {
 
 const handleExportPdf = () => {
     const pdf = new jsPDF();
-    pdf.addFont('/font/SIMHEI.ttf', 'SIMHEI', 'normal');
+    pdf.addFont('/static/fonts/SIMHEI.ttf', 'SIMHEI', 'normal');
     pdf.setFont('SIMHEI');
     const splitText = pdf.splitTextToSize(contentToCopy.value.textContent, pdf.internal.pageSize.width - 20);
     for (let i = 0; i < splitText.length; i++) {
