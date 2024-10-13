@@ -168,12 +168,26 @@ const handleExportPdf = () => {
     const pdf = new jsPDF();
     pdf.addFont('/font/SIMHEI.ttf', 'SIMHEI', 'normal');
     pdf.setFont('SIMHEI');
-    const splitText = pdf.splitTextToSize(contentToCopy.value.textContent, pdf.internal.pageSize.width - 20);
-    for (let i = 0; i < splitText.length; i++) {
-      pdf.text(splitText[i],10, 10 + (i * 10));
+    
+    const pageWidth = pdf.internal.pageSize.width - 20;
+    const lineHeight = 10;
+
+    let currentY = 10;
+    let currentPage = 1;
+
+    const lines = pdf.splitTextToSize(contentToCopy.value.textContent, pageWidth);
+
+    for (let i = 0; i < lines.length; i++) {
+      if (currentY + lineHeight > pdf.internal.pageSize.height) {
+        // 如果当前行的位置超过了页面高度，添加新的一页
+        pdf.addPage();
+        currentY = 10;
+        currentPage++;
+      }
+      pdf.text(lines[i], 10, currentY);
+      currentY += lineHeight;
     }
     pdf.save(`${props.document.doc_name}.pdf`)
-
 }
 
 const handleExportTxt = () => {
