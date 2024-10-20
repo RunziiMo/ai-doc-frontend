@@ -1,6 +1,8 @@
 <script lang="ts" setup>
 import { computed, ref } from 'vue'
 import axios from 'axios'
+import { ElMessage } from 'element-plus';
+
 
 const entityList = defineModel('entityList', {
   type: Array,
@@ -22,6 +24,8 @@ const loading = ref(false)
 const functions = ref([])
 const selectValue = ref([])
 const popoverVisible = ref(false)
+const dialogAIVisible = ref(false)
+const aiTableRef = ref()
 
 defineEmits(['anonymousProcessing', 'aiPreRequest'])
 
@@ -82,7 +86,7 @@ const fetchFunctions = async (query: string) => {
   const response = await axios.get('/api/ai/function')
   if (response.data.errcode !== 0) {
     ElMessage.warning(response.data.message)
-    reutrn
+    return;
   }
   const data = response.data.data
   if (query) {
@@ -96,13 +100,24 @@ const fetchFunctions = async (query: string) => {
   loading.value = false
 }
 
+const handleFunctions = () => {
+  dialogAIVisible.value = true
+  fetchFunctions('')
+}
+
+const selectedFunstions = ref([])
+
+const handleSelectionChange = (arr) => {
+  selectedFunstions.value = arr.map(el => el.id);
+}
+
 </script>
 
 <template>
   <div class="document-operate-wrapper flex justify-between p-t-16px p-b-16px">
     <el-button
       class="flex-1"
-      v-if="entityList.length === 0"
+      v-if="entityList?.length === 0"
       :loading="entityRecognitionLoad"
       @click="$emit('anonymousProcessing')"
     >
@@ -110,44 +125,12 @@ const fetchFunctions = async (query: string) => {
     </el-button>
     <el-button class="flex-1" v-else @click="handleView"> 脱敏结果 </el-button>
     
-    <el-popover
-      :visible="popoverVisible"
-      placement="bottom"
-      :width="300"
-    >
-      <template #reference>
-        <el-button
-          @click="popoverVisible = !popoverVisible"
-          class="flex-1" :disabled="entityRecognitionLoad">
-          AI预请求
-        </el-button>
-      </template>
-      <el-select
-        v-model="selectValue"
-        multiple
-        filterable
-        remote
-        collapse-tags
-        remote-show-suffix
-        :remote-method="fetchFunctions"
-        :loading="entityRecognitionLoad"
-        placeholder="点击或者输入选择AI能力"
-        style="width: 240px"
-      >
-        <el-option
-          v-for="item in functions"
-          :key="item.id"
-          :label="item.template_name"
-          :value="item.id"
-        />
-      </el-select>
-      <div class="mt-2 flex items-end">
-        <el-button size="small" text @click="popoverVisible = false">取消</el-button>
-        <el-button size="small" type="primary" @click="popoverVisible = false; $emit('aiPreRequest', selectValue)">
-          确认
-        </el-button>
-      </div>
-    </el-popover>
+
+    <el-button
+      @click="handleFunctions"
+      class="flex-1" :disabled="entityRecognitionLoad">
+      AI预请求
+    </el-button>
   </div>
   <el-dialog v-model="dialogTableVisible" title="脱敏结果" top="0" width="800">
     <el-table :data="result">
@@ -175,6 +158,21 @@ const fetchFunctions = async (query: string) => {
       @current-change="handleCurrentChange"
     />
   </el-dialog>
+  <!-- AI预请求 -->
+  <el-dialog v-model="dialogAIVisible" title="AI预请求" top="0" width="800">
+    <el-table ref="aiTableRef" :data="functions" v-loading="loading" row-key="id" @selection-change="handleSelectionChange">
+      <el-table-column type="selection" width="55" />
+      <el-table-column property="template_name" label="能力" />
+     </el-table>
+     <div class="flex items-center justify-center p-t-16px">
+        <el-button @click="dialogAIVisible = false" class="w-120px">取消</el-button>
+        <el-button type="primary" class="w-120px" @click="dialogAIVisible = false; $emit('aiPreRequest', selectedFunstions)">
+          确认
+        </el-button>
+     </div>
+  </el-dialog> 
+  <!-- AI预请求 -->
+
 </template>
 <style scoped>
 .el-table--fit {

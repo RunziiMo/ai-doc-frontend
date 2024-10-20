@@ -225,7 +225,7 @@ const loadChatMessages = async (documentId) => {
     ElMessage.warning(response.data.message)
   } else {
     const data = response.data.data
-    return data.page.List
+    return data.page.List || [];
   }
 }
 
