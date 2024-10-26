@@ -121,12 +121,16 @@ markEntitys.value = async (entitys) => {
     },
     done: async function () {}
   })
-  entitys?.forEach((el) => {
-    const texts = el.window_text.split(el.replaced_text)
-    const regexStr = `(?<=${texts[0]})${el.replaced_text}(?=${texts[1]})`
-    const regex = new RegExp(regexStr, 'gim')
+  entitys?.forEach(el => {
+    const regex = new RegExp(el.replaced_text, 'gim')
     instance.markRegExp(regex, options(el))
   })
+  // entitys?.forEach((el) => {
+  //   const texts = el.window_text.split(el.replaced_text)
+  //   const regexStr = `(?<=${texts[0]})${el.replaced_text}(?=${texts[1]})`
+  //   const regex = new RegExp(regexStr, 'gim')
+  //   instance.markRegExp(regex, options(el))
+  // })
 }
 
 const { x: mouseX, y: mouseY, isOutside } = useMouseInElement(docContainer.value)
@@ -306,25 +310,25 @@ const handleAdd = async () => {
   }
 }
 const typeList = [
-  {
-    label: '人名',
+{
+    text: '人名',
     value: 'PERSON'
   },
   {
-    label: '地名',
+    text: '地名',
     value: 'LOCATION'
   },
   {
-    label: '金额',
-    value: '金额'
+    text: '金额',
+    value: 'MONEY'
   },
   {
-    label: '组织',
-    value: '组织'
+    text: '组织',
+    value: 'LOC_ORG'
   },
   {
-    label: '日期',
-    value: 'DATE_TIME'
+    text: '日期',
+    value: 'DATE'
   },
   {
     text: '数字',
@@ -406,7 +410,7 @@ const typeList = [
             <el-option
               v-for="item in typeList"
               :key="item.value"
-              :label="item.label"
+              :label="item.text"
               :value="item.value"
             />
           </el-select>

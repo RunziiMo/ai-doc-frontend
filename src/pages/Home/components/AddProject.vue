@@ -47,7 +47,6 @@
         :on-preview="handlePreview"
         :on-remove="handleRemove"
         :before-remove="beforeRemove"
-        :limit="1"
         :on-exceed="handleExceed"
       >
         <div class="flex w-full">
@@ -116,17 +115,20 @@ const rules = {
     },
     {
       validator: (rule, value, callback) => {
+        console.log(value)
         if (value.length > 0) {
-          const file = value[0].raw // 获取第一个文件对象
-          const fileType = file.type
           const acceptTypes = [
             'application/zip',
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             'application/pdf'
           ]
-          if (acceptTypes.indexOf(fileType) === -1) {
-            return callback(new Error('文件类型必须是 ZIP 或 DOCX 或 PDF'))
-          }
+          value.forEach(file => {
+            const raw = file.raw
+            const fileType = raw.type;
+            if (acceptTypes.indexOf(fileType) === -1) {
+               return callback(new Error('文件类型必须是 ZIP 或 DOCX 或 PDF'))
+            }
+          });
           // 还可以添加其他文件属性检查，比如大小限制等
           callback()
         } else {
@@ -143,6 +145,7 @@ const ruleFormRef = ref(null)
 
 const beforeUpload = (file) => {
   // 处理文件上传的逻辑
+  console.log(file)
 }
 
 const options = ref([])
@@ -174,7 +177,10 @@ function submitForm() {
       formData.append('identify', form.identify)
       formData.append('description', form.description)
       formData.append('privately_owned', form.privately_owned)
-      formData.append('import-file', form.file[0].raw)
+      form.file.forEach(file => {
+        formData.append('import-file', file.raw)
+      })
+      
 
       axios
         .post('/book/users/import', formData) // 替换为实际的API地址
