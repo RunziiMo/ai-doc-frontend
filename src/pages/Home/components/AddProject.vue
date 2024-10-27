@@ -57,14 +57,15 @@
     </el-form-item>
 
     <el-form-item>
-      <el-button type="primary" @click="submitForm"> 创建 </el-button>
+      <el-button type="primary" @click="submitForm" :loading="createLoading"> 创建 </el-button>
       <el-button @click="dialogFormVisible = false">取消</el-button>
     </el-form-item>
   </el-form>
 </template>
 <script lang="ts" setup>
-import { ref, reactive, computed } from 'vue'
+import { ref, reactive, computed, nextTick } from 'vue'
 import axios from 'axios'
+import { marked } from 'marked'
 import { ElMessage, ElMessageBox } from 'element-plus'
 
 const props = defineProps({
@@ -140,6 +141,8 @@ const rules = {
   ]
 }
 
+const createLoading = ref(false)
+
 // 表单引用，用于表单校验
 const ruleFormRef = ref(null)
 
@@ -164,12 +167,50 @@ const itemSearch = async (query) => {
   loading.value = false
 }
 
+const uploadFile = async (file) => {
+  const formData = new FormData();
+    const fileName = file.name;
+    const nameWithoutExtension = fileName.substring(0, fileName.lastIndexOf('.'));
+
+    formData.append('doc_identify', fileName);
+    formData.append('doc_name', nameWithoutExtension);
+    let response = await axios.post(`/api/${form.identify}/create`, formData)
+    if (response.data.errcode !== 0) {
+        ElMessage.error('文档创建失败: ' + response.data.message);
+        createLoading.value = false
+        return
+    }
+    
+    const document = response.data.data;
+    formData.append('import-file', file.raw);
+    // TODO extract file to markdown
+    const markdown = `# ${fileName}\nThis is a simple Markdown file saying ${fileName}.\n`;
+    formData.append('markdown', markdown);
+    formData.append('html', marked(markdown));
+    response = await axios.post(`/api/${form.identify}/content/${document.doc_id}`, formData)
+    if (response.data.errcode !== 0) {
+        ElMessage.error('文档上传失败: ' + response.data.message);
+        createLoading.value = false
+        return
+    }
+
+}
+
+const uploadFiles = async() => {
+  const requests = [];
+  form.file.forEach(async (file) => {
+    requests.push(uploadFile(file))
+  })
+
+  await Promise.all(requests); 
+}
+
 // 提交表单
-function submitForm() {
-  ruleFormRef.value.validate((valid) => {
+ function submitForm() {
+  ruleFormRef.value.validate(async (valid) => {
     if (valid) {
       // 表单校验通过，开始提交表单数据
-      console.log('提交数据', form)
+      createLoading.value = true
 
       const formData = new FormData()
       formData.append('itemId', form.itemId)
@@ -177,34 +218,30 @@ function submitForm() {
       formData.append('identify', form.identify)
       formData.append('description', form.description)
       formData.append('privately_owned', form.privately_owned)
-      form.file.forEach(file => {
-        formData.append('import-file', file.raw)
-      })
+
+      const response = await axios.post('/book/create ', formData) // 替换为实际的API地址
+      if (response.data.errcode !== 0) {
+        ElMessage.error('项目创建失败: ' + response.data.message)
+        return
+      }
+
+      await uploadFiles(form);
       
 
-      axios
-        .post('/book/users/import', formData) // 替换为实际的API地址
-        .then((response) => {
-          if (response.data.errcode == 0) {
-            ElMessage.success(response.data.message)
-            // 重置表单
-            form.itemId = 0
-            form.book_name = ''
-            form.identify = ''
-            form.description = ''
-            form.privately_owned = 1
-            form.file = []
-            dialogFormVisible.value = false
-          } else {
-            ElMessage.error('项目创建失败: ' + response.data.message)
-          }
-        })
-        .catch((error) => {
-          console.error('请求失败:', error)
-          ElMessage.error('请求失败，请稍后再试')
-        })
+      dialogFormVisible.value = false
+      createLoading.value = false
+      ElMessage.success(response.data.message)
+      // 重置表单
+      form.itemId = ''
+      form.book_name = ''
+      form.identify = ''
+      form.description = ''
+      form.privately_owned = 1
+      form.file = []
+      
     } else {
       // 表单校验不通过，提示用户错误信息
+      createLoading.value = false
       return false
     }
   })

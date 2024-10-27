@@ -114,6 +114,7 @@ const uploadFile = async (file) => {
     let response = await axios.post(`/api/${props.book.identify}/create`, formData)
     if (response.data.errcode !== 0) {
         ElMessage.error('文档创建失败: ' + response.data.message);
+        loading.value = false;
         emit('error');
         return
     }
@@ -127,9 +128,27 @@ const uploadFile = async (file) => {
     response = await axios.post(`/api/${props.book.identify}/content/${document.doc_id}`, formData)
     if (response.data.errcode !== 0) {
         ElMessage.error('文档上传失败: ' + response.data.message);
+        loading.value = false;
         emit('error');
         return
     }
+}
+
+const uploadFiles = async() => {
+  const requests = [];
+  form.file.forEach(async (file) => {
+    requests.push(uploadFile(file))
+  })
+
+  await Promise.all(requests); 
+}
+
+const submitUpload = async () => {
+    loading.value = true;
+    await uploadFiles();
+    ElMessage.success('文档创建成功');
+    loading.value = false;
+    dialogFormVisible.value = false;
     // 重置表单
     form.itemId = 0;
     form.book_name = '';
@@ -137,17 +156,6 @@ const uploadFile = async (file) => {
     form.description = '';
     form.privately_owned = 1;
     form.file = [];
-
-}
-
-const submitUpload = async () => {
-    loading.value = true;
-    form.file.forEach(async (file) => {
-        await uploadFile(file)
-    })
-    ElMessage.success('文档创建成功');
-    loading.value = false;
-    dialogFormVisible.value = false;
     emit('success');
 }
 
