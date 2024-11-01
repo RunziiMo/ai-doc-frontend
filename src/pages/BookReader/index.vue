@@ -1,6 +1,6 @@
 <script setup>
 import { ElMessage } from 'element-plus'
-import { ref, onMounted, watch, watchEffect, provide } from 'vue'
+import { ref, onMounted, watch, watchEffect, provide, nextTick } from 'vue'
 import axios from 'axios'
 import { Splitpanes, Pane } from 'splitpanes'
 import 'splitpanes/dist/splitpanes.css'
@@ -25,12 +25,16 @@ const uploadDialogVisible = ref(false)
 const docTreeVisible = ref(false)
 const isShowSide = ref(true)
 
+const markEntitys = ref()
+
 const getEntityList = async (docId) => {
   const { data } = await axios.get(`/api/document/${docId}/entity`)
   if (data.errcode !== 0) {
     entityList.value = []
   } else {
     entityList.value = data.data.page.List || []
+    await nextTick()
+    markEntitys.value(entityList.value)
   }
 }
 
@@ -96,7 +100,6 @@ function deleteDocId(docIdTmp) {
   book.value.document_trees = book.value.document_trees.filter((item) => item.id !== docIdTmp)
 }
 
-const markEntitys = ref()
 const entityList = ref([]);
 
 const handleEntityResults = (entitys) => {
