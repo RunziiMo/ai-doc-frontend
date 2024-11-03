@@ -3,7 +3,6 @@ import { computed, ref } from 'vue'
 import axios from 'axios'
 import { ElMessage } from 'element-plus';
 
-
 const entityList = defineModel('entityList', {
   type: Array,
   default: () => []
@@ -18,16 +17,14 @@ const pageSize = ref(50)
 const dialogTableVisible = ref(false)
 const result = ref([])
 const current = ref(1)
-const type = ref()
+const popoverVisible = ref(false)
 
 const loading = ref(false)
 const functions = ref([])
-const selectValue = ref([])
-const popoverVisible = ref(false)
-const dialogAIVisible = ref(false)
 const aiTableRef = ref()
+const formInstance = ref()
 
-defineEmits(['anonymousProcessing', 'aiPreRequest'])
+const emit = defineEmits(['anonymousProcessing', 'aiPreRequest'])
 
 const handleCurrentChange = (val) => {
   result.value = data.value.slice(
@@ -100,9 +97,21 @@ const fetchFunctions = async (query: string) => {
   loading.value = false
 }
 
+const lawsOptions = ref([])
+
+const fetchLaws = async () => {
+  const response = await axios.get('/api/ai/law')
+  if (response.data.errcode !== 0) {
+    ElMessage.warning(response.data.message)
+    return
+  }
+  lawsOptions.value = response.data.data.map(el => ({label: el, value: el}))
+}
+
 const handleFunctions = () => {
-  dialogAIVisible.value = true
+  popoverVisible.value = true
   fetchFunctions('')
+  fetchLaws()
 }
 
 const selectedFunstions = ref([])
@@ -111,6 +120,25 @@ const handleSelectionChange = (arr) => {
   selectedFunstions.value = arr.map(el => el.id);
 }
 
+const showlaw = (func) => {
+  return func.template.includes('{{ law }}')
+}
+
+const handleConfirm = async() => {
+  await formInstance.value.validate();
+  popoverVisible.value = false; 
+  emit('aiPreRequest', selectedFunstions.value)
+}
+
+const checkLaw = (row, rule, value, callback) => {
+  const isSelect = selectedFunstions.value.includes(row.id)
+  if (isSelect && !value) {
+    callback(new Error('参考法律为必选项'));
+  } else {
+    callback();
+  }
+
+}
 </script>
 
 <template>
@@ -125,12 +153,65 @@ const handleSelectionChange = (arr) => {
     </el-button>
     <el-button class="flex-1" v-else @click="handleView"> 脱敏结果 </el-button>
     
-
-    <el-button
-      @click="handleFunctions"
-      class="flex-1" :disabled="entityRecognitionLoad">
-      AI预请求
-    </el-button>
+    <el-popover
+      :visible="popoverVisible"
+      placement="bottom"
+      title="AI预请求"
+      width="540"
+      trigger="click"
+      :popper-options="{
+          modifiers: [
+          {
+            name: 'offset',
+            options: {
+              offset: [-200, 5],
+            },
+          },
+        ],
+      }"
+    >
+    <el-form :model="{ functions }" ref="formInstance">
+        <el-table ref="aiTableRef" :height="470" :data="functions" v-loading="loading" row-key="id" @selection-change="handleSelectionChange">
+          <el-table-column type="selection" width="55" />
+          <el-table-column property="template_name" label="能力" />
+          <el-table-column label="参考法律">
+            <template #default="{ row, $index }">
+              <el-form-item
+                v-if="showlaw(row)" 
+                :prop="`functions.${$index}.law`"
+                :rules="{
+                  validator: (rule, value, callback) => checkLaw(row,rule, value, callback),
+                  trigger: 'change',
+                }"
+              >
+                <el-select v-model="row.law" placeholder="默认参考文档" >
+                  <el-option v-for="option in lawsOptions" :label="option.label" :value="option.value" />
+                </el-select>
+              </el-form-item>
+            </template>
+          </el-table-column>
+          <el-table-column label="利益方">
+            <template #default="{ row }">
+              <el-input v-if="showlaw(row)" v-model="row.role" placeholder="请填写利益方" />
+            </template>
+          </el-table-column>
+        </el-table>
+        <div class="flex items-center justify-center p-t-16px">
+          <el-button @click="popoverVisible = false" class="w-120px">取消</el-button>
+          <el-button type="primary" class="w-120px" @click="handleConfirm">
+            确认
+          </el-button>
+        </div>
+      </el-form>
+      <template #reference>
+        <el-button
+          @click="handleFunctions"
+          class="flex-1" :disabled="entityRecognitionLoad">
+          AI预请求
+        </el-button>
+      </template>
+    </el-popover>
+  
   </div>
   <el-dialog v-model="dialogTableVisible" title="脱敏结果" top="0" width="800">
     <el-table :data="result">
@@ -158,21 +239,6 @@ const handleSelectionChange = (arr) => {
       @current-change="handleCurrentChange"
     />
   </el-dialog>
-  <!-- AI预请求 -->
-  <el-dialog v-model="dialogAIVisible" title="AI预请求" top="0" width="800">
-    <el-table ref="aiTableRef" :data="functions" v-loading="loading" row-key="id" @selection-change="handleSelectionChange">
-      <el-table-column type="selection" width="55" />
-      <el-table-column property="template_name" label="能力" />
-     </el-table>
-     <div class="flex items-center justify-center p-t-16px">
-        <el-button @click="dialogAIVisible = false" class="w-120px">取消</el-button>
-        <el-button type="primary" class="w-120px" @click="dialogAIVisible = false; $emit('aiPreRequest', selectedFunstions)">
-          确认
-        </el-button>
-     </div>
-  </el-dialog> 
-  <!-- AI预请求 -->
-
 </template>
 <style scoped>
 .el-table--fit {

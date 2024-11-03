@@ -1,11 +1,10 @@
 <script setup>
 import { ElMessage } from 'element-plus'
-import { ref, onMounted, watch, watchEffect, provide, nextTick } from 'vue'
+import { ref, onMounted, nextTick } from 'vue'
 import axios from 'axios'
 import { Splitpanes, Pane } from 'splitpanes'
 import 'splitpanes/dist/splitpanes.css'
 import LeftSidebar from '../../components/LeftSidebar.vue'
-
 import UploadFile from './components/UploadFile.vue'
 import DocTag from './components/DocTag.vue'
 import DocumentReader from './components/DocumentReader.vue'
