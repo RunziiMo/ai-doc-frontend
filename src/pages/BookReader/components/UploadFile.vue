@@ -125,6 +125,7 @@ const uploadFile = async (file) => {
     const markdown = `# ${fileName}\nThis is a simple Markdown file saying ${fileName}.\n`;
     formData.append('markdown', markdown);
     formData.append('html', marked(markdown));
+    formData.append('version', response.data.data.version);
     response = await axios.post(`/api/${props.book.identify}/content/${document.doc_id}`, formData)
     if (response.data.errcode !== 0) {
         ElMessage.error('文档上传失败: ' + response.data.message);
