@@ -186,9 +186,9 @@ const handleEntityResults = (entitys) => {
                   @entity-results="handleEntityResults"
                 />
               </pane>
-              <pane min-size="20" max-size="70">
+              <!-- <pane min-size="20" max-size="70">
                 <ReferenceDocuments/>
-              </pane>
+              </pane> -->
             </splitpanes>
           </pane>
         </splitpanes>
