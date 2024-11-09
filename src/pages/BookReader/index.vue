@@ -9,6 +9,7 @@ import UploadFile from './components/UploadFile.vue'
 import DocTag from './components/DocTag.vue'
 import DocumentReader from './components/DocumentReader.vue'
 import DocumentChatter from './components/DocumentChatter.vue'
+import ReferenceDocuments from './components/ReferenceDocuments.vue'
 
 const showChatter = ref(true)
 const book = ref({
@@ -168,20 +169,27 @@ const handleEntityResults = (entitys) => {
             size="35"
             class="flex flex-col items-stretch relative justify-between"
           >
-            <DocumentChatter
-              v-model:entity-list="entityList"
-              :bookIdentify="bookIdentify"
-              :document="document"
-              :functions="[
-                'summary',
-                'extract_once_trace',
-                'checker_legal',
-                'checker_interest',
-                'checker_miss'
-              ]"
-              @text-selected="(text) => (selectedText = text)"
-              @entity-results="handleEntityResults"
-            />
+            <splitpanes horizontal>
+              <pane>
+                <DocumentChatter
+                  v-model:entity-list="entityList"
+                  :bookIdentify="bookIdentify"
+                  :document="document"
+                  :functions="[
+                    'summary',
+                    'extract_once_trace',
+                    'checker_legal',
+                    'checker_interest',
+                    'checker_miss'
+                  ]"
+                  @text-selected="(text) => (selectedText = text)"
+                  @entity-results="handleEntityResults"
+                />
+              </pane>
+              <pane min-size="20" max-size="70">
+                <ReferenceDocuments/>
+              </pane>
+            </splitpanes>
           </pane>
         </splitpanes>
       </el-main>

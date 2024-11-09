@@ -124,6 +124,10 @@ const showlaw = (func) => {
   return func.template.includes('{{ law }}')
 }
 
+const showRole = (func) => {
+  return func.template.includes('{{ role }}')
+}
+
 const handleConfirm = async() => {
   await formInstance.value.validate();
   popoverVisible.value = false; 
@@ -157,7 +161,7 @@ const checkLaw = (row, rule, value, callback) => {
       :visible="popoverVisible"
       placement="bottom"
       title="AI预请求"
-      width="540"
+      width="580"
       trigger="click"
       :popper-options="{
           modifiers: [
@@ -183,6 +187,7 @@ const checkLaw = (row, rule, value, callback) => {
                   validator: (rule, value, callback) => checkLaw(row,rule, value, callback),
                   trigger: 'change',
                 }"
+                class="!m-b-0px"
               >
                 <el-select v-model="row.law" placeholder="默认参考文档" >
                   <el-option v-for="option in lawsOptions" :label="option.label" :value="option.value" />
@@ -191,8 +196,18 @@ const checkLaw = (row, rule, value, callback) => {
             </template>
           </el-table-column>
           <el-table-column label="利益方">
-            <template #default="{ row }">
-              <el-input v-if="showlaw(row)" v-model="row.role" placeholder="请填写利益方" />
+            <template #default="{ row, $index }">
+              <el-form-item
+                v-if="showRole(row)" 
+                :prop="`functions.${$index}.law`"
+                :rules="{
+                  validator: (rule, value, callback) => checkLaw(row,rule, value, callback),
+                  trigger: 'change',
+                }"
+                class="!m-b-0px"
+              >
+                <el-input v-model="row.role" placeholder="请填写利益方" />
+              </el-form-item>
             </template>
           </el-table-column>
         </el-table>
