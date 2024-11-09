@@ -121,7 +121,7 @@ markEntitys.value = async (entitys) => {
     },
     done: async function () {}
   })
-  entitys?.forEach(el => {
+  entitys?.filter((el, index) => entitys.indexOf(el) === index).forEach(el => {
     const regex = new RegExp(el.replaced_text, 'gim')
     instance.markRegExp(regex, options(el))
   })
@@ -278,7 +278,8 @@ const handleDelete = async () => {
     cancelButtonText: '取消',
     type: 'warning'
   })
-  const response = await axios.delete(`/api/document/${props.document?.doc_id}/entity?&type=${entityInfo.type}&text=${entityInfo.replaced_text}`)
+
+  const response = await axios.delete(`/api/document/${props.document?.doc_id}/entity?&type=${entityInfo.type}&text=${encodeURIComponent(entityInfo.replaced_text)}`)
   const { errcode, message } = response.data
   if (errcode === 0) {
     ElMessage.success(message)

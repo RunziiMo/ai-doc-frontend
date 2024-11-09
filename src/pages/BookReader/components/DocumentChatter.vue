@@ -1,80 +1,82 @@
 <template>
-  <DocumentOperate
-    v-model:entityRecognitionLoading="entityRecognitionLoading"
-    v-model:entityList="entityList"
-    @ai-pre-request="handleAiRequest"
-    @anonymous-processing="docNameEntityRecognition"
-  />
-  <div
-    class="flex-1 hide-scrobar flex flex-col items-stretch overflow-y-scroll mb-3"
-    ref="scrollContainer"
-    style="scrollbar-width: none; -ms-overflow-style: none"
-  >
-    <ChatMessage
-      v-for="m in messages"
-      :message="m"
-      :export="exportMode"
-      @text-selected="(text) => $emit('textSelected', text)"
-      @deleted-message="handleDeleteMessage"
-      @switch-export="(id) => switchExport(id)"
-      @update-response-success="updateMessege"
-    >
-    </ChatMessage>
-    <div ref="viewAnchor" />
-  </div>
-  <div v-if="!exportMode" class="self-stretch flex mb-3 justify-between">
-    <el-autocomplete
-      class="flex-1 inline-input"
-      v-model="prompt"
-      @select="customizeChat"
-      :fetch-suggestions="querySearch"
-      :highlight-first-item="true"
-      :trigger-on-focus="false"
-      :fit-input-width="true"
-      clearable
-      placeholder="输入 / 选择或者直接提问"
-      :disabled="entityRecognitionLoading"
-    >
-      <template #default="{ item }">
-        <div class="flex justify-between  ">
-          <div class="flex flex-col">
-            <el-text class="self-start">{{ item.template_name }}</el-text>
-          </div>
-          <el-text truncated>{{ item.template}}</el-text>
-          <div class="flex items-center slef-end">
-            <el-text>
-              作者：{{ item.author }}
-              <el-icon class="el-input__icon">
-                <StarFilled />
-              </el-icon>
-              {{ item.agree_count }}
-            </el-text>
-          </div>
-        </div>
-      </template>
-    </el-autocomplete>
-    <el-button
-      @click="docAnalyze(prompt)"
-      :loading="loading"
-      class="ml-3"
-      type="success"
-      :disabled="entityRecognitionLoading"
-      :icon="Promotion"
+  <div class="w-full h-full flex flex-col">
+    <DocumentOperate
+      v-model:entityRecognitionLoading="entityRecognitionLoading"
+      v-model:entityList="entityList"
+      @ai-pre-request="handleAiRequest"
+      @anonymous-processing="docNameEntityRecognition"
     />
-  </div>
-  <div v-else class="self-stretch flex mb-3 justify-between items-center">
-    <el-checkbox
-      class="self-center"
-      v-model="checkAll"
-      :indeterminate="isIndeterminate"
-      @change="handleCheckAllChange"
+    <div
+      class="flex-1 hide-scrobar flex flex-col items-stretch overflow-y-scroll mb-3"
+      ref="scrollContainer"
+      style="scrollbar-width: none; -ms-overflow-style: none"
     >
-      全部选中
-    </el-checkbox>
-    <el-button @click="switchExport" class="w-30">取消</el-button>
-    <el-button @click="showExportDialog = true" class="w-30" type="primary">导出</el-button>
+      <ChatMessage
+        v-for="m in messages"
+        :message="m"
+        :export="exportMode"
+        @text-selected="(text) => $emit('textSelected', text)"
+        @deleted-message="handleDeleteMessage"
+        @switch-export="(id) => switchExport(id)"
+        @update-response-success="updateMessege"
+      >
+      </ChatMessage>
+      <div ref="viewAnchor" />
+    </div>
+    <div v-if="!exportMode" class="self-stretch flex mb-3 justify-between">
+      <el-autocomplete
+        class="flex-1 inline-input"
+        v-model="prompt"
+        @select="customizeChat"
+        :fetch-suggestions="querySearch"
+        :highlight-first-item="true"
+        :trigger-on-focus="false"
+        :fit-input-width="true"
+        clearable
+        placeholder="输入 / 选择或者直接提问"
+        :disabled="entityRecognitionLoading"
+      >
+        <template #default="{ item }">
+          <div class="flex justify-between  ">
+            <div class="flex flex-col">
+              <el-text class="self-start">{{ item.template_name }}</el-text>
+            </div>
+            <el-text truncated>{{ item.template}}</el-text>
+            <div class="flex items-center slef-end">
+              <el-text>
+                作者：{{ item.author }}
+                <el-icon class="el-input__icon">
+                  <StarFilled />
+                </el-icon>
+                {{ item.agree_count }}
+              </el-text>
+            </div>
+          </div>
+        </template>
+      </el-autocomplete>
+      <el-button
+        @click="docAnalyze(prompt)"
+        :loading="loading"
+        class="ml-3"
+        type="success"
+        :disabled="entityRecognitionLoading"
+        :icon="Promotion"
+      />
+    </div>
+    <div v-else class="self-stretch flex mb-3 justify-between items-center">
+      <el-checkbox
+        class="self-center"
+        v-model="checkAll"
+        :indeterminate="isIndeterminate"
+        @change="handleCheckAllChange"
+      >
+        全部选中
+      </el-checkbox>
+      <el-button @click="switchExport" class="w-30">取消</el-button>
+      <el-button @click="showExportDialog = true" class="w-30" type="primary">导出</el-button>
+    </div>
+    <ExportDialog v-model:showDialog="showExportDialog" :document="document" :messages="messages" />
   </div>
-  <ExportDialog v-model:showDialog="showExportDialog" :document="document" :messages="messages" />
 </template>
 
 <script lang="ts" setup>
@@ -200,7 +202,7 @@ const querySearch = async (queryString: string, cb: any) => {
   if (response.data.errcode !== 0) {
     ElMessage.warning(response.data.message)
     cb([])
-    reutrn
+    return
   }
   const data = response.data.data
   const functions = queryString
@@ -317,7 +319,7 @@ const customizeChat = async (event) => {
   }
   // 必填利益方参数
   if (func.template.includes('{{ role }}') && (params.role || params.role === '')) {
-    try {
+    try { 
       const value = await checkRequestParam('请输入利益方')
       params.role = value.value
     } catch (error) {
@@ -433,8 +435,57 @@ const handleDeleteMessage = async (id) => {
   }
 }
 
-const handleAiRequest = async (values) => {
-  console.log(values)
+const customizeChatbySelectFunction = async (event) => {
+  let func = event
+  if (isProxy(event)) {
+    func = toRaw(event)
+  }
+  if (!('EventSource' in window)) {
+    ElMessage.warning('您的浏览器不支持该功能')
+    return
+  }
+  console.log(func)
+  loading.value = true
+  const params = {
+    book_identify: props.bookIdentify,
+    doc_id: props.document.doc_id,
+    role: func.role,
+    law: func.law,
+    function_id: func.id,
+  }
+  const filteredParams = Object.fromEntries(
+    Object.entries(params).filter(([_, v]) => v != null && v !== '')
+  )
+  console.log(filteredParams)
+  const queryString = new URLSearchParams(filteredParams).toString()
+  const url = `/aigc/customize_chat?${queryString}`
+
+  return new Promise((resolve, reject) => {
+    const eventSource = new EventSource(url)
+    eventSource.onmessage = (event) => {
+      messages.value[messages.value.length - 1].response += event.data
+    }
+    eventSource.addEventListener('start', async (event) => {
+      const message = JSON.parse(event.data)
+      messages.value.push(message)
+    })
+    eventSource.addEventListener('warning', (event) => {
+      ElMessage.warning(event.data)
+    })
+    eventSource.addEventListener('close', (event) => {
+      ElMessage.warning(event.data)
+      messages.value[messages.value.length - 1].approved = 1
+    })
+    eventSource.onerror = (event) => {
+      eventSource.close()
+      loading.value = false
+      resolve();
+    }
+  });
+}
+
+const handleAiRequest = async (funes) => {
+  console.log(funes)
   try {
     if (entityList.value.length === 0) {
       const value = await ElMessageBox.confirm('是否确认文档无需脱敏处理？', 'Warning', {
@@ -463,19 +514,9 @@ const handleAiRequest = async (values) => {
       return
     }
   }
-  const response = await axios.get('/api/ai/function')
-  if (response.data.errcode !== 0) {
-    ElMessage.warning(response.data.message)
-    reutrn
-  }
-  const data = response.data.data
-  const valuesArray = Object.values(values);
-  const functions = valuesArray.length > 0
-    ? data.page.List.filter((item) => {
-      return Object.values(values).includes(item.id)
-    }) : []
-  for (const item of functions) {
-    await customizeChat(item);
+
+  for (const item of funes) {
+    await customizeChatbySelectFunction(item);
   }
   ElMessage.success('操作成功')
 }
