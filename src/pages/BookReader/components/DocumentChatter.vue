@@ -19,6 +19,7 @@
         @deleted-message="handleDeleteMessage"
         @switch-export="(id) => switchExport(id)"
         @update-response-success="updateMessege"
+        @get-message="(val) => $emit('getMessage', val)"
       >
       </ChatMessage>
       <div ref="viewAnchor" />
@@ -109,7 +110,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['textSelected', 'entityResults'])
+const emit = defineEmits(['textSelected', 'entityResults', 'getMessage'])
 
 let intervalId
 onMounted(async () => {
@@ -474,7 +475,9 @@ const customizeChatbySelectFunction = async (event) => {
     })
     eventSource.addEventListener('close', (event) => {
       ElMessage.warning(event.data)
-      messages.value[messages.value.length - 1].approved = 1
+      if(messages.value[messages.value.length - 1]) {
+        messages.value[messages.value.length - 1].approved = 1
+      }
     })
     eventSource.onerror = (event) => {
       eventSource.close()

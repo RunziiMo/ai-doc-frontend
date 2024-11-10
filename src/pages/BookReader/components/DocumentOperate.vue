@@ -117,7 +117,7 @@ const handleFunctions = () => {
 const selectedFunstions = ref([])
 
 const handleSelectionChange = (arr) => {
-  selectedFunstions.value = arr.map(el => el.id);
+  selectedFunstions.value = arr;
 }
 
 const showlaw = (func) => {
@@ -135,9 +135,19 @@ const handleConfirm = async() => {
 }
 
 const checkLaw = (row, rule, value, callback) => {
-  const isSelect = selectedFunstions.value.includes(row.id)
+  const isSelect = selectedFunstions.value.findIndex(el => el.id === row.id) !== -1
   if (isSelect && !value) {
     callback(new Error('参考法律为必选项'));
+  } else {
+    callback();
+  }
+
+}
+
+const checkRole =(row, rule, value, callback) => {
+  const isSelect = selectedFunstions.value.findIndex(el => el.id === row.id) !== -1
+  if (isSelect && !value) {
+    callback(new Error('利益方为必填项'));
   } else {
     callback();
   }
@@ -184,10 +194,10 @@ const checkLaw = (row, rule, value, callback) => {
                 v-if="showlaw(row)" 
                 :prop="`functions.${$index}.law`"
                 :rules="{
-                  validator: (rule, value, callback) => checkLaw(row,rule, value, callback),
+                  validator: (rule, value, callback) => checkLaw(row, rule, value, callback),
                   trigger: 'change',
                 }"
-                class="!m-b-0px"
+                class="!m-b-14px !m-t-14px"
               >
                 <el-select v-model="row.law" placeholder="默认参考文档" >
                   <el-option v-for="option in lawsOptions" :label="option.label" :value="option.value" />
@@ -199,12 +209,12 @@ const checkLaw = (row, rule, value, callback) => {
             <template #default="{ row, $index }">
               <el-form-item
                 v-if="showRole(row)" 
-                :prop="`functions.${$index}.law`"
+                :prop="`functions.${$index}.role`"
                 :rules="{
-                  validator: (rule, value, callback) => checkLaw(row,rule, value, callback),
+                  validator: (rule, value, callback) => checkRole(row, rule, value, callback),
                   trigger: 'change',
                 }"
-                class="!m-b-0px"
+                class="!m-b-14px !m-t-14px"
               >
                 <el-input v-model="row.role" placeholder="请填写利益方" />
               </el-form-item>

@@ -27,6 +27,8 @@ const isShowSide = ref(true)
 
 const markEntitys = ref()
 
+const currentMessage = ref()
+
 const getEntityList = async (docId) => {
   const { data } = await axios.get(`/api/document/${docId}/entity`)
   if (data.errcode !== 0) {
@@ -184,11 +186,15 @@ const handleEntityResults = (entitys) => {
                   ]"
                   @text-selected="(text) => (selectedText = text)"
                   @entity-results="handleEntityResults"
+                  @get-message="(message) => (currentMessage = message)"
                 />
               </pane>
-              <!-- <pane min-size="20" max-size="70">
-                <ReferenceDocuments/>
-              </pane> -->
+              <pane v-if="currentMessage" min-size="20" max-size="70">
+                <ReferenceDocuments
+                  :search-string="selectedText"
+                  :current-message="currentMessage"
+                />
+              </pane>
             </splitpanes>
           </pane>
         </splitpanes>
