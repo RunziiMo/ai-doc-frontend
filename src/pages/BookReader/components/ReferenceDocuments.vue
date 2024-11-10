@@ -40,7 +40,7 @@ const isPdf = computed(() => {
 })
 
 const isDocx = computed(() => {
-  return fileName.value && fileName.value?.endsWith('.pdf')
+  return fileName.value && fileName.value?.endsWith('.docx')
 })
 const url = computed(() => {
   return `/law_files/${fileName.value}`
@@ -51,19 +51,20 @@ const loadDocument = async () => {
   let response = await axios.get(url.value, {
     responseType: 'blob' // 设置响应类型为 blob
   })
-  const docxOptions = Object.assign(defaultOptions, {
+  const docxOptions = Object.assign (defaultOptions, {
     inWrapper: false,
     ignoreWidth: true,
     experimental: true
   })
   await renderAsync(response.data, docContainer.value, null, docxOptions);
+  scrollToText(props.searchString)
 }
 
 watch(
   () => props.currentMessage,
-  () => {
+  async () => {
     if (isPdf.value) return
-    loadDocument()
+    await loadDocument()
   }
 )
 
@@ -77,6 +78,7 @@ const docContainer = ref<HTMLDivElement>(null)
 
 
 const scrollToText = async (searchString) => {
+    console.log(docContainer)
   new Mark(docContainer.value).unmark().mark(searchString, {
     acrossElements: true,
     accuracy: 'partially'

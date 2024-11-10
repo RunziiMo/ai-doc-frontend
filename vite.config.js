@@ -35,6 +35,11 @@ export default defineConfig({
         changeOrigin: true,
         // rewrite: (path) => path.replace(/^\/api/, ""),
       },
+      "/law_files": {
+        target: "http://123.57.55.24:8181",
+        changeOrigin: true,
+        // rewrite: (path) => path.replace(/^\/api2/, ""),
+      },
       "/static": {
         target: "http://123.57.55.24:8181",
         changeOrigin: true,

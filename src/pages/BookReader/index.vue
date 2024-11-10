@@ -189,7 +189,7 @@ const handleEntityResults = (entitys) => {
                   @get-message="(message) => (currentMessage = message)"
                 />
               </pane>
-              <pane v-if="currentMessage" min-size="20" max-size="70">
+              <pane min-size="20" max-size="70">
                 <ReferenceDocuments
                   :search-string="selectedText"
                   :current-message="currentMessage"
