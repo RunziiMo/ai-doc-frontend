@@ -47,6 +47,7 @@ const url = computed(() => {
 })
 
 const loadDocument = async () => {
+    console.log("===s")
   if(!fileName.value) return;
   let response = await axios.get(url.value, {
     responseType: 'blob' // 设置响应类型为 blob
@@ -57,14 +58,25 @@ const loadDocument = async () => {
     experimental: true
   })
   await renderAsync(response.data, docContainer.value, null, docxOptions);
-  scrollToText(props.searchString)
 }
+
+const init = async() => {
+    if(isDocx.value) {
+        await loadDocument()
+        await nextTick()
+        scrollToText(props.searchString)
+    }
+
+    if(isPdf.value) {
+       scrollToText(props.searchString)
+    }
+}
+init()
 
 watch(
   () => props.currentMessage,
   async () => {
-    if (isPdf.value) return
-    await loadDocument()
+    init()
   }
 )
 
@@ -78,7 +90,6 @@ const docContainer = ref<HTMLDivElement>(null)
 
 
 const scrollToText = async (searchString) => {
-    console.log(docContainer)
   new Mark(docContainer.value).unmark().mark(searchString, {
     acrossElements: true,
     accuracy: 'partially'
@@ -98,6 +109,7 @@ const scrollToText = async (searchString) => {
 
 <template>
   <el-scrollbar
+    class="wh-full"
     v-if="isPdf"
   >
     <div ref="docContainer" class="wh-full" >
@@ -105,9 +117,10 @@ const scrollToText = async (searchString) => {
     </div>
   </el-scrollbar>
   <el-scrollbar
+   class="wh-full"
     v-else-if="isDocx"
   >
-    <div ref="docContainer"/>
+    <div ref="docContainer" class="wh-full"/>
   </el-scrollbar>
   <el-empty
     v-else-if="fileName === undefined"

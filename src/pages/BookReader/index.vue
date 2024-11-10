@@ -1,6 +1,6 @@
 <script setup>
 import { ElMessage } from 'element-plus'
-import { ref, onMounted, nextTick } from 'vue'
+import { ref, onMounted, nextTick, computed } from 'vue'
 import axios from 'axios'
 import { Splitpanes, Pane } from 'splitpanes'
 import 'splitpanes/dist/splitpanes.css'
@@ -28,6 +28,15 @@ const isShowSide = ref(true)
 const markEntitys = ref()
 
 const currentMessage = ref()
+
+const fileName = computed(() => {
+    try {
+        const context = JSON.parse(currentMessage.value.slots)
+        return context?.context?.[0]
+    } catch (error) {
+        return undefined;
+    }
+})
 
 const getEntityList = async (docId) => {
   const { data } = await axios.get(`/api/document/${docId}/entity`)
@@ -189,7 +198,7 @@ const handleEntityResults = (entitys) => {
                   @get-message="(message) => (currentMessage = message)"
                 />
               </pane>
-              <pane min-size="20" max-size="70">
+              <pane v-if="!!fileName">
                 <ReferenceDocuments
                   :search-string="selectedText"
                   :current-message="currentMessage"
