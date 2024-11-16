@@ -1,10 +1,12 @@
 <template>
-    <el-input
-        v-model="filterText"
-        style="width: 240px"
-        placeholder="输入文件名或标签名过滤"
-    />
-
+    <div class="flex justify-between">
+        <el-input
+            v-model="filterText"
+            style="width: 180px"
+            placeholder="输入文件名或标签名过滤"
+        />
+        <el-button @click="handleCheckAll">{{ checkAallText }}</el-button>
+    </div>
     <div style="overflow-x: scroll;margin-top: 20px;">
         <el-tree
           ref="treeRef"
@@ -14,7 +16,9 @@
           default-expand-all
           :filter-node-method="filterNode"
           node-key="id"
+          show-checkbox
           @node-contextmenu="(event, node, data)=>handleNodeContextmenu(event, node, data)"
+          @check-change="handleCheckChange"
         >
             <template #default="{ node, data }">
                 <div
@@ -81,7 +85,7 @@
 </template>
 
 <script lang="ts" setup>
-import { ref, watch, nextTick, reactive, toRefs } from 'vue'
+import { ref, watch, nextTick, computed, PropType } from 'vue'
 import axios from 'axios';
 import { Delete, Check } from '@element-plus/icons-vue'
 import { ElTree, ElInput, ElMessage } from 'element-plus'
@@ -98,7 +102,6 @@ const props = defineProps({
       required: true,
     },
 });
-let documentsReactive = '';
 
 interface Tree {
   [key: string]: any
@@ -106,10 +109,51 @@ interface Tree {
 
 const filterText = ref('')
 const treeRef = ref<InstanceType<typeof ElTree>>()
+const checkedKeys = defineModel('checkedKeys', {
+    type: Array as PropType<string[]>
+})
 
 const defaultProps = {
     id: 'id',
     label: 'text',
+}
+
+const allkeys = computed(() => {
+    return props.documents.map(( el: any ) => el.id)
+})
+
+const checkAallText = computed(() => {
+    if(allkeys.value.length === checkedKeys.value.length) {
+        return '取消全选'
+    }
+    return '全选'
+})
+
+const setCheckKeys = (val?: string[]) => {
+    treeRef.value.setCheckedKeys(val)
+    checkedKeys.value = val;
+}
+
+watch(() => checkedKeys.value, (val) => [
+    setCheckKeys(checkedKeys.value)
+])
+nextTick(()=> [
+    setCheckKeys(checkedKeys.value)
+])
+
+
+const getCheckKeys = () => {
+   return treeRef.value.getCheckedKeys() || []
+}
+
+const handleCheckAll = () => {
+    const keys = getCheckKeys();
+    if(keys.length === props.documents.length) {
+        // 全选
+        setCheckKeys([])
+    } else {
+        setCheckKeys(allkeys.value)
+    }
 }
 
 const filterNode = (value: string, data: Tree) => {
@@ -123,6 +167,7 @@ watch(filterText, (val) => {
 
 
 const handleNodeClick = (data: Tree) => {
+    setCheckKeys([data.id])
     emit('updateDocId', data.id)
 }
 
@@ -210,6 +255,12 @@ const handleEditDocNameConfirm = (key, data) => {
             console.error('请求失败:', error);
             ElMessage.error('请求失败，请稍后再试');
         });
+}
+
+const handleCheckChange = (data, checked) => {
+    if(checked && !checkedKeys.value.includes(data.id)) {
+        checkedKeys.value.push(data.id)
+    }
 }
 </script>
 

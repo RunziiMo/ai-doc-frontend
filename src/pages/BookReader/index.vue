@@ -27,6 +27,8 @@ const isShowSide = ref(true)
 
 const markEntitys = ref()
 
+const checkedFiles = ref([])
+
 const currentMessage = ref()
 
 const fileName = computed(() => {
@@ -62,6 +64,7 @@ const loadDoc = async (bookIdentify, docId) => {
     var data = response.data.data
     document.value = data
     content.value = data.markdown
+    checkedFiles.value=[document.value.doc_id]
     getEntityList(document.value.doc_id)
   }
 }
@@ -157,6 +160,7 @@ const handleEntityResults = (entitys) => {
         <!-- 增加“上传文档”和“设置标签” 结束-->
         <div class="sidebar">
           <LeftSidebar
+            v-model:checked-keys="checkedFiles"
             :documents="book.document_trees"
             :book="book"
             @update-doc-id="updateDocId"
@@ -184,8 +188,10 @@ const handleEntityResults = (entitys) => {
               <pane>
                 <DocumentChatter
                   v-model:entity-list="entityList"
+                  :checked-files="checkedFiles"
                   :bookIdentify="bookIdentify"
                   :document="document"
+                  :documents="book.document_trees"
                   :functions="[
                     'summary',
                     'extract_once_trace',

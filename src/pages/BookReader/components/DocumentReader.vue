@@ -101,11 +101,7 @@ const markEntitys = defineModel('markEntitys', {
   type: Function,
   default: () => {}
 })
-
-markEntitys.value = async (entitys) => {
-  await nextTick()
-  const instance = new Mark(docContainer.value)
-  instance.unmark()
+const handelMark = (instance, entitys) => {
   const options = (data) => ({
     acrossElements: true,
     className: 'text-selected',
@@ -131,6 +127,13 @@ markEntitys.value = async (entitys) => {
   //   const regex = new RegExp(regexStr, 'gim')
   //   instance.markRegExp(regex, options(el))
   // })
+
+}
+
+markEntitys.value = async (entitys) => {
+  const instance = new Mark(docContainer.value)
+  instance.unmark()
+  handelMark(instance, entitys)
 }
 
 const { x: mouseX, y: mouseY, isOutside } = useMouseInElement(docContainer.value)
@@ -205,14 +208,15 @@ const handleRendered = async () => {
   emit('fileRenderFinished')
 }
 
-const toast = (message) => {
-  ElMessage.warning(message)
-}
 const scrollToText = async (searchString) => {
-  new Mark(docContainer.value).unmark().mark(searchString, {
+  const markIns = new Mark(docContainer.value)
+  markIns.unmark()
+  handelMark(markIns, entityList.value)
+  markIns.mark(searchString, {
     acrossElements: true,
     accuracy: 'partially'
   })
+  
   await nextTick() // 等待DOM更新
   const elements = docContainer.value.querySelectorAll('mark') // 假设被高亮的文本被<mark>标签包裹
   if (elements.length > 0) {
