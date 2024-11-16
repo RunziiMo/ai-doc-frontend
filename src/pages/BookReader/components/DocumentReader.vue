@@ -218,9 +218,15 @@ const scrollToText = async (searchString) => {
   })
   
   await nextTick() // 等待DOM更新
-  const elements = docContainer.value.querySelectorAll('mark') // 假设被高亮的文本被<mark>标签包裹
+  const elements = docContainer.value.getElementsByTagName('mark') // 假设被高亮的文本被<mark>标签包裹
+  let firstElement;
+  for (let i = 0; i < elements.length; i++) {
+    if (searchString.includes(elements[i].textContent)) {
+      firstElement = elements[i];
+      break; // 找到第一个符合条件的就退出循环
+    }
+  }
   if (elements.length > 0) {
-    const firstElement = elements[0]
     firstElement.scrollIntoView({ behavior: 'smooth' })
     // 如果使用<el-scrollbar>，则可能需要使用其API来滚动
     // scrollbar.value?.scrollToElement(firstElement); // 假设Element Plus提供了这样的API

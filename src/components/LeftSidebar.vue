@@ -5,7 +5,7 @@
             style="width: 180px"
             placeholder="输入文件名或标签名过滤"
         />
-        <el-button @click="handleCheckAll">{{ checkAallText }}</el-button>
+        <!-- <el-button @click="handleCheckAll">{{ checkAallText }}</el-button> -->
     </div>
     <div style="overflow-x: scroll;margin-top: 20px;">
         <el-tree
@@ -16,7 +16,6 @@
           default-expand-all
           :filter-node-method="filterNode"
           node-key="id"
-          show-checkbox
           @node-contextmenu="(event, node, data)=>handleNodeContextmenu(event, node, data)"
           @check-change="handleCheckChange"
         >
@@ -258,8 +257,14 @@ const handleEditDocNameConfirm = (key, data) => {
 }
 
 const handleCheckChange = (data, checked) => {
-    if(checked && !checkedKeys.value.includes(data.id)) {
-        checkedKeys.value.push(data.id)
+    if(checked) {
+        if(!checkedKeys.value.includes(data.id)) {
+            checkedKeys.value.push(data.id)
+        }
+    } else {
+        if(checkedKeys.value.includes(data.id)) {
+            checkedKeys.value.splice(checkedKeys.value.indexOf(data.id), 1)
+        }
     }
 }
 </script>
