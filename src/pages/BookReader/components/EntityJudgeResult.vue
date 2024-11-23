@@ -74,8 +74,10 @@ const indexMethod = (index: number) => {
 watch(
   () => props.entityList,
   () => {
+    result.value = []
+    data.value = [];
     clonedEntityList()
-  }
+  },
 )
 const filterHandler = (value, row, column) => {
   const property = column['property']
