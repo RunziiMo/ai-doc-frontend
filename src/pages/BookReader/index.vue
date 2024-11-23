@@ -137,7 +137,7 @@ const handleEntityResults = (entitys) => {
       />
     </el-header>
     <el-container>
-      <el-aside v-show="isShowSide" width="300px">
+      <el-aside v-show="isShowSide" width="260px">
         <!-- 增加“上传文档”和“设置标签” 开始 -->
         <div style="paddingleft: 10px; margintop: 10px">
           <el-button type="success" @click="uploadDialogVisible = !uploadDialogVisible"
@@ -170,7 +170,7 @@ const handleEntityResults = (entitys) => {
       </el-aside>
       <el-main>
         <splitpanes :first-splitter="false" :dbl-click-splitter="false" :push-other-panes="false">
-          <pane class="flex justify-center" size="65">
+          <pane class="flex justify-center" size="62">
             <DocumentReader
               :bookIdentify="bookIdentify"
               :document="document"
@@ -181,11 +181,12 @@ const handleEntityResults = (entitys) => {
           </pane>
           <pane
             v-if="showChatter"
-            size="35"
+            size="38"
+            style="overflow: unset;"
             class="flex flex-col items-stretch relative justify-between"
           >
             <splitpanes horizontal>
-              <pane>
+              <pane style="overflow: unset;">
                 <DocumentChatter
                   v-model:entity-list="entityList"
                   :checked-files="checkedFiles"

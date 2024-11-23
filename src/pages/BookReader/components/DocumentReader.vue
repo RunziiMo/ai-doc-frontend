@@ -104,7 +104,7 @@ const markEntitys = defineModel('markEntitys', {
 const handelMark = (instance, entitys) => {
   const options = (data) => ({
     acrossElements: true,
-    className: 'text-selected',
+    className: `text-selected--${data.type}`,
     each: (element) => {
       element.setAttribute('id', data.entity_id)
       element.onmouseenter = function () {
@@ -488,12 +488,31 @@ const typeList = [
   height: 100%;
 }
 
-:deep(.text-selected) {
-  background: #d48a91 !important;
+:deep(mark) {
   cursor: pointer;
   position: relative;
   user-select: none;
 }
+
+:deep(.text-selected--NUM) {
+  background: rgb(0, 217, 255) !important;
+}
+:deep(.text-selected--PERSON) {
+  background: rgb(255, 191, 0)!important;
+}
+:deep(.text-selected--DATE) {
+  background: rgb(111, 230, 111)!important;
+}
+:deep(.text-selected--LOCATION) {
+  background: rgb(255, 149, 0)!important;
+}
+:deep(.text-selected--MONEY) {
+  background: rgb(255, 127, 127)!important;
+}
+:deep(.text-selected--LOC_ORG) {
+  background: rgb(255, 191, 0)!important;
+}
+
 
 :deep(.edit-popover) {
   left: 0;

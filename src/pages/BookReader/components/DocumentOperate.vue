@@ -156,14 +156,14 @@ const checkRole =(row, rule, value, callback) => {
 </script>
 
 <template>
-  <div class="document-operate-wrapper flex justify-between p-t-16px p-b-16px">
+  <div class="document-operate-wrapper flex justify-between p-b-8px">
     <el-button
       class="flex-1"
       v-if="entityList?.length === 0"
       :loading="entityRecognitionLoad"
       @click="$emit('anonymousProcessing')"
     >
-      匿名实体识别
+      实体识别
     </el-button>
     <el-button class="flex-1" v-else @click="handleView"> 脱敏结果 </el-button>
     
