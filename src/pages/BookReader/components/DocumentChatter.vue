@@ -5,10 +5,11 @@
       v-model:entityList="entityList"
       @ai-pre-request="handleAiRequest"
       @anonymous-processing="docNameEntityRecognition"
+      @request-entity-result="$emit('requestEntityResult')"
     />
     <splitpanes class="flex-1" horizontal>
       <pane>
-        <EntityJudgeResult :entity-list="entityList" @traceability="(data) => $emit('traceability', data)" />
+        <EntityJudgeResult v-loading="entityTableLoading" :entity-list="entityList" @traceability="(data) => $emit('traceability', data)" />
       </pane>
       <pane>
         <div class="w-full h-full flex flex-col">
@@ -94,7 +95,7 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, h, ref, computed, watch, onMounted, onUnmounted, nextTick, provide } from 'vue'
+import { reactive, h, ref, computed, watch, onMounted, onUnmounted, nextTick, provide, inject } from 'vue'
 import { isProxy, toRaw } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Promotion } from '@element-plus/icons-vue'
@@ -130,10 +131,14 @@ const props = defineProps({
   documents: {
     type: Array,
     required: true
+  },
+  entityTableLoading: {
+    type: Boolean,
+    required: true
   }
 })
 
-const emit = defineEmits(['textSelected', 'entityResults', 'getMessage', 'traceability'])
+const emit = defineEmits(['textSelected', 'entityResults', 'getMessage', 'traceability', 'requestEntityResult'])
 
 let intervalId
 onMounted(async () => {

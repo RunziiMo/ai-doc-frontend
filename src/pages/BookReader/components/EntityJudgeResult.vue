@@ -159,14 +159,14 @@ const handleTableExport = (type: 'pdf' | 'excel') => {
         :total="pageStore.total"
         @current-change="handleCurrentChange"
       />
-      <div class="flex">
+      <!-- <div class="flex">
         <el-button type="primary" size="small" @click="handleTableExport('pdf')">
           pdf导出
         </el-button>
         <el-button type="primary" size="small" @click="handleTableExport('excel')">
           excel导出
         </el-button>
-      </div>
+      </div> -->
     </div>
   </div>
 </template>

@@ -1,6 +1,6 @@
 <script setup>
 import { ElMessage } from 'element-plus'
-import { ref, onMounted, nextTick, computed } from 'vue'
+import { ref, onMounted, nextTick, computed, provide } from 'vue'
 import axios from 'axios'
 import { Splitpanes, Pane } from 'splitpanes'
 import 'splitpanes/dist/splitpanes.css'
@@ -32,22 +32,30 @@ const checkedFiles = ref([])
 const currentMessage = ref()
 
 const fileName = computed(() => {
-    try {
-        const context = JSON.parse(currentMessage.value.slots)
-        return context?.context?.[0]
-    } catch (error) {
-        return undefined;
-    }
+  try {
+    const context = JSON.parse(currentMessage.value.slots)
+    return context?.context?.[0]
+  } catch (error) {
+    return undefined
+  }
 })
 
+const entityTableLoading = ref(true)
+
 const getEntityList = async (docId) => {
-  const { data } = await axios.get(`/api/document/${docId}/entity`)
-  if (data.errcode !== 0) {
-    entityList.value = []
-  } else {
-    entityList.value = data.data.page.List || []
-    await nextTick()
-    markEntitys.value(entityList.value)
+  try {
+    entityTableLoading.value = true
+    const { data } = await axios.get(`/api/document/${docId}/entity`)
+     entityTableLoading.value = false
+    if (data.errcode !== 0) {
+      entityList.value = []
+    } else {
+      entityList.value = data.data.page.List || []
+      await nextTick()
+      markEntitys.value(entityList.value)
+    }
+  } catch (error) {
+     entityTableLoading.value = false
   }
 }
 
@@ -64,7 +72,7 @@ const loadDoc = async (bookIdentify, docId) => {
     var data = response.data.data
     document.value = data
     content.value = data.markdown
-    checkedFiles.value=[document.value.doc_id]
+    checkedFiles.value = [document.value.doc_id]
     getEntityList(document.value.doc_id)
   }
 }
@@ -114,7 +122,7 @@ function deleteDocId(docIdTmp) {
   book.value.document_trees = book.value.document_trees.filter((item) => item.id !== docIdTmp)
 }
 
-const entityList = ref([]);
+const entityList = ref([])
 
 const handleEntityResults = (entitys) => {
   if (entitys.length !== 0) {
@@ -126,9 +134,8 @@ const handleEntityResults = (entitys) => {
 // 溯源信息
 const traceability = ref()
 const handletRaceability = (data) => {
-  traceability.value = data
+  traceability.value = data || {}
 }
-
 </script>
 
 <template>
@@ -188,17 +195,18 @@ const handletRaceability = (data) => {
           <pane
             v-if="showChatter"
             size="38"
-            style="overflow: unset;"
+            style="overflow: unset"
             class="flex flex-col items-stretch relative justify-between"
           >
             <splitpanes horizontal>
-              <pane style="overflow: unset;">
+              <pane style="overflow: unset">
                 <DocumentChatter
                   v-model:entity-list="entityList"
                   :checked-files="checkedFiles"
                   :bookIdentify="bookIdentify"
                   :document="document"
                   :documents="book.document_trees"
+                  :entity-table-loading="entityTableLoading"
                   :functions="[
                     'summary',
                     'extract_once_trace',
@@ -210,6 +218,7 @@ const handletRaceability = (data) => {
                   @entity-results="handleEntityResults"
                   @get-message="(message) => (currentMessage = message)"
                   @traceability="handletRaceability"
+                  @request-entity-result="() => getEntityList(document.doc_id)"
                 />
               </pane>
               <pane v-if="!!fileName">
