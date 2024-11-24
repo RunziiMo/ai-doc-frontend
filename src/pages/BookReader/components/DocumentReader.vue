@@ -31,7 +31,11 @@ const props = defineProps({
   searchString: {
     type: String,
     required: true
-  }
+  },
+  traceability: {
+    type: Object,
+    required: true
+  },
 })
 
 const emit = defineEmits(['fileRenderFinished', 'refreshEntity'])
@@ -76,6 +80,14 @@ watch(
     scrollToText(newValue)
   }
 )
+
+watch(
+  () => props.traceability,
+  (newValue, oldValue) => {
+    console.log(newValue, 'traceability')
+    scrollToText(newValue.entityName, newValue.entityIndex)
+  }
+)
 const docContainer = ref<HTMLDivElement>(null)
 
 const addPopoverRef = ref()
@@ -117,6 +129,7 @@ const handelMark = (instance, entitys) => {
     },
     done: async function () {}
   })
+  
   entitys?.filter((el, index) => entitys.indexOf(el) === index).forEach(el => {
     const regex = new RegExp(el.replaced_text, 'gim')
     instance.markRegExp(regex, options(el))
@@ -208,26 +221,21 @@ const handleRendered = async () => {
   emit('fileRenderFinished')
 }
 
-const scrollToText = async (searchString) => {
+const scrollToText = async (searchString, index = 0) => {
   const markIns = new Mark(docContainer.value)
   markIns.unmark()
   handelMark(markIns, entityList.value)
-  markIns.mark(searchString, {
-    acrossElements: true,
-    accuracy: 'partially'
-  })
+  // markIns.mark(searchString, {
+  //   acrossElements: true,
+  //   accuracy: 'partially',
+  //   className: 'select',
+  // })
   
   await nextTick() // 等待DOM更新
   const elements = docContainer.value.getElementsByTagName('mark') // 假设被高亮的文本被<mark>标签包裹
-  let firstElement;
-  for (let i = 0; i < elements.length; i++) {
-    if (searchString.includes(elements[i].textContent)) {
-      firstElement = elements[i];
-      break; // 找到第一个符合条件的就退出循环
-    }
-  }
+  let firstElement = Array.from(elements).filter(el => searchString.startsWith(el.textContent) && el.parentElement.tagName !== 'MARK')?.[index];
   if (elements.length > 0) {
-    firstElement.scrollIntoView({ behavior: 'smooth' })
+    !!firstElement && firstElement.scrollIntoView({ behavior: 'smooth' })
     // 如果使用<el-scrollbar>，则可能需要使用其API来滚动
     // scrollbar.value?.scrollToElement(firstElement); // 假设Element Plus提供了这样的API
   } else {

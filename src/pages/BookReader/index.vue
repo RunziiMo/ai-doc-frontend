@@ -123,6 +123,11 @@ const handleEntityResults = (entitys) => {
     ElMessage.warning('暂无可标记的实体')
   }
 }
+// 溯源信息
+const traceability = ref()
+const handletRaceability = (data) => {
+  traceability.value = data
+}
 
 </script>
 
@@ -175,6 +180,7 @@ const handleEntityResults = (entitys) => {
               :bookIdentify="bookIdentify"
               :document="document"
               :searchString="selectedText"
+              :traceability="traceability"
               v-model:mark-entitys="markEntitys"
               v-model:entity-list="entityList"
             />
@@ -203,6 +209,7 @@ const handleEntityResults = (entitys) => {
                   @text-selected="(text) => (selectedText = text)"
                   @entity-results="handleEntityResults"
                   @get-message="(message) => (currentMessage = message)"
+                  @traceability="handletRaceability"
                 />
               </pane>
               <pane v-if="!!fileName">

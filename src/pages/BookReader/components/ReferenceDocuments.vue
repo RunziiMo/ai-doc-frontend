@@ -47,7 +47,6 @@ const url = computed(() => {
 })
 
 const loadDocument = async () => {
-    console.log("===s")
   if(!fileName.value) return;
   let response = await axios.get(url.value, {
     responseType: 'blob' // 设置响应类型为 blob
@@ -76,6 +75,7 @@ init()
 watch(
   () => props.currentMessage,
   async () => {
+    console.log("=====")
     init()
   }
 )

@@ -58,14 +58,19 @@ watch(entityKeyword, () => {
 })
 
 const clonedEntityList = () => {
-  props.entityList.forEach((el, index) => {
-    if (index < pageStore.pageSize) {
-      result.value.push(el)
+  props.entityList.forEach((el: any) => {
+    const i = data.value.findIndex((item) => item.replaced_text === el.replaced_text)
+    if (i === -1) {
+      data.value.push(el)
+    } else {
+      data.value[i].entityList = [data.value[i], el]
     }
-
-    data.value.push(el)
-    pageStore.total = props.entityList.length
   })
+  pageStore.total = data.value.length
+  result.value = data.value?.slice(
+    (pageStore.current - 1) * pageStore.pageSize,
+    pageStore.current * pageStore.pageSize
+  )
 }
 const indexMethod = (index: number) => {
   return index + 1 + (pageStore.current - 1) * pageStore.pageSize
@@ -75,9 +80,9 @@ watch(
   () => props.entityList,
   () => {
     result.value = []
-    data.value = [];
+    data.value = []
     clonedEntityList()
-  },
+  }
 )
 const filterHandler = (value, row, column) => {
   const property = column['property']
@@ -95,6 +100,17 @@ const handleCurrentChange = (val) => {
     pageStore.current * pageStore.pageSize
   )
 }
+const emit = defineEmits(['traceability'])
+const handleClickEntity = (data, index) => {
+  emit('traceability', {
+    entityName: data.replaced_text,
+    entityIndex: index
+  })
+}
+
+const handleTableExport = (type: 'pdf' | 'excel') => {
+  console.log('导出')
+}
 </script>
 <template>
   <div class="w-full h-full flex flex-col">
@@ -103,7 +119,12 @@ const handleCurrentChange = (val) => {
       <el-table-column property="replaced_text" width="136px">
         <template #header>
           <span>实体名</span>
-          <el-input v-model="entityKeyword" size="small" class="!w-65px m-l-4px" placeholder="搜索实体" />
+          <el-input
+            v-model="entityKeyword"
+            size="small"
+            class="!w-65px m-l-4px"
+            placeholder="搜索实体"
+          />
         </template>
       </el-table-column>
       <el-table-column
@@ -116,15 +137,36 @@ const handleCurrentChange = (val) => {
         <template #default="{ row }"> {{ getType(row.type) }} </template>
       </el-table-column>
       <el-table-column property="start_index" label="溯源">
-        <template #default="{ row }"> {{ row.start_index }} ~ {{ row.end_index }} </template>
+        <template #default="{ row }">
+          <div class="flex flex-wrap">
+            <el-button
+              type="text"
+              v-for="(item, index) in row?.entityList"
+              :key="item.entity_id"
+              @click="handleClickEntity(item, index)"
+            >
+              {{ index + 1 }}
+            </el-button>
+          </div>
+        </template>
       </el-table-column>
     </el-table>
-    <el-pagination
-      v-model:current-page="pageStore.current"
-      :page-size="pageStore.pageSize"
-      layout="total, prev, pager, next"
-      :total="pageStore.total"
-      @current-change="handleCurrentChange"
-    />
+    <div class="flex items-center justify-between">
+      <el-pagination
+        v-model:current-page="pageStore.current"
+        :page-size="pageStore.pageSize"
+        layout="total, prev, pager, next"
+        :total="pageStore.total"
+        @current-change="handleCurrentChange"
+      />
+      <div class="flex">
+        <el-button type="primary" size="small" @click="handleTableExport('pdf')">
+          pdf导出
+        </el-button>
+        <el-button type="primary" size="small" @click="handleTableExport('excel')">
+          excel导出
+        </el-button>
+      </div>
+    </div>
   </div>
 </template>

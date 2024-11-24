@@ -7,85 +7,87 @@
       @anonymous-processing="docNameEntityRecognition"
     />
     <splitpanes class="flex-1" horizontal>
-      <pane> 
-        <EntityJudgeResult :entity-list="entityList"/>
-       </pane>
       <pane>
-        <div
-          class="w-full h-full flex-1 hide-scrobar flex flex-col items-stretch overflow-y-scroll mb-3"
-          ref="scrollContainer"
-          style="scrollbar-width: none; -ms-overflow-style: none"
-        >
-          <ChatMessage
-            v-for="m in messages"
-            :message="m"
-            :export="exportMode"
-            @text-selected="(text) => $emit('textSelected', text)"
-            @deleted-message="handleDeleteMessage"
-            @switch-export="(id) => switchExport(id)"
-            @update-response-success="updateMessege"
-            @get-message="(val) => $emit('getMessage', val)"
+        <EntityJudgeResult :entity-list="entityList" @traceability="(data) => $emit('traceability', data)" />
+      </pane>
+      <pane>
+        <div class="w-full h-full flex flex-col">
+          <div
+            class="flex-1 hide-scrobar flex flex-col items-stretch overflow-y-scroll mb-3"
+            ref="scrollContainer"
+            style="scrollbar-width: none; -ms-overflow-style: none"
           >
-          </ChatMessage>
-          <div ref="viewAnchor" />
-        </div>
-        <div v-if="!exportMode" class="self-stretch flex mb-3 justify-between">
-          <el-autocomplete
-            class="flex-1 inline-input"
-            v-model="prompt"
-            @select="customizeChat"
-            :fetch-suggestions="querySearch"
-            :highlight-first-item="true"
-            :trigger-on-focus="false"
-            :fit-input-width="true"
-            clearable
-            placeholder="输入 / 选择或者直接提问"
-            :disabled="entityRecognitionLoading"
-          >
-            <template #default="{ item }">
-              <div class="flex justify-between">
-                <div class="flex flex-col">
-                  <el-text class="self-start">{{ item.template_name }}</el-text>
+            <ChatMessage
+              v-for="m in messages"
+              :message="m"
+              :export="exportMode"
+              @text-selected="(text) => $emit('textSelected', text)"
+              @deleted-message="handleDeleteMessage"
+              @switch-export="(id) => switchExport(id)"
+              @update-response-success="updateMessege"
+              @get-message="(val) => $emit('getMessage', val)"
+            >
+            </ChatMessage>
+            <div ref="viewAnchor" />
+          </div>
+          <div v-if="!exportMode" class="self-stretch flex mb-3 justify-between">
+            <el-autocomplete
+              class="flex-1 inline-input"
+              v-model="prompt"
+              @select="customizeChat"
+              :fetch-suggestions="querySearch"
+              :highlight-first-item="true"
+              :trigger-on-focus="false"
+              :fit-input-width="true"
+              clearable
+              placeholder="输入 / 选择或者直接提问"
+              :disabled="entityRecognitionLoading"
+            >
+              <template #default="{ item }">
+                <div class="flex justify-between">
+                  <div class="flex flex-col">
+                    <el-text class="self-start">{{ item.template_name }}</el-text>
+                  </div>
+                  <el-text truncated>{{ item.template }}</el-text>
+                  <div class="flex items-center slef-end">
+                    <el-text>
+                      作者：{{ item.author }}
+                      <el-icon class="el-input__icon">
+                        <StarFilled />
+                      </el-icon>
+                      {{ item.agree_count }}
+                    </el-text>
+                  </div>
                 </div>
-                <el-text truncated>{{ item.template }}</el-text>
-                <div class="flex items-center slef-end">
-                  <el-text>
-                    作者：{{ item.author }}
-                    <el-icon class="el-input__icon">
-                      <StarFilled />
-                    </el-icon>
-                    {{ item.agree_count }}
-                  </el-text>
-                </div>
-              </div>
-            </template>
-          </el-autocomplete>
-          <el-button
-            @click="docAnalyzes(prompt)"
-            :loading="loading"
-            class="ml-3"
-            type="success"
-            :disabled="entityRecognitionLoading"
-            :icon="Promotion"
+              </template>
+            </el-autocomplete>
+            <el-button
+              @click="docAnalyzes(prompt)"
+              :loading="loading"
+              class="ml-3"
+              type="success"
+              :disabled="entityRecognitionLoading"
+              :icon="Promotion"
+            />
+          </div>
+          <div v-else class="self-stretch flex mb-3 justify-between items-center">
+            <el-checkbox
+              class="self-center"
+              v-model="checkAll"
+              :indeterminate="isIndeterminate"
+              @change="handleCheckAllChange"
+            >
+              全部选中
+            </el-checkbox>
+            <el-button @click="switchExport" class="w-30">取消</el-button>
+            <el-button @click="showExportDialog = true" class="w-30" type="primary">导出</el-button>
+          </div>
+          <ExportDialog
+            v-model:showDialog="showExportDialog"
+            :document="document"
+            :messages="messages"
           />
         </div>
-        <div v-else class="self-stretch flex mb-3 justify-between items-center">
-          <el-checkbox
-            class="self-center"
-            v-model="checkAll"
-            :indeterminate="isIndeterminate"
-            @change="handleCheckAllChange"
-          >
-            全部选中
-          </el-checkbox>
-          <el-button @click="switchExport" class="w-30">取消</el-button>
-          <el-button @click="showExportDialog = true" class="w-30" type="primary">导出</el-button>
-        </div>
-        <ExportDialog
-          v-model:showDialog="showExportDialog"
-          :document="document"
-          :messages="messages"
-        />
       </pane>
     </splitpanes>
   </div>
@@ -131,7 +133,7 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['textSelected', 'entityResults', 'getMessage'])
+const emit = defineEmits(['textSelected', 'entityResults', 'getMessage', 'traceability'])
 
 let intervalId
 onMounted(async () => {
