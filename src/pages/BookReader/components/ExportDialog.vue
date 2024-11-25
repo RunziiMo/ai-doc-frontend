@@ -26,6 +26,7 @@ import 'highlight.js/styles/github-dark.css'
 import { ElMessage } from 'element-plus'
 import { exportToTxt, exportWord } from '@/utils/file'
 import ExportMessage from './ExportMessage.vue'
+import '../../../../public/static/js/SIMHEI-normal.js'
 
 const props = defineProps({
   showDialog: {
@@ -166,7 +167,6 @@ const handleExportWord = () => {
 
 const handleExportPdf = () => {
     const pdf = new jsPDF();
-    pdf.addFont('/static/fonts/SIMHEI.ttf', 'SIMHEI', 'normal');
     pdf.setFont('SIMHEI');
     
     const pageWidth = pdf.internal.pageSize.width - 20;

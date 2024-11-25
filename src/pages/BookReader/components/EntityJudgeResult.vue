@@ -1,5 +1,8 @@
 <script lang="ts" setup>
 import { reactive, ref, watch } from 'vue'
+import jsPDF from 'jspdf'
+import 'jspdf-autotable'
+import '../../../../public/static/js/SIMHEI-normal.js'
 
 const props = defineProps({
   entityList: {
@@ -108,8 +111,87 @@ const handleClickEntity = (data, index) => {
   })
 }
 
-const handleTableExport = (type: 'pdf' | 'excel') => {
-  console.log('导出')
+const getExportTableData = () => {
+  const exportData = data.value?.map((el, index) => [
+    index + 1,
+    el.replaced_text,
+    getType(el.type),
+    el?.entityList
+      ?.map((item, itemIndex) => {
+        return `${item.replaced_text}${itemIndex + 1}的上下文为：${item.window_text}`
+      })
+      .join('\n') || ''
+  ])
+  return [['序号', '实体名', '类型', '溯源'], ...(exportData || [])]
+}
+
+const handleTablePdfExport = () => {
+  // 示例数据
+  const data = [
+  ['Name', 'Age', 'Email'],
+  ['John Doe', 28, 'john.doe@example.com'],
+  ['Jane Smith', 34, 'jane.smith@example.org'],
+  ['Michael Johnson', 45, 'michael.j@example.net']
+];
+
+  // 创建一个新的PDF文档
+  const doc = new jsPDF() as any
+
+  // 使用autoTable插件添加表格到PDF中
+  doc.autoTable({
+    head: data[0], // 表头
+    body: data.slice(1), // 表格内容（排除表头）
+    styles: {
+      fontSize: 12, // 字体大小
+      cellPadding: 5, // 单元格内边距
+      font: 'SIMHEI'
+    },
+
+    margin: { top: 10 }, // 顶部边距
+    didDrawCell: (data) => {
+      // 可选的单元格绘制后钩子，用于自定义单元格样式
+    }
+  })
+
+  // 保存PDF文件
+  doc.save('table.pdf')
+}
+const handleTableExcelExport = async () => {
+ 
+  const aoa = getExportTableData();
+
+  /* dynamically import the SheetJS Wrapper */
+  const XLSX = await import('@/utils/sheetJSWriteWrapper')
+
+  // 创建一个新的工作簿
+  const wb = XLSX.utils.book_new()
+
+  // 将数据转换为工作表
+  const ws = XLSX.utils.aoa_to_sheet(aoa)
+  // 设置列宽
+  ws['!cols'] = [
+    { wch: 5 }, // 序号 列宽度
+    { wch: 10 }, // 实体名 列宽度
+    { wch: 10 }, // 类型 列宽
+    { wch: 60 } // 溯源更宽以防止溢出
+  ]
+  // 设置单元格样式
+  for (let R = 0; R < aoa?.length; R++) {
+    for (let C = 0; C < data[R]?.length; C++) {
+      const cell_address = XLSX.utils.encode_cell({ r: R, c: C })
+      if (!ws[cell_address]) continue // 跳过空单元格
+
+      // 设置单元格文本样式
+      ws[cell_address].s = {
+        alignment: {
+          wrapText: true // 允许文本换行
+        }
+      }
+    }
+  }
+  XLSX.utils.book_append_sheet(wb, ws, 'Sheet1')
+
+  XLSX.writeFileXLSX(wb, '实体结果.xlsx')
 }
 </script>
 <template>
@@ -159,14 +241,12 @@ const handleTableExport = (type: 'pdf' | 'excel') => {
         :total="pageStore.total"
         @current-change="handleCurrentChange"
       />
-      <!-- <div class="flex">
-        <el-button type="primary" size="small" @click="handleTableExport('pdf')">
-          pdf导出
-        </el-button>
-        <el-button type="primary" size="small" @click="handleTableExport('excel')">
+      <div class="flex">
+        <el-button type="primary" size="small" @click="handleTablePdfExport()"> pdf导出 </el-button>
+        <el-button type="primary" size="small" @click="handleTableExcelExport()">
           excel导出
         </el-button>
-      </div> -->
+      </div>
     </div>
   </div>
 </template>
