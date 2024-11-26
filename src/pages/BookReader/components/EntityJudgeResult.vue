@@ -1,7 +1,7 @@
 <script lang="ts" setup>
 import { reactive, ref, watch } from 'vue'
 import jsPDF from 'jspdf'
-import 'jspdf-autotable'
+import autoTable from 'jspdf-autotable'
 import '../../../../public/static/js/SIMHEI-normal.js'
 
 const props = defineProps({
@@ -61,7 +61,7 @@ watch(entityKeyword, () => {
 })
 
 const clonedEntityList = () => {
-  props.entityList.forEach((el: any) => {
+  props.entityList?.forEach((el: any) => {
     const i = data.value.findIndex((item) => item.replaced_text === el.replaced_text)
     if (i === -1) {
       data.value.push(el)
@@ -124,41 +124,31 @@ const getExportTableData = () => {
   ])
   return [['序号', '实体名', '类型', '溯源'], ...(exportData || [])]
 }
-
 const handleTablePdfExport = () => {
   // 示例数据
-  const data = [
-  ['Name', 'Age', 'Email'],
-  ['John Doe', 28, 'john.doe@example.com'],
-  ['Jane Smith', 34, 'jane.smith@example.org'],
-  ['Michael Johnson', 45, 'michael.j@example.net']
-];
+  const data = getExportTableData()
 
   // 创建一个新的PDF文档
-  const doc = new jsPDF() as any
-
+  const doc = new jsPDF()
   // 使用autoTable插件添加表格到PDF中
-  doc.autoTable({
-    head: data[0], // 表头
+  autoTable(doc, {
+    head: [data[0]], // 表头
     body: data.slice(1), // 表格内容（排除表头）
     styles: {
       fontSize: 12, // 字体大小
-      cellPadding: 5, // 单元格内边距
-      font: 'SIMHEI'
+      font: 'SIMHEI',
+      overflow: 'linebreak',
+      cellWidth: 'auto',
+      minCellWidth: 18 // 最小单元格宽度
     },
-
-    margin: { top: 10 }, // 顶部边距
-    didDrawCell: (data) => {
-      // 可选的单元格绘制后钩子，用于自定义单元格样式
-    }
+    columnStyles: { content: { cellWidth: 'auto' } }
   })
 
   // 保存PDF文件
   doc.save('table.pdf')
 }
 const handleTableExcelExport = async () => {
- 
-  const aoa = getExportTableData();
+  const aoa = getExportTableData()
 
   /* dynamically import the SheetJS Wrapper */
   const XLSX = await import('@/utils/sheetJSWriteWrapper')
@@ -175,20 +165,6 @@ const handleTableExcelExport = async () => {
     { wch: 10 }, // 类型 列宽
     { wch: 60 } // 溯源更宽以防止溢出
   ]
-  // 设置单元格样式
-  for (let R = 0; R < aoa?.length; R++) {
-    for (let C = 0; C < data[R]?.length; C++) {
-      const cell_address = XLSX.utils.encode_cell({ r: R, c: C })
-      if (!ws[cell_address]) continue // 跳过空单元格
-
-      // 设置单元格文本样式
-      ws[cell_address].s = {
-        alignment: {
-          wrapText: true // 允许文本换行
-        }
-      }
-    }
-  }
   XLSX.utils.book_append_sheet(wb, ws, 'Sheet1')
 
   XLSX.writeFileXLSX(wb, '实体结果.xlsx')
