@@ -8,8 +8,12 @@
       @request-entity-result="$emit('requestEntityResult')"
     />
     <splitpanes class="flex-1" horizontal>
-      <pane>
-        <EntityJudgeResult v-loading="entityTableLoading" :entity-list="entityList" @traceability="(data) => $emit('traceability', data)" />
+      <pane v-if="entityList.length > 0">
+        <EntityJudgeResult
+          v-loading="entityTableLoading"
+          :entity-list="entityList"
+          @traceability="(data) => $emit('traceability', data)"
+        />
       </pane>
       <pane>
         <div class="w-full h-full flex flex-col">
@@ -95,7 +99,18 @@
 </template>
 
 <script lang="ts" setup>
-import { reactive, h, ref, computed, watch, onMounted, onUnmounted, nextTick, provide, inject } from 'vue'
+import {
+  reactive,
+  h,
+  ref,
+  computed,
+  watch,
+  onMounted,
+  onUnmounted,
+  nextTick,
+  provide,
+  inject
+} from 'vue'
 import { isProxy, toRaw } from 'vue'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import { Promotion } from '@element-plus/icons-vue'
@@ -138,7 +153,13 @@ const props = defineProps({
   }
 })
 
-const emit = defineEmits(['textSelected', 'entityResults', 'getMessage', 'traceability', 'requestEntityResult'])
+const emit = defineEmits([
+  'textSelected',
+  'entityResults',
+  'getMessage',
+  'traceability',
+  'requestEntityResult'
+])
 
 let intervalId
 onMounted(async () => {
@@ -262,10 +283,6 @@ const loadChatMessages = async (documentId) => {
 
 const docNameEntityRecognition = async () => {
   entityRecognitionLoading.value = true
-  const params = {
-    book_identify: props.bookIdentify,
-    doc_id: props.document.doc_id
-  }
   const formData = new FormData()
   formData.append('book_identify', props.bookIdentify)
   formData.append('doc_id', props.document.doc_id)

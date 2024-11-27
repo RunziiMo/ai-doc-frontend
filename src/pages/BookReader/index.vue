@@ -182,7 +182,7 @@ const handletRaceability = (data) => {
       </el-aside>
       <el-main>
         <splitpanes :first-splitter="false" :dbl-click-splitter="false" :push-other-panes="false">
-          <pane class="flex justify-center" size="62">
+          <pane class="flex justify-center" size="54">
             <DocumentReader
               :bookIdentify="bookIdentify"
               :document="document"
@@ -194,7 +194,7 @@ const handletRaceability = (data) => {
           </pane>
           <pane
             v-if="showChatter"
-            size="38"
+            size="46"
             style="overflow: unset"
             class="flex flex-col items-stretch relative justify-between"
           >

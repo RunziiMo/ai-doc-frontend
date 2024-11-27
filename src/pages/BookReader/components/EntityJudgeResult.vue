@@ -61,6 +61,8 @@ watch(entityKeyword, () => {
 })
 
 const clonedEntityList = () => {
+  result.value = []
+  data.value = []
   props.entityList?.forEach((el: any) => {
     const i = data.value.findIndex((item) => item.replaced_text === el.replaced_text)
     if (i === -1) {
@@ -78,18 +80,20 @@ const clonedEntityList = () => {
 const indexMethod = (index: number) => {
   return index + 1 + (pageStore.current - 1) * pageStore.pageSize
 }
-
+clonedEntityList()
 watch(
   () => props.entityList,
   () => {
-    result.value = []
-    data.value = []
     clonedEntityList()
   }
 )
 const filterHandler = (value, row, column) => {
   const property = column['property']
   return row[property] === value
+}
+
+const handleFliterChange = () => {
+  // pageStore.total = result.value.length
 }
 
 const getType = (type) => {
@@ -172,9 +176,9 @@ const handleTableExcelExport = async () => {
 </script>
 <template>
   <div class="w-full h-full flex flex-col">
-    <el-table class="flex-1" :data="result">
+    <el-table class="flex-1" :data="result" @filter-change="handleFliterChange">
       <el-table-column type="index" :index="indexMethod" label="序号" width="55px" />
-      <el-table-column property="replaced_text" width="136px">
+      <el-table-column property="replaced_text" width="200px">
         <template #header>
           <span>实体名</span>
           <el-input

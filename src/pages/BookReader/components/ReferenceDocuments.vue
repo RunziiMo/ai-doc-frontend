@@ -75,7 +75,6 @@ init()
 watch(
   () => props.currentMessage,
   async () => {
-    console.log("=====")
     init()
   }
 )
