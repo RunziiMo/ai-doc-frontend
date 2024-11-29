@@ -234,7 +234,7 @@ const scrollToText = async (searchString, index = 0) => {
   if (elements.length > 0) {
     if (firstElement) {
       firstElement.scrollIntoView({ behavior: 'smooth' })
-      firstElement.style.setProperty('--background-color', colors[index])
+      firstElement.classList.add('text-scroll-selected')
       // if (targetMarks.length > 1) {
       //   const marks = firstElement.getElementsByTagName('mark')
       //   console.log(marks[marks.length])
@@ -242,7 +242,6 @@ const scrollToText = async (searchString, index = 0) => {
       // } else {
       //   firstElement.style.setProperty('--background-color', colors[index])
       // }
-      firstElement.style.setProperty('--background-color', colors[index])
     }
     // 如果使用<el-scrollbar>，则可能需要使用其API来滚动
     // scrollbar.value?.scrollToElement(firstElement); // 假设Element Plus提供了这样的API
@@ -538,11 +537,16 @@ const typeList = [
   position: relative;
   user-select: none;
   background: var(--background-color);
-
-  mark {
-    background: var(--background-color) !important;
-  }
 }
+:deep(.text-scroll-selected) {
+  --background-color: red !important;
+  background: var(--background-color) !important;
+}
+:deep(.text-scroll-selected mark) {
+  --background-color: red !important;
+  background: var(--background-color) !important;
+}
+
 
 :deep(.edit-popover) {
   left: 0;
