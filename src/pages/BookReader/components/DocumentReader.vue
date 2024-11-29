@@ -104,7 +104,7 @@ const markEntitys = defineModel('markEntitys', {
   default: () => {}
 })
 const colors = {
-  PERSON: '#ffc107',
+  PERSON: 'rgb(255, 0, 166)',
   LOCATION: '#ff9800',
   MONEY: '#ff5722',
   LOC_ORG: '#f44336',
@@ -132,8 +132,7 @@ const handelMark = (instance, entitys) => {
   entitys
     ?.filter((el, index) => entitys.indexOf(el) === index)
     .forEach((el) => {
-      const regex = new RegExp(el.replaced_text, 'gim')
-      instance.markRegExp(regex, options(el))
+      instance.mark(el.replaced_text, options(el))
     })
   // entitys?.forEach((el) => {
   //   const texts = el.window_text.split(el.replaced_text)
@@ -221,8 +220,6 @@ const handleRendered = async () => {
 
 const scrollToText = async (searchString, index = 0) => {
   const markIns = new Mark(docContainer.value)
-  markIns.unmark()
-  handelMark(markIns, entityList.value)
 
   await nextTick() // 等待DOM更新
   const elements = docContainer.value.getElementsByTagName('mark') // 假设被高亮的文本被<mark>标签包裹
@@ -234,7 +231,12 @@ const scrollToText = async (searchString, index = 0) => {
   if (elements.length > 0) {
     if (firstElement) {
       firstElement.scrollIntoView({ behavior: 'smooth' })
-      firstElement.classList.add('text-scroll-selected')
+      markIns.unmark()
+      handelMark(markIns, entityList.value)
+      markIns.mark(searchString, {
+        acrossElements: true,
+        className: 'text-scroll-selected'
+      })
       // if (targetMarks.length > 1) {
       //   const marks = firstElement.getElementsByTagName('mark')
       //   console.log(marks[marks.length])
@@ -539,14 +541,13 @@ const typeList = [
   background: var(--background-color);
 }
 :deep(.text-scroll-selected) {
-  --background-color: red !important;
+  --background-color: rgb(255, 166, 0) !important;
   background: var(--background-color) !important;
 }
 :deep(.text-scroll-selected mark) {
-  --background-color: red !important;
+  --background-color: rgb(255, 166, 0) !important;
   background: var(--background-color) !important;
 }
-
 
 :deep(.edit-popover) {
   left: 0;
