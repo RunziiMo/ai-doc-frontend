@@ -1,7 +1,8 @@
 <script lang="ts" setup>
 import { reactive, ref, watch } from 'vue'
-import { createPDFDocument } from '@/utils/pdf'
 import autoTable from 'jspdf-autotable'
+import jsPDF from 'jspdf'
+import '@/assets/js/SIMHEI-normal.js'
 
 const props = defineProps({
   entityList: {
@@ -132,7 +133,7 @@ const handleTablePdfExport = () => {
   const data = getExportTableData()
 
   // 创建一个新的PDF文档
-  const doc = createPDFDocument()
+  const doc = new jsPDF()
 
   // 使用autoTable插件添加表格到PDF中
   autoTable(doc, {

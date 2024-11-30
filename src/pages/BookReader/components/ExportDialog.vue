@@ -24,7 +24,8 @@ import hljs from 'highlight.js'
 import 'highlight.js/styles/github-dark.css'
 import { ElMessage } from 'element-plus'
 import { exportToTxt, exportWord } from '@/utils/file'
-import { createPDFDocument } from '@/utils/pdf'
+import jsPDF from 'jspdf'
+import '@/assets/js/SIMHEI-normal.js'
 import ExportMessage from './ExportMessage.vue'
 
 const props = defineProps({
@@ -165,7 +166,7 @@ const handleExportWord = () => {
 }
 
 const handleExportPdf = () => {
-    const pdf = createPDFDocument()
+    const pdf = new jsPDF()
 
     const pageWidth = pdf.internal.pageSize.width - 20;
     const lineHeight = 10;
