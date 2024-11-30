@@ -33,8 +33,8 @@
     </el-form-item>
     <el-form-item label="">
       <el-radio-group v-model="form.privately_owned">
-        <el-radio :value="1">公开(任何人都可以访问)</el-radio>
-        <!-- <el-radio :value="0">私有(只有参与者或者使用令牌才能访问)</el-radio> -->
+        <el-radio :value="0">公开(任何人都可以访问)</el-radio>
+        <el-radio :value="1">私有(只有参与者或者使用令牌才能访问)</el-radio>
       </el-radio-group>
     </el-form-item>
     <el-form-item label="" prop="file">
@@ -90,7 +90,7 @@ const form = reactive({
   book_name: '',
   identify: '',
   description: '',
-  privately_owned: 1, // 假设公开为默认值
+  privately_owned: 0, // 假设公开为默认值
   file: [] // 文件列表
 })
 
@@ -238,7 +238,7 @@ const uploadFiles = async() => {
       form.book_name = ''
       form.identify = ''
       form.description = ''
-      form.privately_owned = 1
+      form.privately_owned = 0
       form.file = []
       
     } else {
