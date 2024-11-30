@@ -1,16 +1,7 @@
 <script lang="ts" setup>
-import {
-  ref,
-  computed,
-  watch,
-  nextTick,
-  reactive,
-} from 'vue'
+import { ref, computed, watch, nextTick, reactive } from 'vue'
 import { useMouseInElement } from '@vueuse/core'
-import { Splitpanes, Pane } from 'splitpanes'
 import { ElMessageBox, ElScrollbar } from 'element-plus'
-import { Promotion } from '@element-plus/icons-vue'
-import { marked } from 'marked'
 import 'splitpanes/dist/splitpanes.css'
 import axios from 'axios'
 import { defaultOptions, renderAsync } from 'docx-preview'
@@ -18,6 +9,7 @@ import Mark from 'mark.js'
 import { getSelectedTextInfos } from '@/utils/text'
 import { ElMessage } from 'element-plus'
 import PdfView from './PdfView.vue'
+import { generateLightColors } from '@/utils/light-colors'
 
 const props = defineProps({
   bookIdentify: {
@@ -30,6 +22,10 @@ const props = defineProps({
   },
   searchString: {
     type: String,
+    required: true
+  },
+  traceability: {
+    type: Object,
     required: true
   }
 })
@@ -46,8 +42,7 @@ const addPopover = ref({
   left: 0
 })
 
-
-const loadDocument = async (bookIdentify, docId, docIdentify) => {
+const loadDocument = async (bookIdentify, docId) => {
   const url = `/api/book/${bookIdentify}/download/${docId}`
   let response = await axios.get(url, {
     responseType: 'blob' // 设置响应类型为 blob
@@ -64,16 +59,23 @@ const loadDocument = async (bookIdentify, docId, docIdentify) => {
 
 watch(
   () => props.document,
-  (newValue, oldValue) => {
+  (newValue) => {
     if (isPdf.value) return
-    loadDocument(props.bookIdentify, newValue.doc_id, newValue.identify)
+    loadDocument(props.bookIdentify, newValue.doc_id)
   }
 )
 
 watch(
   () => props.searchString,
-  (newValue, oldValue) => {
+  (newValue) => {
     scrollToText(newValue)
+  }
+)
+
+watch(
+  () => props.traceability,
+  (newValue) => {
+    scrollToText(newValue.entityName, newValue.entityIndex)
   }
 )
 const docContainer = ref<HTMLDivElement>(null)
@@ -101,15 +103,20 @@ const markEntitys = defineModel('markEntitys', {
   type: Function,
   default: () => {}
 })
-
-markEntitys.value = async (entitys) => {
-  await nextTick()
-  const instance = new Mark(docContainer.value)
-  instance.unmark()
+const colors = {
+  PERSON: 'rgb(255, 0, 166)',
+  LOCATION: '#ff9800',
+  MONEY: '#ff5722',
+  LOC_ORG: '#f44336',
+  DATE: '#e91e63',
+  NUM: '#9c27b0'
+}
+const handelMark = (instance, entitys) => {
   const options = (data) => ({
     acrossElements: true,
     className: 'text-selected',
     each: (element) => {
+      element.style.setProperty('--background-color', colors[data.type])
       element.setAttribute('id', data.entity_id)
       element.onmouseenter = function () {
         Object.assign(editEntitysModel, data)
@@ -121,16 +128,24 @@ markEntitys.value = async (entitys) => {
     },
     done: async function () {}
   })
-  entitys?.filter((el, index) => entitys.indexOf(el) === index).forEach(el => {
-    const regex = new RegExp(el.replaced_text, 'gim')
-    instance.markRegExp(regex, options(el))
-  })
+
+  entitys
+    ?.filter((el, index) => entitys.indexOf(el) === index)
+    .forEach((el) => {
+      instance.mark(el.replaced_text, options(el))
+    })
   // entitys?.forEach((el) => {
   //   const texts = el.window_text.split(el.replaced_text)
   //   const regexStr = `(?<=${texts[0]})${el.replaced_text}(?=${texts[1]})`
   //   const regex = new RegExp(regexStr, 'gim')
   //   instance.markRegExp(regex, options(el))
   // })
+}
+
+markEntitys.value = async (entitys) => {
+  const instance = new Mark(docContainer.value)
+  instance.unmark()
+  handelMark(instance, entitys)
 }
 
 const { x: mouseX, y: mouseY, isOutside } = useMouseInElement(docContainer.value)
@@ -142,12 +157,12 @@ const addEntitysModel = reactive({
   start_index: 0,
   end_index: 0,
   window_text: '',
-  replaced_text: '',
+  replaced_text: ''
 })
 
 const selectedTextInfos = ref([])
 
-const handleMouseUp = (e) => {
+const handleMouseUp = () => {
   const selection = window.getSelection()
   const selectedText = selection.toString()
   if (selectedText) {
@@ -158,7 +173,7 @@ const handleMouseUp = (e) => {
         top: mouseY.value,
         left: mouseX.value
       }
-      addEntitysModel.replaced_text = selectedText;
+      addEntitysModel.replaced_text = selectedText
       selectedTextInfos.value = getSelectedTextInfos(selectedText, docContainer.value.innerText)
     }
   }
@@ -193,8 +208,6 @@ const getEntityList = async (data) => {
   }
 }
 
-
-
 const handleRendered = async () => {
   if (entityList.value.length !== 0) {
     await nextTick()
@@ -205,19 +218,33 @@ const handleRendered = async () => {
   emit('fileRenderFinished')
 }
 
-const toast = (message) => {
-  ElMessage.warning(message)
-}
-const scrollToText = async (searchString) => {
-  new Mark(docContainer.value).unmark().mark(searchString, {
-    acrossElements: true,
-    accuracy: 'partially'
-  })
+const scrollToText = async (searchString, index = 0) => {
+  const markIns = new Mark(docContainer.value)
+
   await nextTick() // 等待DOM更新
-  const elements = docContainer.value.querySelectorAll('mark') // 假设被高亮的文本被<mark>标签包裹
+  const elements = docContainer.value.getElementsByTagName('mark') // 假设被高亮的文本被<mark>标签包裹
+  const targetMarks = Array.from(elements).filter(
+    (el) => searchString.startsWith(el.textContent) && el.parentElement.tagName !== 'MARK'
+  )
+  const colors = generateLightColors(targetMarks.length)
+  let firstElement = targetMarks?.[index]
   if (elements.length > 0) {
-    const firstElement = elements[0]
-    firstElement.scrollIntoView({ behavior: 'smooth' })
+    if (firstElement) {
+      firstElement.scrollIntoView({ behavior: 'smooth' })
+      markIns.unmark()
+      handelMark(markIns, entityList.value)
+      markIns.mark(searchString, {
+        acrossElements: true,
+        className: 'text-scroll-selected'
+      })
+      // if (targetMarks.length > 1) {
+      //   const marks = firstElement.getElementsByTagName('mark')
+      //   console.log(marks[marks.length])
+      //   marks[marks.length - 1].style.setProperty('--background-color', colors[index])
+      // } else {
+      //   firstElement.style.setProperty('--background-color', colors[index])
+      // }
+    }
     // 如果使用<el-scrollbar>，则可能需要使用其API来滚动
     // scrollbar.value?.scrollToElement(firstElement); // 假设Element Plus提供了这样的API
   } else {
@@ -236,7 +263,7 @@ const objToFormData = (obj) => {
   const formData = new FormData()
 
   for (const key in obj) {
-    if (obj.hasOwnProperty(key)) {
+    if (Object.prototype.hasOwnProperty.call(obj, key)) {
       formData.append(key, obj[key])
     }
   }
@@ -247,7 +274,9 @@ const objToFormData = (obj) => {
 const handleEdit = async () => {
   const form = objToFormData(editEntitysModel)
   const response = await axios.put(
-    `/api/document/${props.document?.doc_id}/entity/${editEntitysModel.entity_id}`, form)
+    `/api/document/${props.document?.doc_id}/entity/${editEntitysModel.entity_id}`,
+    form
+  )
   const { errcode, message } = response.data
   if (errcode === 0) {
     ElMessage.success(message)
@@ -259,27 +288,35 @@ const handleEdit = async () => {
   }
 }
 const handleDelete = async () => {
-  const entityInfo = entityList.value.find(el => {
-    return el.entity_id === editEntitysModel.entity_id;
-  });
-  const entityIds = entityList.value.filter(el => {
-    return el.replaced_text === entityInfo.replaced_text
-  }).map(el => el.entity_id);
-  if(entityIds.length > 1) {
-    await ElMessageBox.confirm(`当前文章共有${entityIds.length}个相同实体，确定后将全部删除，确定删除吗?`, 'Warning', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    });
+  const entityInfo = entityList.value.find((el) => {
+    return el.entity_id === editEntitysModel.entity_id
+  })
+  const entityIds = entityList.value
+    .filter((el) => {
+      return el.replaced_text === entityInfo.replaced_text
+    })
+    .map((el) => el.entity_id)
+  if (entityIds.length > 1) {
+    await ElMessageBox.confirm(
+      `当前文章共有${entityIds.length}个相同实体，确定后将全部删除，确定删除吗?`,
+      'Warning',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
   }
-  
+
   await ElMessageBox.confirm('确定要删除吗?', 'Warning', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
     type: 'warning'
   })
 
-  const response = await axios.delete(`/api/document/${props.document?.doc_id}/entity?&type=${entityInfo.type}&text=${encodeURIComponent(entityInfo.replaced_text)}`)
+  const response = await axios.delete(
+    `/api/document/${props.document?.doc_id}/entity?&type=${entityInfo.type}&text=${encodeURIComponent(entityInfo.replaced_text)}`
+  )
   const { errcode, message } = response.data
   if (errcode === 0) {
     ElMessage.success(message)
@@ -292,15 +329,22 @@ const handleDelete = async () => {
 }
 
 const handleAdd = async () => {
-  if(selectedTextInfos.value.length > 1) {
-    await ElMessageBox.confirm(`当前文章共有${selectedTextInfos.value.length}个相同实体，确定后将全部添加，确定添加吗?`, 'Warning', {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning'
-    })
+  if (selectedTextInfos.value.length > 1) {
+    await ElMessageBox.confirm(
+      `当前文章共有${selectedTextInfos.value.length}个相同实体，确定后将全部添加，确定添加吗?`,
+      'Warning',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning'
+      }
+    )
   }
-  const response = await axios.post(`/api/document/${props.document?.doc_id}/entity`, addEntitysModel)
-  const { errcode, message, data } = response.data
+  const response = await axios.post(
+    `/api/document/${props.document?.doc_id}/entity`,
+    addEntitysModel
+  )
+  const { errcode, message } = response.data
   if (errcode === 0) {
     ElMessage.success(message)
     getEntityList(response.data)
@@ -311,7 +355,7 @@ const handleAdd = async () => {
   }
 }
 const typeList = [
-{
+  {
     text: '人名',
     value: 'PERSON'
   },
@@ -333,7 +377,7 @@ const typeList = [
   },
   {
     text: '数字',
-    value: 'NUM',
+    value: 'NUM'
   }
 ]
 </script>
@@ -366,30 +410,36 @@ const typeList = [
       :style="{ top: addPopover.top + 'px', left: addPopover.left + 'px' }"
       @mouseup.stop
     >
-    <el-form :model="addEntitysModel" class="flex gap-10px w-100%" inline>
-      <el-form-item class="!m-r-0 !m-b-0" label="类别">
-        <el-select
-          placeholder="type"
-          size="small"
-          class="!w-74px"
-          :teleported="false"
-          v-model="addEntitysModel.type"
-        >
-          <el-option
-            v-for="item in typeList"
-            :key="item.value"
-            :label="item.label"
-            :value="item.value"
+      <el-form :model="addEntitysModel" class="flex gap-10px w-100%" inline>
+        <el-form-item class="!m-r-0 !m-b-0" label="类别">
+          <el-select
+            placeholder="type"
+            size="small"
+            class="!w-74px"
+            :teleported="false"
+            v-model="addEntitysModel.type"
+          >
+            <el-option
+              v-for="item in typeList"
+              :key="item.value"
+              :label="item.text"
+              :value="item.value"
+            />
+          </el-select>
+        </el-form-item>
+        <el-form-item class="!m-r-0 !m-b-0" label="置信度">
+          <el-input
+            v-model="addEntitysModel.confidence"
+            size="small"
+            class="!w-60px"
+            disabled
+            placeholder="置信度"
           />
-        </el-select>
-      </el-form-item>
-      <el-form-item class="!m-r-0 !m-b-0" label="置信度">
-        <el-input v-model="addEntitysModel.confidence" size="small" class="!w-60px" disabled placeholder="置信度" />
-      </el-form-item>
-    </el-form>
-    <div class="flex w-100% m-t-8px">
-      <el-button class="flex-1" type="primary" size="small" @click="handleAdd"> 确定 </el-button>
-    </div>
+        </el-form-item>
+      </el-form>
+      <div class="flex w-100% m-t-8px">
+        <el-button class="flex-1" type="primary" size="small" @click="handleAdd"> 确定 </el-button>
+      </div>
     </div>
   </Teleport>
   <Teleport v-if="editPopover.visible" to="body">
@@ -417,7 +467,13 @@ const typeList = [
           </el-select>
         </el-form-item>
         <el-form-item class="!m-r-0 !m-b-0" label="置信度">
-          <el-input v-model="editEntitysModel.confidence" size="small" class="!w-60px" disabled placeholder="置信度" />
+          <el-input
+            v-model="editEntitysModel.confidence"
+            size="small"
+            class="!w-60px"
+            disabled
+            placeholder="置信度"
+          />
         </el-form-item>
       </el-form>
       <div class="flex w-100% m-t-8px">
@@ -478,11 +534,19 @@ const typeList = [
   height: 100%;
 }
 
-:deep(.text-selected) {
-  background: #d48a91 !important;
+:deep(mark) {
   cursor: pointer;
   position: relative;
   user-select: none;
+  background: var(--background-color);
+}
+:deep(.text-scroll-selected) {
+  --background-color: rgb(255, 166, 0) !important;
+  background: var(--background-color) !important;
+}
+:deep(.text-scroll-selected mark) {
+  --background-color: rgb(255, 166, 0) !important;
+  background: var(--background-color) !important;
 }
 
 :deep(.edit-popover) {

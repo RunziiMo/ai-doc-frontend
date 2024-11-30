@@ -196,6 +196,7 @@ const emit = defineEmits(['textSelected',
     'updateResponseSuccess',
     'switchExport',
     'deletedMessage',
+    'getMessage'
 ]);
 
 const checkedMessages = inject('checkedMessages');
@@ -208,6 +209,7 @@ const getSelectedText = () => {
         return
     }
     emit('textSelected', selectedText);
+    emit('getMessage', props.message);
 };
 const handleSourceClick = (event) => {
     let targetElement = event.target;
