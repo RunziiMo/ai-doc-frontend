@@ -21,12 +21,11 @@
 import { reactive, ref, computed, inject } from 'vue'
 import { marked } from 'marked'
 import hljs from 'highlight.js'
-import jsPDF from 'jspdf'
 import 'highlight.js/styles/github-dark.css'
 import { ElMessage } from 'element-plus'
 import { exportToTxt, exportWord } from '@/utils/file'
+import { createPDFDocument } from '@/utils/pdf'
 import ExportMessage from './ExportMessage.vue'
-import '../../../../public/static/js/SIMHEI-normal.js'
 
 const props = defineProps({
   showDialog: {
@@ -166,9 +165,8 @@ const handleExportWord = () => {
 }
 
 const handleExportPdf = () => {
-    const pdf = new jsPDF();
-    pdf.setFont('SIMHEI');
-    
+    const pdf = createPDFDocument()
+
     const pageWidth = pdf.internal.pageSize.width - 20;
     const lineHeight = 10;
 
