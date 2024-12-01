@@ -224,11 +224,11 @@ const handleTableExcelExport = async () => {
         @current-change="handleCurrentChange"
       />
       <div class="flex">
+        <el-button type="primary" size="small" @click="$emit('retract')"> 收起 </el-button>
         <el-button type="primary" size="small" @click="handleTablePdfExport()"> pdf导出 </el-button>
         <el-button type="primary" size="small" @click="handleTableExcelExport()">
           excel导出
         </el-button>
-        <el-button type="primary" size="small" @click="$emit('retract')"> 收起 </el-button>
       </div>
     </div>
   </div>
