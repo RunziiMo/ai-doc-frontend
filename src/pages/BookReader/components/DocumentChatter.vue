@@ -8,11 +8,12 @@
       @request-entity-result="$emit('requestEntityResult')"
     />
     <splitpanes class="flex-1" horizontal>
-      <pane v-if="entityList.length > 0">
+      <pane v-if="!isRetract && entityList.length > 0">
         <EntityJudgeResult
           v-loading="entityTableLoading"
           :entity-list="entityList"
           @traceability="(data) => $emit('traceability', data)"
+          @retract="$emit('retract')"
         />
       </pane>
       <pane>
@@ -150,6 +151,10 @@ const props = defineProps({
   entityTableLoading: {
     type: Boolean,
     required: true
+  },
+  isRetract: {
+    type: Boolean,
+    required: true
   }
 })
 
@@ -158,7 +163,8 @@ const emit = defineEmits([
   'entityResults',
   'getMessage',
   'traceability',
-  'requestEntityResult'
+  'requestEntityResult',
+  'retract'
 ])
 
 let intervalId

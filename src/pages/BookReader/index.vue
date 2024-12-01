@@ -40,10 +40,13 @@ const fileName = computed(() => {
   }
 })
 
+const isRetract = ref(false)
+
 const entityTableLoading = ref(true)
 
 const getEntityList = async (docId) => {
   try {
+    isRetract.value = false
     entityTableLoading.value = true
     const { data } = await axios.get(`/api/document/${docId}/entity`)
      entityTableLoading.value = false
@@ -214,11 +217,13 @@ const handletRaceability = (data) => {
                     'checker_interest',
                     'checker_miss'
                   ]"
+                  :is-retract="isRetract"
                   @text-selected="(text) => (selectedText = text)"
                   @entity-results="handleEntityResults"
                   @get-message="(message) => (currentMessage = message)"
                   @traceability="handletRaceability"
                   @request-entity-result="() => getEntityList(document.doc_id)"
+                  @retract="isRetract = true"
                 />
               </pane>
               <pane v-if="!!fileName">
