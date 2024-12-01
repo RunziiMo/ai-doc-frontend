@@ -34,7 +34,7 @@ const currentMessage = ref()
 const fileName = computed(() => {
   try {
     const context = JSON.parse(currentMessage.value.slots)
-    return context?.context?.[0]
+    return context?.law?.[0]
   } catch (error) {
     return undefined
   }
@@ -132,7 +132,7 @@ const handleEntityResults = (entitys) => {
   }
 }
 // 溯源信息
-const traceability = ref()
+const traceability = ref({})
 const handletRaceability = (data) => {
   traceability.value = data || {}
 }
