@@ -50,7 +50,7 @@
         :on-exceed="handleExceed"
       >
         <div class="flex w-full">
-            <el-input placeholder="请选择Zip或者Docx文件" class="flex-1"></el-input>
+            <el-input placeholder="请选择 Docx 或者 Pdf 文件" class="flex-1"></el-input>
             <el-button type="primary">选择</el-button>
         </div>
       </el-upload>
@@ -119,7 +119,8 @@ const rules = {
         console.log(value)
         if (value.length > 0) {
           const acceptTypes = [
-            'application/zip',
+            // 'application/zip',
+            // 'application/x-zip-compressed',
             'application/vnd.openxmlformats-officedocument.wordprocessingml.document',
             'application/pdf'
           ]
@@ -127,7 +128,7 @@ const rules = {
             const raw = file.raw
             const fileType = raw.type;
             if (acceptTypes.indexOf(fileType) === -1) {
-               return callback(new Error('文件类型必须是 ZIP 或 DOCX 或 PDF'))
+               return callback(new Error('文件类型必须是 DOCX 或 PDF'))
             }
           });
           // 还可以添加其他文件属性检查，比如大小限制等
@@ -203,7 +204,7 @@ const uploadFiles = async() => {
     requests.push(uploadFile(file))
   })
 
-  await Promise.all(requests); 
+  await Promise.all(requests);
 }
 
 // 提交表单
@@ -227,7 +228,7 @@ const uploadFiles = async() => {
         return
       }
 
-      await uploadFiles(form);
+      await uploadFiles();
       
 
       dialogFormVisible.value = false
