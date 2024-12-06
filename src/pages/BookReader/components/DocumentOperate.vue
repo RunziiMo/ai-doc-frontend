@@ -108,7 +108,7 @@ const checkRole =(row, rule, value, callback) => {
     >
       实体识别
     </el-button>
-    <el-button class="flex-1" v-else @click="$emit('requestEntityResult')"> 实体结果 </el-button>
+    <el-button class="flex-1" v-else @click="$emit('requestEntityResult')"> 实体信息 </el-button>
     
     <el-popover
       :visible="popoverVisible"
@@ -175,7 +175,7 @@ const checkRole =(row, rule, value, callback) => {
         <el-button
           @click="handleFunctions"
           class="flex-1" :disabled="entityRecognitionLoad">
-          AI预请求
+          AI批量问答
         </el-button>
       </template>
     </el-popover>

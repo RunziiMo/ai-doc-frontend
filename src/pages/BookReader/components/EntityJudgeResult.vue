@@ -107,7 +107,7 @@ const handleCurrentChange = (val) => {
     pageStore.current * pageStore.pageSize
   )
 }
-const emit = defineEmits(['traceability'])
+const emit = defineEmits(['traceability', 'retract'])
 const handleClickEntity = (data, index) => {
   emit('traceability', {
     entityName: data.replaced_text,
@@ -174,6 +174,7 @@ const handleTableExcelExport = async () => {
 
   XLSX.writeFileXLSX(wb, '实体结果.xlsx')
 }
+
 </script>
 <template>
   <div class="w-full h-full flex flex-col">
@@ -223,6 +224,7 @@ const handleTableExcelExport = async () => {
         @current-change="handleCurrentChange"
       />
       <div class="flex">
+        <el-button type="primary" size="small" @click="$emit('retract')"> 收起 </el-button>
         <el-button type="primary" size="small" @click="handleTablePdfExport()"> pdf导出 </el-button>
         <el-button type="primary" size="small" @click="handleTableExcelExport()">
           excel导出

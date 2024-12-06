@@ -27,7 +27,7 @@ const props = defineProps({
 const fileName = computed(() => {
     try {
         const context = JSON.parse(props.currentMessage.slots)
-        return context?.context?.[0]
+        return context?.law?.[0]
     } catch (error) {
         return undefined;
     }

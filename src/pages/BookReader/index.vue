@@ -34,16 +34,19 @@ const currentMessage = ref()
 const fileName = computed(() => {
   try {
     const context = JSON.parse(currentMessage.value.slots)
-    return context?.context?.[0]
+    return context?.law?.[0]
   } catch (error) {
     return undefined
   }
 })
 
+const isRetract = ref(false)
+
 const entityTableLoading = ref(true)
 
 const getEntityList = async (docId) => {
   try {
+    isRetract.value = false
     entityTableLoading.value = true
     const { data } = await axios.get(`/api/document/${docId}/entity`)
      entityTableLoading.value = false
@@ -132,7 +135,7 @@ const handleEntityResults = (entitys) => {
   }
 }
 // 溯源信息
-const traceability = ref()
+const traceability = ref({})
 const handletRaceability = (data) => {
   traceability.value = data || {}
 }
@@ -214,11 +217,13 @@ const handletRaceability = (data) => {
                     'checker_interest',
                     'checker_miss'
                   ]"
+                  :is-retract="isRetract"
                   @text-selected="(text) => (selectedText = text)"
                   @entity-results="handleEntityResults"
                   @get-message="(message) => (currentMessage = message)"
                   @traceability="handletRaceability"
                   @request-entity-result="() => getEntityList(document.doc_id)"
+                  @retract="isRetract = true"
                 />
               </pane>
               <pane v-if="!!fileName">
