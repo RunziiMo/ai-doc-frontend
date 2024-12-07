@@ -104,12 +104,15 @@ const markEntitys = defineModel('markEntitys', {
   default: () => {}
 })
 const colors = {
-  PERSON: 'rgb(255, 0, 166)',
-  LOCATION: '#ff9800',
-  MONEY: '#ff5722',
-  LOC_ORG: '#f44336',
-  DATE: '#e91e63',
-  NUM: '#9c27b0'
+  PERSON: 'rgba(255, 182, 193)',
+  LOCATION: 'rgba(255, 255, 153)',
+  MONEY: 'rgb(135, 206, 235)',
+  ORGANIZATION: 'rgba(152, 251, 152)',
+  TIME: 'rgb(204, 153, 255)',
+  NUM: 'rgba(255, 204, 153)',
+  BRAND: 'rgba(220, 220, 220)',
+  DENTIFICATION: 'rgb(245, 204, 193)',
+  EMAIL: 'rgb(102, 204, 238)'
 }
 const handelMark = (instance, entitys) => {
   const options = (data) => ({
@@ -360,25 +363,37 @@ const typeList = [
     value: 'PERSON'
   },
   {
-    text: '地名',
+    text: '地址',
     value: 'LOCATION'
+  },
+  {
+    text: '时间',
+    value: 'TIME'
+  },
+  {
+    text: '组织',
+    value: 'ORGANIZATION'
   },
   {
     text: '金额',
     value: 'MONEY'
   },
   {
-    text: '组织',
-    value: 'LOC_ORG'
-  },
-  {
-    text: '日期',
-    value: 'DATE'
-  },
-  {
     text: '数字',
     value: 'NUM'
-  }
+  },
+  {
+    text: '品牌',
+    value: 'BRAND'
+  },
+  {
+    text: '身份证件号码',
+    value: 'DENTIFICATION'
+  },
+  {
+    text: '电子邮件地址',
+    value: 'EMAIL'
+  },
 ]
 </script>
 

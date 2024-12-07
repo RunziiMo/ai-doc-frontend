@@ -25,25 +25,37 @@ const typeList = ref([
     value: 'PERSON'
   },
   {
-    text: '地名',
+    text: '地址',
     value: 'LOCATION'
+  },
+  {
+    text: '时间',
+    value: 'TIME'
+  },
+  {
+    text: '组织',
+    value: 'ORGANIZATION'
   },
   {
     text: '金额',
     value: 'MONEY'
   },
   {
-    text: '组织',
-    value: 'LOC_ORG'
-  },
-  {
-    text: '日期',
-    value: 'DATE'
-  },
-  {
     text: '数字',
     value: 'NUM'
-  }
+  },
+  {
+    text: '品牌',
+    value: 'BRAND'
+  },
+  {
+    text: '身份证件号码',
+    value: 'DENTIFICATION'
+  },
+  {
+    text: '电子邮件地址',
+    value: 'EMAIL'
+  },
 ])
 
 watch(entityKeyword, () => {
@@ -66,11 +78,13 @@ const clonedEntityList = () => {
   props.entityList?.forEach((el: any) => {
     const i = data.value.findIndex((item) => item.replaced_text === el.replaced_text)
     if (i === -1) {
+      el.entityList = [el]
       data.value.push(el)
     } else {
       data.value[i].entityList = [data.value[i], el]
     }
   })
+  console.log(data.value,"=====data.value====")
   pageStore.total = data.value.length
   result.value = data.value?.slice(
     (pageStore.current - 1) * pageStore.pageSize,
