@@ -84,7 +84,6 @@ const clonedEntityList = () => {
       data.value[i].entityList = [data.value[i], el]
     }
   })
-  console.log(data.value,"=====data.value====")
   pageStore.total = data.value.length
   result.value = data.value?.slice(
     (pageStore.current - 1) * pageStore.pageSize,
