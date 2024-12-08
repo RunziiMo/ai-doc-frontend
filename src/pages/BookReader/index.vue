@@ -1,6 +1,6 @@
 <script setup>
 import { ElMessage } from 'element-plus'
-import { ref, onMounted, nextTick, computed, provide } from 'vue'
+import { ref, onMounted, nextTick, computed, provide, onBeforeMount } from 'vue'
 import axios from 'axios'
 import { Splitpanes, Pane } from 'splitpanes'
 import 'splitpanes/dist/splitpanes.css'
@@ -44,18 +44,17 @@ const isRetract = ref(false)
 
 const entityTableLoading = ref(true)
 
-const getEntityList = async (docId) => {
+const getEntityList = async () => {
   try {
     isRetract.value = false
     entityTableLoading.value = true
-    const { data } = await axios.get(`/api/document/${docId}/entity`)
+    const { data } = await axios.get(`/api/document/${document.value.doc_id}/entity`)
      entityTableLoading.value = false
     if (data.errcode !== 0) {
       entityList.value = []
     } else {
       entityList.value = data.data.page.List || []
-      await nextTick()
-      markEntitys.value(entityList.value)
+
     }
   } catch (error) {
      entityTableLoading.value = false
@@ -102,11 +101,13 @@ const getBook = async () => {
   }
 }
 
-onMounted(async () => {
+const requestData = (async () => {
   bookIdentify.value = window.location.pathname.split('/')[2]
   docId.value = window.location.pathname.split('/')[3]
   await getBook()
 })
+requestData()
+
 
 function handleBatchAppendTag(data) {
   console.log('add-tree-tag')

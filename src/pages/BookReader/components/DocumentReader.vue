@@ -9,7 +9,7 @@ import Mark from 'mark.js'
 import { getSelectedTextInfos } from '@/utils/text'
 import { ElMessage } from 'element-plus'
 import PdfView from './PdfView.vue'
-import { generateLightColors } from '@/utils/light-colors'
+import { onUnmounted } from 'vue'
 
 const props = defineProps({
   bookIdentify: {
@@ -52,7 +52,7 @@ const loadDocument = async (bookIdentify, docId) => {
     ignoreWidth: true,
     experimental: true
   })
-  await renderAsync(response.data, docContainer.value, null, docxOptions).then(() => {
+  await renderAsync(response.data, docContainer.value, null, docxOptions).finally(() => {
     handleRendered()
   })
 }
@@ -131,12 +131,15 @@ const handelMark = (instance, entitys) => {
     },
     done: async function () {}
   })
-
+  const start = new Date().getTime()
+console.log(start,'=====start')
   entitys
     ?.filter((el, index) => entitys.indexOf(el) === index)
     .forEach((el) => {
       instance.mark(el.replaced_text, options(el))
     })
+    console.log(new Date().getTime(),'====')
+    console.log(new Date().getTime() - start,'=====')
   // entitys?.forEach((el) => {
   //   const texts = el.window_text.split(el.replaced_text)
   //   const regexStr = `(?<=${texts[0]})${el.replaced_text}(?=${texts[1]})`
@@ -207,16 +210,14 @@ const getEntityList = async (data) => {
   } else {
     entityList.value = data.data.page.List || []
     await nextTick() // 等待DOM更新
-    markEntitys.value(entityList.value)
+    markEntitys.value?.(entityList.value)
   }
 }
 
 const handleRendered = async () => {
+  await getEntityListByApi()
   if (entityList.value.length !== 0) {
-    await nextTick()
-    setTimeout(() => {
-      markEntitys.value?.(entityList.value)
-    }, 1000)
+    markEntitys.value?.(entityList.value)
   }
   emit('fileRenderFinished')
 }
@@ -224,12 +225,11 @@ const handleRendered = async () => {
 const scrollToText = async (searchString, index = 0) => {
   const markIns = new Mark(docContainer.value)
 
-  await nextTick() // 等待DOM更新
+  // await nextTick() // 等待DOM更新
   const elements = docContainer.value.getElementsByTagName('mark') // 假设被高亮的文本被<mark>标签包裹
   const targetMarks = Array.from(elements).filter(
     (el) => searchString.startsWith(el.textContent) && el.parentElement.tagName !== 'MARK'
   )
-  const colors = generateLightColors(targetMarks.length)
   let firstElement = targetMarks?.[index]
   if (elements.length > 0) {
     if (firstElement) {
@@ -403,14 +403,14 @@ const typeList = [
     @scroll="() => ((addPopover.visible = false), (editPopover.visible = false))"
   >
     <div ref="docContainer" class="wh-full" @mouseup.stop="handleMouseUp">
-      <PdfView :url="url" @rendered="handleRendered" />
+      <PdfView :url="url" @rendered="handleRendered"/>
     </div>
   </el-scrollbar>
   <el-scrollbar
     v-else-if="isDocx"
     @scroll="() => ((addPopover.visible = false), (editPopover.visible = false))"
   >
-    <div ref="docContainer" @mouseup.stop="handleMouseUp" />
+    <div ref="docContainer" @mouseup.stop="handleMouseUp"/>
   </el-scrollbar>
   <el-empty
     v-else-if="document.markdown !== undefined && document.markdown === ''"
