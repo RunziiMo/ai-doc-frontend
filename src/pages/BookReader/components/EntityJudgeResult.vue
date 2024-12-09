@@ -8,7 +8,11 @@ const props = defineProps({
   entityList: {
     type: Array,
     default: () => []
-  }
+  },
+  document: {
+    type: Object,
+    required: true
+  },
 })
 
 const pageStore = reactive({
@@ -135,7 +139,7 @@ const getExportTableData = () => {
     getType(el.type),
     el?.entityList
       ?.map((item, itemIndex) => {
-        return `${item.replaced_text}${itemIndex + 1}的上下文为：${item.window_text}`
+        return `${itemIndex + 1}：${item.window_text}`
       })
       .join('\n') || ''
   ])
@@ -163,7 +167,7 @@ const handleTablePdfExport = () => {
   })
 
   // 保存PDF文件
-  doc.save('table.pdf')
+  doc.save(`${props.document.doc_name}-实体结果.pdf`)
 }
 const handleTableExcelExport = async () => {
   const aoa = getExportTableData()
@@ -185,7 +189,7 @@ const handleTableExcelExport = async () => {
   ]
   XLSX.utils.book_append_sheet(wb, ws, 'Sheet1')
 
-  XLSX.writeFileXLSX(wb, '实体结果.xlsx')
+  XLSX.writeFileXLSX(wb, `${props.document.doc_name}-实体结果.xlsx`)
 }
 
 </script>

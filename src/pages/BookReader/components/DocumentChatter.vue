@@ -11,6 +11,7 @@
       <pane v-if="!isRetract && entityList.length > 0">
         <EntityJudgeResult
           v-loading="entityTableLoading"
+          :document="document"
           :entity-list="entityList"
           @traceability="(data) => $emit('traceability', data)"
           @retract="$emit('retract')"
