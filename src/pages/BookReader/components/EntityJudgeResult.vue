@@ -85,7 +85,7 @@ const clonedEntityList = () => {
       el.entityList = [el]
       data.value.push(el)
     } else {
-      data.value[i].entityList = [data.value[i], el]
+      data.value[i].entityList.push(el)
     }
   })
   pageStore.total = data.value.length
@@ -219,7 +219,7 @@ const handleTableExcelExport = async () => {
       </el-table-column>
       <el-table-column property="start_index" label="溯源">
         <template #default="{ row }">
-          <div class="flex flex-wrap">
+          <div class="flex flex-wrap max-h-80px overflow-y-auto">
             <el-button
               type="text"
               v-for="(item, index) in row?.entityList"
