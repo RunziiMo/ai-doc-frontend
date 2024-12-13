@@ -9,7 +9,6 @@ import Mark from 'mark.js'
 import { getSelectedTextInfos } from '@/utils/text'
 import { ElMessage } from 'element-plus'
 import PdfView from './PdfView.vue'
-import { onUnmounted } from 'vue'
 
 const props = defineProps({
   bookIdentify: {
@@ -131,15 +130,12 @@ const handelMark = (instance, entitys) => {
     },
     done: async function () {}
   })
-  const start = new Date().getTime()
-console.log(start,'=====start')
   entitys
     ?.filter((el, index) => entitys.indexOf(el) === index)
     .forEach((el) => {
       instance.mark(el.replaced_text, options(el))
     })
-    console.log(new Date().getTime(),'====')
-    console.log(new Date().getTime() - start,'=====')
+
   // entitys?.forEach((el) => {
   //   const texts = el.window_text.split(el.replaced_text)
   //   const regexStr = `(?<=${texts[0]})${el.replaced_text}(?=${texts[1]})`
@@ -149,9 +145,27 @@ console.log(start,'=====start')
 }
 
 markEntitys.value = async (entitys) => {
-  const instance = new Mark(docContainer.value)
-  instance.unmark()
-  handelMark(instance, entitys)
+  const observer = new IntersectionObserver((entries) => {
+    entries.forEach((entry) => {
+      if (entry.isIntersecting) {
+        const el = entry.target
+        const textContent = el.textContent
+        const currentDomEntitys = entitys.filter((el) => textContent.includes(el.replaced_text))
+        // 在这里进行标记操作
+        if(currentDomEntitys.length === 0) return
+        const instance = new Mark(el)
+        instance.unmark()
+        handelMark(instance, currentDomEntitys)
+        observer.unobserve(el)
+      }
+    })
+  })
+  Array.from(docContainer.value.getElementsByTagName('article')).forEach((article) => {
+    Array.from(article.children).forEach((element) => {
+      observer.observe(element)
+    })
+  })
+
 }
 
 const { x: mouseX, y: mouseY, isOutside } = useMouseInElement(docContainer.value)
@@ -234,19 +248,10 @@ const scrollToText = async (searchString, index = 0) => {
   if (elements.length > 0) {
     if (firstElement) {
       firstElement.scrollIntoView({ behavior: 'smooth' })
-      markIns.unmark()
-      handelMark(markIns, entityList.value)
       markIns.mark(searchString, {
         acrossElements: true,
         className: 'text-scroll-selected'
       })
-      // if (targetMarks.length > 1) {
-      //   const marks = firstElement.getElementsByTagName('mark')
-      //   console.log(marks[marks.length])
-      //   marks[marks.length - 1].style.setProperty('--background-color', colors[index])
-      // } else {
-      //   firstElement.style.setProperty('--background-color', colors[index])
-      // }
     }
     // 如果使用<el-scrollbar>，则可能需要使用其API来滚动
     // scrollbar.value?.scrollToElement(firstElement); // 假设Element Plus提供了这样的API
@@ -393,7 +398,7 @@ const typeList = [
   {
     text: '电子邮件地址',
     value: 'EMAIL'
-  },
+  }
 ]
 </script>
 
@@ -403,14 +408,14 @@ const typeList = [
     @scroll="() => ((addPopover.visible = false), (editPopover.visible = false))"
   >
     <div ref="docContainer" class="wh-full" @mouseup.stop="handleMouseUp">
-      <PdfView :url="url" @rendered="handleRendered"/>
+      <PdfView :url="url" @rendered="handleRendered" />
     </div>
   </el-scrollbar>
   <el-scrollbar
     v-else-if="isDocx"
     @scroll="() => ((addPopover.visible = false), (editPopover.visible = false))"
   >
-    <div ref="docContainer" @mouseup.stop="handleMouseUp"/>
+    <div ref="docContainer" @mouseup.stop="handleMouseUp" />
   </el-scrollbar>
   <el-empty
     v-else-if="document.markdown !== undefined && document.markdown === ''"

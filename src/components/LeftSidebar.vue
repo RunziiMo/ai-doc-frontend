@@ -271,7 +271,7 @@ const handleCheckChange = (data, checked) => {
 
 <style>
 .node-label {
-    margin-right: 10px;
+    width: 100%;
 }
 .el-tree-node__children {
     overflow: visible !important;
