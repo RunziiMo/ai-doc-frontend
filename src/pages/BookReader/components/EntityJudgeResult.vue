@@ -1,12 +1,12 @@
 <script lang="ts" setup>
-import { reactive, ref, watch } from 'vue'
+import { computed, PropType, reactive, ref, watch } from 'vue'
 import autoTable from 'jspdf-autotable'
 import jsPDF from 'jspdf'
 import '@/assets/js/SIMHEI-normal.js'
 
 const props = defineProps({
   entityList: {
-    type: Array,
+    type: Array as PropType<Record<string,string>[]>,
     default: () => []
   },
   document: {
@@ -23,44 +23,15 @@ const pageStore = reactive({
 const result = ref([])
 const data = ref([])
 const entityKeyword = ref('')
-const typeList = ref([
-  {
-    text: '人名',
-    value: 'PERSON'
-  },
-  {
-    text: '地址',
-    value: 'LOCATION'
-  },
-  {
-    text: '时间',
-    value: 'TIME'
-  },
-  {
-    text: '组织',
-    value: 'ORGANIZATION'
-  },
-  {
-    text: '金额',
-    value: 'MONEY'
-  },
-  {
-    text: '数字',
-    value: 'NUM'
-  },
-  {
-    text: '品牌',
-    value: 'BRAND'
-  },
-  {
-    text: '身份证件号码',
-    value: 'DENTIFICATION'
-  },
-  {
-    text: '电子邮件地址',
-    value: 'EMAIL'
-  },
-])
+const typeList = computed(() => {
+  const result = props.entityList.reduce((acc, item) => {
+    if (!acc.some((el) => el.text === item.type)) {
+      acc.push({ text: item.type, value: item.type })
+    }
+    return acc
+  }, [])
+  return result;
+})
 
 watch(entityKeyword, () => {
   const searchResult = data.value.filter(
@@ -113,10 +84,6 @@ const handleFliterChange = () => {
   // pageStore.total = result.value.length
 }
 
-const getType = (type) => {
-  return typeList.value.find((el) => el.value === type)?.text
-}
-
 const handleCurrentChange = (val) => {
   pageStore.current = val
   result.value = data.value?.slice(
@@ -136,7 +103,7 @@ const getExportTableData = () => {
   const exportData = data.value?.map((el, index) => [
     index + 1,
     el.replaced_text,
-    getType(el.type),
+    el.type,
     el?.entityList
       ?.map((item, itemIndex) => {
         return `${itemIndex + 1}：${item.window_text}`
@@ -215,7 +182,6 @@ const handleTableExcelExport = async () => {
         :filter-multiple="false"
         :filter-method="filterHandler"
       >
-        <template #default="{ row }"> {{ getType(row.type) }} </template>
       </el-table-column>
       <el-table-column property="start_index" label="溯源">
         <template #default="{ row }">
