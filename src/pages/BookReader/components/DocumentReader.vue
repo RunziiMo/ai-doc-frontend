@@ -435,11 +435,11 @@ const handleAdd = async () => {
       @mouseup.stop
     >
       <el-form :model="addEntitysModel" class="flex gap-10px w-100%" inline>
-        <el-form-item class="!m-r-0 !m-b-0" label="类别">
+        <el-form-item class="!m-r-0 !m-b-0 !w-100%" label="类别">
           <el-select
             placeholder="type"
             size="small"
-            class="!w-74px"
+            class="!w-100%"
             :teleported="false"
             v-model="addEntitysModel.type"
           >
@@ -451,7 +451,7 @@ const handleAdd = async () => {
             />
           </el-select>
         </el-form-item>
-        <el-form-item class="!m-r-0 !m-b-0" label="置信度">
+        <!-- <el-form-item class="!m-r-0 !m-b-0" label="置信度">
           <el-input
             v-model="addEntitysModel.confidence"
             size="small"
@@ -459,7 +459,7 @@ const handleAdd = async () => {
             disabled
             placeholder="置信度"
           />
-        </el-form-item>
+        </el-form-item> -->
       </el-form>
       <div class="flex w-100% m-t-8px">
         <el-button class="flex-1" type="primary" size="small" @click="handleAdd"> 确定 </el-button>
@@ -473,11 +473,11 @@ const handleAdd = async () => {
       @mouseup.stop
     >
       <el-form :model="editEntitysModel" class="flex gap-10px w-100%" inline>
-        <el-form-item class="!m-r-0 !m-b-0" label="类别">
+        <el-form-item class="!m-r-0 !m-b-0 !w-100%" label="类别">
           <el-select
             placeholder="type"
             size="small"
-            class="!w-74px"
+            class="!w-100%"
             :teleported="false"
             :disabled="disabledEditEntity"
             v-model="editEntitysModel.type"
@@ -490,7 +490,7 @@ const handleAdd = async () => {
             />
           </el-select>
         </el-form-item>
-        <el-form-item class="!m-r-0 !m-b-0" label="置信度">
+        <!-- <el-form-item class="!m-r-0 !m-b-0" label="置信度">
           <el-input
             v-model="editEntitysModel.confidence"
             size="small"
@@ -498,7 +498,7 @@ const handleAdd = async () => {
             disabled
             placeholder="置信度"
           />
-        </el-form-item>
+        </el-form-item> -->
       </el-form>
       <div class="flex w-100% m-t-8px">
         <el-button
