@@ -29,6 +29,8 @@ const props = defineProps({
   }
 })
 
+const typeList = ref([])
+
 const emit = defineEmits(['fileRenderFinished', 'refreshEntity'])
 
 const isPdf = computed(() => {
@@ -102,23 +104,51 @@ const markEntitys = defineModel('markEntitys', {
   type: Function,
   default: () => {}
 })
-const colors = {
-  PERSON: 'rgba(255, 182, 193)',
-  LOCATION: 'rgba(255, 255, 153)',
-  MONEY: 'rgb(135, 206, 235)',
-  ORGANIZATION: 'rgba(152, 251, 152)',
-  TIME: 'rgb(204, 153, 255)',
-  NUM: 'rgba(255, 204, 153)',
-  BRAND: 'rgba(220, 220, 220)',
-  DENTIFICATION: 'rgb(245, 204, 193)',
-  EMAIL: 'rgb(102, 204, 238)'
+
+const generateLightColorsBySequence = (num) =>  {
+  const colors = [];
+  const usedColors = new Set();
+  while (colors.length < num) {
+      // 生成较浅颜色的RGB分量，这里通过控制范围让颜色较浅（例如，让RGB值都在150 - 255之间）
+      const r = Math.floor(Math.random() * 106 + 150);
+      const g = Math.floor(Math.random() * 106 + 150);
+      const k = Math.floor(Math.random() * 106 + 150);
+      const color = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${k.toString(16).padStart(2, '0')}`;
+      if (!usedColors.has(color)) {
+        colors.push(color);
+        usedColors.add(color);
+      }
+  }
+  return colors;
 }
+const colors = ref()
+
+const getcolors = (data) => {
+  const results = {}
+  const colors = generateLightColorsBySequence(data.length)
+  console.log(colors,'==')
+  data.forEach((el, index) => {
+    results[el.value] = colors[index]
+  })
+  return results
+}
+// const colors = {
+//   PERSON: 'rgba(255, 182, 193)',
+//   LOCATION: 'rgba(255, 255, 153)',
+//   MONEY: 'rgb(135, 206, 235)',
+//   ORGANIZATION: 'rgba(152, 251, 152)',
+//   TIME: 'rgb(204, 153, 255)',
+//   NUM: 'rgba(255, 204, 153)',
+//   BRAND: 'rgba(220, 220, 220)',
+//   DENTIFICATION: 'rgb(245, 204, 193)',
+//   EMAIL: 'rgb(102, 204, 238)'
+// }
 const handelMark = (instance, entitys) => {
   const options = (data) => ({
     acrossElements: true,
     className: 'text-selected',
     each: (element) => {
-      element.style.setProperty('--background-color', colors[data.type])
+      element.style.setProperty('--background-color', colors.value[data.type])
       element.setAttribute('id', data.entity_id)
       element.onmouseenter = function () {
         Object.assign(editEntitysModel, data)
@@ -207,12 +237,24 @@ const entityList = defineModel('entityList', {
   default: () => []
 })
 
+const getTypeList = (data) => {
+  const result = data.reduce((acc, item) => {
+    if (!acc.some((el) => el.text === item.type)) {
+      acc.push({ text: item.type, value: item.type })
+    }
+    return acc
+  }, [])
+  return result;
+}
+
 const getEntityListByApi = async () => {
   const { data } = await axios.get(`/api/document/${props.document?.doc_id}/entity`)
   if (data.errcode !== 0) {
     entityList.value = []
   } else {
     entityList.value = data.data.page.List || []
+    typeList.value = getTypeList(data.data.page.List || []) 
+    colors.value = getcolors(typeList.value)
     await nextTick() // 等待DOM更新
     markEntitys.value(entityList.value)
   }
@@ -362,44 +404,6 @@ const handleAdd = async () => {
     ElMessage.warning(message)
   }
 }
-const typeList = [
-  {
-    text: '人名',
-    value: 'PERSON'
-  },
-  {
-    text: '地址',
-    value: 'LOCATION'
-  },
-  {
-    text: '时间',
-    value: 'TIME'
-  },
-  {
-    text: '组织',
-    value: 'ORGANIZATION'
-  },
-  {
-    text: '金额',
-    value: 'MONEY'
-  },
-  {
-    text: '数字',
-    value: 'NUM'
-  },
-  {
-    text: '品牌',
-    value: 'BRAND'
-  },
-  {
-    text: '身份证件号码',
-    value: 'DENTIFICATION'
-  },
-  {
-    text: '电子邮件地址',
-    value: 'EMAIL'
-  }
-]
 </script>
 
 <template>
