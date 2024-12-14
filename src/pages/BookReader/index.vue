@@ -44,17 +44,20 @@ const isRetract = ref(false)
 
 const entityTableLoading = ref(true)
 
+// 更新并且全量获取实体列表
 const getEntityList = async () => {
   try {
     isRetract.value = false
     entityTableLoading.value = true
-    const { data } = await axios.get(`/api/document/${document.value.doc_id}/entity`)
-     entityTableLoading.value = false
+    const formData = new FormData()
+    formData.append('book_identify', bookIdentify.value)
+    formData.append('doc_id', document.value.doc_id)
+    const { data } = await axios.post(`/aigc/ner_update`, formData)
+    entityTableLoading.value = false
     if (data.errcode !== 0) {
       entityList.value = []
     } else {
       entityList.value = data.data.page.List || []
-
     }
   } catch (error) {
      entityTableLoading.value = false
