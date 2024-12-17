@@ -105,50 +105,49 @@ const markEntitys = defineModel('markEntitys', {
   default: () => {}
 })
 
-const generateLightColorsBySequence = (num) =>  {
-  const colors = [];
-  const usedColors = new Set();
-  while (colors.length < num) {
-      // 生成较浅颜色的RGB分量，这里通过控制范围让颜色较浅（例如，让RGB值都在150 - 255之间）
-      const r = Math.floor(Math.random() * 106 + 150);
-      const g = Math.floor(Math.random() * 106 + 150);
-      const k = Math.floor(Math.random() * 106 + 150);
-      const color = `#${r.toString(16).padStart(2, '0')}${g.toString(16).padStart(2, '0')}${k.toString(16).padStart(2, '0')}`;
-      if (!usedColors.has(color)) {
-        colors.push(color);
-        usedColors.add(color);
-      }
-  }
-  return colors;
-}
-const colors = ref()
+const typeNames = [
+  "人名", "地址", "时间", "组织", "金额", "数字", "品牌", "身份证号",
+  "电子邮件地址","参与集中的经营者名称", "企业性质", " 统一社会信用代码",
+  "申报人", "合并方", "收购方", "被收购方", "股权出让方", "被收购方的原有股东",
+  "合营方", "全球范围主要业务", "中国境内主要业务", "最终控制人"
+]
+const darkerLightColors = [
+    "rgb(238, 232, 170)", // 浅棕色
+    "rgb(216, 255, 191)", // 浅黄绿色
+    "rgb(192, 250, 255)", // 浅青色带灰
+    "rgb(153, 255, 255)", // 浅天蓝色带灰
+    "rgb(136, 255, 165)", // 浅绿蓝色
+    "rgb(255, 235, 189)", // 浅橙色带黄
+    "rgb(255, 204, 188)", // 浅粉红色带橙
+    "rgb(255, 192, 203)", // 浅紫红色
+    "rgb(255, 182, 107)", // 浅橙色带棕
+    "rgb(245, 245, 215)", // 浅米黄色带灰
+    "rgb(204, 255, 229)", // 浅青绿色带灰
+    "rgb(173, 216, 230)", // 浅蓝紫色
+    "rgb(153, 204, 255)", // 浅蓝色带灰
+    "rgb(136, 189, 255)", // 浅天蓝色带深灰
+    "rgb(238, 238, 204)", // 浅黄色带灰
+    "rgb(230, 230, 173)", // 浅黄绿色带灰
+    "rgb(217, 217, 181)", // 浅棕色带灰
+    "rgb(204, 255, 204)", // 浅青绿色带白
+    "rgb(189, 255, 189)", // 浅绿色带白
+    "rgb(173, 255, 173)", // 浅绿色更深
+    "rgb(224, 255, 224)", // 浅绿色带白更亮
+    "rgb(211, 238, 211)"  // 浅黄绿色带白更亮
+];
 
-const getcolors = (data) => {
-  const results = {}
-  const colors = generateLightColorsBySequence(data.length)
-  console.log(colors,'==')
-  data.forEach((el, index) => {
-    results[el.value] = colors[index]
-  })
-  return results
-}
-// const colors = {
-//   PERSON: 'rgba(255, 182, 193)',
-//   LOCATION: 'rgba(255, 255, 153)',
-//   MONEY: 'rgb(135, 206, 235)',
-//   ORGANIZATION: 'rgba(152, 251, 152)',
-//   TIME: 'rgb(204, 153, 255)',
-//   NUM: 'rgba(255, 204, 153)',
-//   BRAND: 'rgba(220, 220, 220)',
-//   DENTIFICATION: 'rgb(245, 204, 193)',
-//   EMAIL: 'rgb(102, 204, 238)'
-// }
+
+const colors = {};
+typeNames.forEach((el, index) => {
+    colors[el] = darkerLightColors[index]
+ })
+
 const handelMark = (instance, entitys) => {
   const options = (data) => ({
     acrossElements: true,
     className: 'text-selected',
     each: (element) => {
-      element.style.setProperty('--background-color', colors.value[data.type])
+      element.style.setProperty('--background-color', colors[data.type])
       element.setAttribute('id', data.entity_id)
       element.onmouseenter = function () {
         Object.assign(editEntitysModel, data)
@@ -160,12 +159,23 @@ const handelMark = (instance, entitys) => {
     },
     done: async function () {}
   })
-  entitys
-    ?.filter((el, index) => entitys.indexOf(el) === index)
-    .forEach((el) => {
+ 
+  const num = entitys.length;
+  let operationIndex = 0
+  function performDOMOperations() {
+    const operationsPerFrame = 5; // 每次执行5个标记操作作为一个分片
+    const endIndex = Math.min(operationIndex + operationsPerFrame, num);
+    for (let i = operationIndex; i < endIndex; i++) {
+      const el = entitys[i]
       instance.mark(el.replaced_text, options(el))
-    })
+    }
+    operationIndex = endIndex;
+    if (operationIndex < num) {
+      requestAnimationFrame(performDOMOperations);
+    }
+  }
 
+  requestAnimationFrame(performDOMOperations);
   // entitys?.forEach((el) => {
   //   const texts = el.window_text.split(el.replaced_text)
   //   const regexStr = `(?<=${texts[0]})${el.replaced_text}(?=${texts[1]})`
@@ -179,10 +189,13 @@ markEntitys.value = async (entitys) => {
     entries.forEach((entry) => {
       if (entry.isIntersecting) {
         const el = entry.target
+       
         const textContent = el.textContent
-        const currentDomEntitys = entitys.filter((el) => textContent.includes(el.replaced_text))
+        const currentDomEntitys = entitys
+        .filter((el, index) => textContent.includes(el.replaced_text) && index === entitys.findIndex((el2) => el2.replaced_text === el.replaced_text))
         // 在这里进行标记操作
         if(currentDomEntitys.length === 0) return
+        
         const instance = new Mark(el)
         instance.unmark()
         handelMark(instance, currentDomEntitys)
@@ -254,7 +267,6 @@ const getEntityListByApi = async () => {
   } else {
     entityList.value = data.data.page.List || []
     typeList.value = getTypeList(data.data.page.List || []) 
-    colors.value = getcolors(typeList.value)
     await nextTick() // 等待DOM更新
     markEntitys.value(entityList.value)
   }
@@ -435,11 +447,11 @@ const handleAdd = async () => {
       @mouseup.stop
     >
       <el-form :model="addEntitysModel" class="flex gap-10px w-100%" inline>
-        <el-form-item class="!m-r-0 !m-b-0" label="类别">
+        <el-form-item class="!m-r-0 !m-b-0 !w-100%" label="类别">
           <el-select
             placeholder="type"
             size="small"
-            class="!w-74px"
+            class="!w-100%"
             :teleported="false"
             v-model="addEntitysModel.type"
           >
@@ -451,7 +463,7 @@ const handleAdd = async () => {
             />
           </el-select>
         </el-form-item>
-        <el-form-item class="!m-r-0 !m-b-0" label="置信度">
+        <!-- <el-form-item class="!m-r-0 !m-b-0" label="置信度">
           <el-input
             v-model="addEntitysModel.confidence"
             size="small"
@@ -459,7 +471,7 @@ const handleAdd = async () => {
             disabled
             placeholder="置信度"
           />
-        </el-form-item>
+        </el-form-item> -->
       </el-form>
       <div class="flex w-100% m-t-8px">
         <el-button class="flex-1" type="primary" size="small" @click="handleAdd"> 确定 </el-button>
@@ -473,11 +485,11 @@ const handleAdd = async () => {
       @mouseup.stop
     >
       <el-form :model="editEntitysModel" class="flex gap-10px w-100%" inline>
-        <el-form-item class="!m-r-0 !m-b-0" label="类别">
+        <el-form-item class="!m-r-0 !m-b-0 !w-100%" label="类别">
           <el-select
             placeholder="type"
             size="small"
-            class="!w-74px"
+            class="!w-100%"
             :teleported="false"
             :disabled="disabledEditEntity"
             v-model="editEntitysModel.type"
@@ -490,7 +502,7 @@ const handleAdd = async () => {
             />
           </el-select>
         </el-form-item>
-        <el-form-item class="!m-r-0 !m-b-0" label="置信度">
+        <!-- <el-form-item class="!m-r-0 !m-b-0" label="置信度">
           <el-input
             v-model="editEntitysModel.confidence"
             size="small"
@@ -498,7 +510,7 @@ const handleAdd = async () => {
             disabled
             placeholder="置信度"
           />
-        </el-form-item>
+        </el-form-item> -->
       </el-form>
       <div class="flex w-100% m-t-8px">
         <el-button

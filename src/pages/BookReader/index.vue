@@ -128,8 +128,10 @@ function deleteDocId(docIdTmp) {
 
 const entityList = ref([])
 
-const handleEntityResults = (entitys) => {
+const handleEntityResults = async (entitys) => {
+  console.log('handleEntityResults', entitys)
   if (entitys.length !== 0) {
+    await nextTick()
     markEntitys.value(entitys)
   } else {
     ElMessage.warning('暂无可标记的实体')
