@@ -197,16 +197,10 @@ onUnmounted(() => {
   clearInterval(intervalId)
 })
 
-watch(
-  () => props.document,
-  async (newValue, oldValue) => {
-    messages.value = await loadChatMessages(newValue.doc_id)
-  }
-)
-
 const prompt = ref('')
 const loading = ref(false)
 const entityRecognitionLoading = ref(false)
+
 
 const showExportDialog = ref(false)
 const exportMode = ref(false)
@@ -299,6 +293,16 @@ const docNameEntityRecognition = async () => {
   emit('entityResults', data.data?.page?.List || [])
   entityRecognitionLoading.value = false
 }
+
+watch(
+  () => props.document,
+  async (newValue, oldValue) => {
+    if(newValue.doc_id !== oldValue.doc_id) {
+      entityRecognitionLoading.value = false;
+    }
+    messages.value = await loadChatMessages(newValue.doc_id)
+  }
+)
 
 const checkRequestParam = async (prompt, options) => {
   const selectedOption = ref(null)
