@@ -195,6 +195,7 @@ const handletRaceability = (data) => {
             <DocumentReader
               :bookIdentify="bookIdentify"
               :document="document"
+              :book="book"
               :searchString="selectedText"
               :traceability="traceability"
               v-model:mark-entitys="markEntitys"

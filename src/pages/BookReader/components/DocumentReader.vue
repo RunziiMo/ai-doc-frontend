@@ -26,10 +26,14 @@ const props = defineProps({
   traceability: {
     type: Object,
     required: true
-  }
+  },
+  book: {  
+    type: Object,
+    required: true,
+  },
 })
 
-const typeList = ref([])
+
 
 const emit = defineEmits(['fileRenderFinished', 'refreshEntity'])
 
@@ -105,12 +109,33 @@ const markEntitys = defineModel('markEntitys', {
   default: () => {}
 })
 
-const typeNames = [
+const filetype = computed(() => {
+  return props.book.item_name
+})
+
+// 股东协议 类型
+const shareholdersAgreementType = [
   "人名", "地址", "时间", "组织", "金额", "数字", "品牌", "身份证号",
-  "电子邮件地址","参与集中的经营者名称", "企业性质", " 统一社会信用代码",
+  "电子邮件地址",
+]
+// 行政文书 类型
+const administrativeDocumentsType = [
+  "参与集中的经营者名称", "企业性质", " 统一社会信用代码",
   "申报人", "合并方", "收购方", "被收购方", "股权出让方", "被收购方的原有股东",
   "合营方", "全球范围主要业务", "中国境内主要业务", "最终控制人"
 ]
+
+const typeNames = [...shareholdersAgreementType, ...administrativeDocumentsType]
+
+const typesMps = {
+  'legal_admin': administrativeDocumentsType,
+  'shareholder_agreement': shareholdersAgreementType,
+}
+
+const typeList = computed(() => {
+  return typesMps[props.book.item_name]?.map(el => ({text: el, value: el})) || []
+})
+
 const darkerLightColors = [
     "rgb(238, 232, 170)", // 浅棕色
     "rgb(216, 255, 191)", // 浅黄绿色
@@ -250,15 +275,7 @@ const entityList = defineModel('entityList', {
   default: () => []
 })
 
-const getTypeList = (data) => {
-  const result = data.reduce((acc, item) => {
-    if (!acc.some((el) => el.text === item.type)) {
-      acc.push({ text: item.type, value: item.type })
-    }
-    return acc
-  }, [])
-  return result;
-}
+
 
 const getEntityListByApi = async () => {
   const { data } = await axios.get(`/api/document/${props.document?.doc_id}/entity`)
@@ -266,7 +283,6 @@ const getEntityListByApi = async () => {
     entityList.value = []
   } else {
     entityList.value = data.data.page.List || []
-    typeList.value = getTypeList(data.data.page.List || []) 
     await nextTick() // 等待DOM更新
     markEntitys.value(entityList.value)
   }
