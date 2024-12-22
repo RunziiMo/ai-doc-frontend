@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed, watch, nextTick, reactive } from 'vue'
+import { ref, computed, watch, nextTick, reactive, inject, Ref } from 'vue'
 import { useMouseInElement } from '@vueuse/core'
 import { ElMessageBox, ElScrollbar } from 'element-plus'
 import 'splitpanes/dist/splitpanes.css'
@@ -33,7 +33,7 @@ const props = defineProps({
   },
 })
 
-
+const currentSelectDocId = inject<Ref<number>>('currentSelectDocId')
 
 const emit = defineEmits(['fileRenderFinished', 'refreshEntity'])
 
@@ -100,6 +100,11 @@ const editPopover = ref({
   visible: false,
   top: 0,
   left: 0
+})
+
+watch(currentSelectDocId, () => {
+  addPopover.value.visible = false;
+  editPopover.value.visible = false;
 })
 
 const disabledEditEntity = ref(true)
@@ -605,7 +610,7 @@ const handleAdd = async () => {
   left: 0;
 }
 </style>
-<style>
+<style scoped>
 .add-popover,
 .edit-popover {
   position: absolute;

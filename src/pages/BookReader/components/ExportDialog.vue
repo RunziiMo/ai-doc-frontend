@@ -194,7 +194,7 @@ const handleExportTxt = () => {
 }
 </script>
 
-<style>
+<style scoped>
 .hljs {
   overflow-x: scroll;
 }

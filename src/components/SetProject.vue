@@ -100,7 +100,7 @@ function handleTransferProject() {
     // 处理转让项目的逻辑  
 }
 </script>
-<style>
+<style scoped>
 .operation-buttons .el-button {  
     margin-left: 10px;  
 }

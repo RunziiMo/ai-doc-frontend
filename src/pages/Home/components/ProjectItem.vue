@@ -30,13 +30,13 @@ const showTip = () => {
     }
 }
 </script>
-<style>
+<style scoped>
 .project-item {
     width: 170px;
     height: 230px;
 }
 
-.el-card__body {
+:deep(.el-card__body) {
     padding: 0;
 }
 </style>

@@ -92,7 +92,7 @@ const value1 = ref(true);
   </p>
 </template>
 
-<style>
+<style scoped>
 .ep-button {
   margin: 4px;
 }

@@ -142,7 +142,7 @@ const fetchTableData = async () => {
 // fetchTableData()  
 </script>
 
-<style>
+<style scoped>
 .avatar {
     width: 25px;
     height: 25px;

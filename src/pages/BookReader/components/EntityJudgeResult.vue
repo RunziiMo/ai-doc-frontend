@@ -1,12 +1,12 @@
 <script lang="ts" setup>
-import { computed, PropType, reactive, ref, watch } from 'vue'
+import { computed, reactive, ref, watch } from 'vue'
 import autoTable from 'jspdf-autotable'
 import jsPDF from 'jspdf'
 import '@/assets/js/SIMHEI-normal.js'
 
 const props = defineProps({
   entityList: {
-    type: Array as PropType<Record<string,string>[]>,
+    type: Array,
     default: () => []
   },
   document: {
@@ -24,7 +24,7 @@ const result = ref([])
 const data = ref([])
 const entityKeyword = ref('')
 const typeList = computed(() => {
-  const result = props.entityList.reduce((acc, item) => {
+  const result = props.entityList.reduce((acc: any, item: any) => {
     if (!acc.some((el) => el.text === item.type)) {
       acc.push({ text: item.type, value: item.type })
     }

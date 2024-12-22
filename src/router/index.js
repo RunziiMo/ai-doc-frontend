@@ -3,7 +3,7 @@ import axios from 'axios'
 import App from '../App.vue'
 
 import Home from '../pages/Home/index.vue';
-import BookReader from '../pages/BookReader/index.vue';
+import BookReader from '../pages/BookReader-v2/index.vue';
 import AiFunction from '../pages/AiFunction/index.vue';
 import Myspace from '../pages/Myspace/index.vue';
 import Login from '../pages/Login/index.vue';

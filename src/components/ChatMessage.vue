@@ -247,7 +247,7 @@ const handleCancel = () => {
 
 </script>
 
-<style>
+<style scoped>
 .message-view {
   width: 100% !important;
 }

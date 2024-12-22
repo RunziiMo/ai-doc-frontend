@@ -92,7 +92,7 @@ const setupHandle = (event, index) => {
     projectList.splice(index, 1);
 }
 </script>
-<style>
+<style scoped>
 .my-project-item {
     display: flex;
     justify-content: space-between;

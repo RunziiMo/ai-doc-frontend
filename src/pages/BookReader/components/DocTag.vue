@@ -196,7 +196,7 @@ function handleExceed() {}
     </el-dialog>
 </template>
 
-<style>
+<style scoped>
 .input-tag-name {
     display: flex;
     gap: 10px;

@@ -44,7 +44,7 @@ function enterPersonal() {
     router.push("/");
 }
 </script>
-<style>
+<style scoped>
 .banner-left {
     color: #;
     display: flex;

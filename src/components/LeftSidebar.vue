@@ -269,7 +269,7 @@ const handleCheckChange = (data, checked) => {
 }
 </script>
 
-<style>
+<style scoped>
 .node-label {
     width: 100%;
 }
