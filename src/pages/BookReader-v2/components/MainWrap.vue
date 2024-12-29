@@ -1,36 +1,41 @@
-<script setup>
-import { ref, computed, inject, nextTick } from 'vue'
+<script lang="ts" setup>
+import { ref, computed, nextTick, provide, type PropType } from 'vue'
 import { Splitpanes, Pane } from 'splitpanes'
-import axios from 'axios'
+import { ElMessage } from 'element-plus'
+import type { BookInfo } from '@/api/types'
 import DocumentReader from '@/pages/BookReader/components/DocumentReader.vue'
 import DocumentChatter from '@/pages/BookReader/components/DocumentChatter.vue'
 import ReferenceDocuments from '@/pages/BookReader/components/ReferenceDocuments.vue'
+import EntityApi from '@/api/entity'
+import AppApi from '@/api/app'
+import type { DocumentInfo } from '@/api/types/document-info'
 
 const props = defineProps({
   bookIdentify: {
     type: String,
-    required: true
+    required: true,
   },
   book: {
-    type: Object,
-    required: true
-  }
+    type: Object as PropType<BookInfo>,
+    required: true,
+  },
+  docId: {
+    type: Number,
+    required: true,
+  },
 })
 
 const showChatter = ref(true)
 const currentMessage = ref()
 const selectedText = ref('')
-const markEntitys = ref()
 const entityList = ref([])
 const content = ref('')
 // 溯源信息
 const traceability = ref({})
 const checkedFiles = ref([])
-const documentInfo = ref({})
+const documentInfo = ref<DocumentInfo>()
 const isRetract = ref(false)
 const entityTableLoading = ref(true)
-
-const currentSelectDocId = inject('currentSelectDocId')
 
 const fileName = computed(() => {
   try {
@@ -46,16 +51,15 @@ const getEntityList = async () => {
   try {
     isRetract.value = false
     entityTableLoading.value = true
-    const formData = new FormData()
-    formData.append('book_identify', props.bookIdentify)
-    formData.append('doc_id', documentInfo.value.doc_id)
-    const { data } = await axios.post(`/aigc/ner_update`, formData)
-    entityTableLoading.value = false
-    if (data.errcode !== 0) {
-      entityList.value = []
-    } else {
-      entityList.value = data.data.page.List || []
+
+    const params = {
+      book_identify: props.bookIdentify,
+      doc_id: props.docId,
     }
+    const { data } = await EntityApi.nerUpdate(params)
+    entityTableLoading.value = false
+
+    entityList.value = data.data.page.List || []
   } catch (error) {
     console.log(error)
     entityTableLoading.value = false
@@ -63,23 +67,19 @@ const getEntityList = async () => {
 }
 
 const loadDoc = async () => {
-  if (!props.bookIdentify || !currentSelectDocId.value) {
+  if (!props.bookIdentify || !props.docId) {
     return
   }
   try {
-    const response = await axios.get(
-      `/api/${props.bookIdentify}/content/${currentSelectDocId.value}`
-    )
-    if (response.data.errcode !== 0) {
-      ElMessage.warning(response.data.message)
-    } else {
-      var data = response.data.data
-      console.log('document:', data)
-      documentInfo.value = data
-      content.value = data.markdown
-      checkedFiles.value = [documentInfo.value.doc_id]
-      getEntityList(documentInfo.value.doc_id)
+    const params = {
+      identify: props.bookIdentify,
+      docId: props.docId,
     }
+    const { data } = await AppApi.getDocument(params)
+    documentInfo.value = data.data || {}
+    content.value = data.data.markdown
+    checkedFiles.value = [documentInfo.value.doc_id]
+    getEntityList()
   } catch (error) {
     console.log(error)
   }
@@ -91,6 +91,8 @@ const handletRaceability = (data) => {
   traceability.value = data || {}
 }
 
+const markEntitys = ref()
+
 const handleEntityResults = async (entitys) => {
   if (entitys.length !== 0) {
     await nextTick()
@@ -99,6 +101,9 @@ const handleEntityResults = async (entitys) => {
     ElMessage.warning('暂无可标记的实体')
   }
 }
+
+provide('entityList', entityList)
+provide('getEntityList', getEntityList)
 </script>
 <template>
   <splitpanes
@@ -116,6 +121,7 @@ const handleEntityResults = async (entitys) => {
         :traceability="traceability"
         v-model:mark-entitys="markEntitys"
         v-model:entity-list="entityList"
+        :docId="docId"
       />
     </pane>
     <pane
@@ -127,25 +133,28 @@ const handleEntityResults = async (entitys) => {
       <splitpanes class="w-100% h-100%" horizontal>
         <pane style="overflow: unset" class="h-100%">
           <DocumentChatter
+            :docId="docId"
             v-model:entity-list="entityList"
             :checked-files="checkedFiles"
+            :book="book"
             :bookIdentify="bookIdentify"
             :document="documentInfo"
-            :documents="book.document_trees"
+            :documents="(book as any)?.document_trees || []"
             :entity-table-loading="entityTableLoading"
             :functions="[
               'summary',
               'extract_once_trace',
               'checker_legal',
               'checker_interest',
-              'checker_miss'
+              'checker_miss',
             ]"
             :is-retract="isRetract"
+            :mark-entitys="markEntitys"
             @text-selected="(text) => (selectedText = text)"
             @entity-results="handleEntityResults"
             @get-message="(message) => (currentMessage = message)"
             @traceability="handletRaceability"
-            @request-entity-result="() => getEntityList(documentInfo.doc_id)"
+            @request-entity-result="() => getEntityList()"
             @retract="isRetract = true"
           />
         </pane>

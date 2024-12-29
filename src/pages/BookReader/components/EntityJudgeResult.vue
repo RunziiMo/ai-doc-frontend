@@ -1,56 +1,64 @@
 <script lang="ts" setup>
-import { computed, reactive, ref, watch } from 'vue'
+import { inject, reactive, ref, watch, type Ref } from 'vue'
 import autoTable from 'jspdf-autotable'
 import jsPDF from 'jspdf'
+import Mark from 'mark.js'
+import EntityApi from '@/api/entity'
 import '@/assets/js/SIMHEI-normal.js'
+import useTypes from './use-types'
+import { ElMessage, ElMessageBox, type FormInstance } from 'element-plus'
+import type { Entity } from '@/api/types'
 
 const props = defineProps({
-  entityList: {
-    type: Array,
-    default: () => []
-  },
   document: {
     type: Object,
-    required: true
+    required: true,
+  },
+  book: {
+    type: Object,
+    required: true,
+  },
+  markEntitys: {
+    type: Function,
+    required: true,
   },
 })
+
+const entityList = inject<Ref<Entity[]>>('entityList')
+const getEntityList = inject<Function>('getEntityList')
+const formInstance = ref<FormInstance>()
 
 const pageStore = reactive({
   pageSize: 10,
   current: 1,
-  total: 0
+  total: 0,
 })
-const result = ref([])
 const data = ref([])
 const entityKeyword = ref('')
-const typeList = computed(() => {
-  const result = props.entityList.reduce((acc: any, item: any) => {
-    if (!acc.some((el) => el.text === item.type)) {
-      acc.push({ text: item.type, value: item.type })
-    }
-    return acc
-  }, [])
-  return result;
+const { typeList } = useTypes(props.book.item_name)
+
+const form = reactive({
+  result: [],
 })
 
 watch(entityKeyword, () => {
   const searchResult = data.value.filter(
     (data) =>
       !entityKeyword.value ||
-      data.replaced_text.toLowerCase().includes(entityKeyword.value.toLowerCase())
+      data.replaced_text.toLowerCase().includes(entityKeyword.value.toLowerCase()),
   )
   pageStore.current = 1
   pageStore.total = searchResult.length
-  result.value = searchResult?.slice(
+  form.result = searchResult?.slice(
     (pageStore.current - 1) * pageStore.pageSize,
-    pageStore.current * pageStore.pageSize
+    pageStore.current * pageStore.pageSize,
   )
 })
 
 const clonedEntityList = () => {
-  result.value = []
+  form.result = []
   data.value = []
-  props.entityList?.forEach((el: any) => {
+  entityList.value?.forEach((el: any) => {
     const i = data.value.findIndex((item) => item.replaced_text === el.replaced_text)
     if (i === -1) {
       el.entityList = [el]
@@ -60,22 +68,19 @@ const clonedEntityList = () => {
     }
   })
   pageStore.total = data.value.length
-  result.value = data.value?.slice(
+  form.result = data.value?.slice(
     (pageStore.current - 1) * pageStore.pageSize,
-    pageStore.current * pageStore.pageSize
+    pageStore.current * pageStore.pageSize,
   )
 }
 const indexMethod = (index: number) => {
   return index + 1 + (pageStore.current - 1) * pageStore.pageSize
 }
 clonedEntityList()
-watch(
-  () => props.entityList,
-  () => {
-    clonedEntityList()
-  }
-)
-const filterHandler = (value, row, column) => {
+watch(entityList, () => {
+  clonedEntityList()
+})
+const filterHandler = (value: any, row: { [x: string]: any }, column: { [x: string]: any }) => {
   const property = column['property']
   return row[property] === value
 }
@@ -84,20 +89,20 @@ const handleFliterChange = () => {
   // pageStore.total = result.value.length
 }
 
-const handleCurrentChange = (val) => {
+const handleCurrentChange = (val: number) => {
   pageStore.current = val
-  result.value = data.value?.slice(
+  form.result = data.value?.slice(
     (pageStore.current - 1) * pageStore.pageSize,
-    pageStore.current * pageStore.pageSize
+    pageStore.current * pageStore.pageSize,
   )
 }
 const emit = defineEmits(['traceability', 'retract'])
-const handleClickEntity = (data, index) => {
-  emit('traceability', {
-    entityName: data.replaced_text,
-    entityIndex: index
-  })
-}
+// const handleClickEntity = (data: { replaced_text: any }, index: any) => {
+//   emit('traceability', {
+//     entityName: data.replaced_text,
+//     entityIndex: index,
+//   })
+// }
 
 const getExportTableData = () => {
   const exportData = data.value?.map((el, index) => [
@@ -105,10 +110,10 @@ const getExportTableData = () => {
     el.replaced_text,
     el.type,
     el?.entityList
-      ?.map((item, itemIndex) => {
+      ?.map((item: { window_text: any }, itemIndex: number) => {
         return `${itemIndex + 1}：${item.window_text}`
       })
-      .join('\n') || ''
+      .join('\n') || '',
   ])
   return [['序号', '实体名', '类型', '溯源'], ...(exportData || [])]
 }
@@ -128,14 +133,15 @@ const handleTablePdfExport = () => {
       font: 'SIMHEI',
       overflow: 'linebreak',
       cellWidth: 'auto',
-      minCellWidth: 18 // 最小单元格宽度
+      minCellWidth: 18, // 最小单元格宽度
     },
-    columnStyles: { content: { cellWidth: 'auto' } }
+    columnStyles: { content: { cellWidth: 'auto' } },
   })
 
   // 保存PDF文件
   doc.save(`${props.document.doc_name}-实体结果.pdf`)
 }
+
 const handleTableExcelExport = async () => {
   const aoa = getExportTableData()
 
@@ -152,52 +158,254 @@ const handleTableExcelExport = async () => {
     { wch: 5 }, // 序号 列宽度
     { wch: 10 }, // 实体名 列宽度
     { wch: 10 }, // 类型 列宽
-    { wch: 60 } // 溯源更宽以防止溢出
+    { wch: 60 }, // 溯源更宽以防止溢出
   ]
   XLSX.utils.book_append_sheet(wb, ws, 'Sheet1')
 
   XLSX.writeFileXLSX(wb, `${props.document.doc_name}-实体结果.xlsx`)
 }
 
+const updateType = async (data: Partial<Entity>) => {
+  if (!data.entity_id) return
+  await EntityApi.edit(data)
+  await getEntityList?.()
+  props.markEntitys(entityList.value)
+  ElMessage.success('ok')
+}
+
+const handleDelete = async (row: Partial<Entity & { entityList: Entity[] }>) => {
+  if (!row.entity_id) {
+    const index = form.result.findIndex((item) => item.replaced_text === row.replaced_text)
+    if (index !== -1) {
+      form.result.splice(index, 1)
+    }
+    return
+  }
+  const num = row?.entityList?.length
+  if (num > 1) {
+    await ElMessageBox.confirm(
+      `当前文章共有${num}个相同实体，确定后将全部删除，确定删除吗?`,
+      'Warning',
+      {
+        confirmButtonText: '确定',
+        cancelButtonText: '取消',
+        type: 'warning',
+      },
+    )
+  }
+
+  await ElMessageBox.confirm('确定要删除吗?', 'Warning', {
+    confirmButtonText: '确定',
+    cancelButtonText: '取消',
+    type: 'warning',
+  })
+
+  await EntityApi.delete(row)
+  await getEntityList?.()
+  // const index = data.value.findIndex((item) => item.replaced_text === row.replaced_text)
+  // if (index !== -1) {
+  //   data.value.splice(index, 1)
+  // }
+  // pageStore.total = data.value.length
+  // form.result = data.value?.slice(
+  //   (pageStore.current - 1) * pageStore.pageSize,
+  //   pageStore.current * pageStore.pageSize,
+  // )
+  props.markEntitys(entityList.value)
+  ElMessage.success('ok')
+}
+const handleAdd = () => {
+  const num = form.result.filter((item) => !item.entity_id)?.length
+  if (num > 0) {
+    ElMessage.warning('请先保存')
+    return
+  }
+  form.result.push({
+    replaced_text: '',
+    type: '',
+    entityList: [],
+  })
+}
+
+const handleSave = async () => {
+  await formInstance.value?.validate()
+  const entity = form.result.find((item) => !item.entity_id)
+  const text = document.getElementById(`file-render-container-${props.document.doc_id}`).textContent
+  const num = text.match(new RegExp(entity.replaced_text, 'g'))?.length
+  await ElMessageBox.confirm(
+    `当前文章共有${num}个相同实体，确定后将全部添加，确定添加吗?`,
+    'Warning',
+    {
+      confirmButtonText: '确定',
+      cancelButtonText: '取消',
+      type: 'warning',
+    },
+  )
+  await EntityApi.add({
+    ...entity,
+    document_id: props.document.doc_id,
+    confidence: 1,
+    window_text: '',
+  })
+  await getEntityList?.()
+  props.markEntitys(entityList.value)
+  ElMessage.success('ok')
+}
+
+const checkEntityName = (_rule: any, value: any, callback: any, data: Entity) => {
+  if (!value) {
+    callback(new Error('实体名不能为空'))
+  } else {
+    if (!data.entity_id) {
+      const index = entityList.value?.findIndex((item) => item.replaced_text === value)
+      if (index !== -1) {
+        callback(new Error('该实体已存在，请重新输入'))
+        return
+      }
+      const text = document.getElementById(
+        `file-render-container-${props.document.doc_id}`,
+      ).textContent
+      if (!text.includes(value)) {
+        callback(new Error('该实体不在文章中，请重新输入'))
+        return
+      }
+      callback()
+    }
+    callback()
+  }
+}
+
+const handleTraceability = (data) => {
+  if (!!data.isTraceability) return
+  data.isTraceability = true
+  const instance = new Mark(document.getElementById(`file-render-container-${props.document.doc_id}`))
+  instance.unmark({
+    className: `entity-${data.entity_id}`,
+  })
+  instance.mark(data.replaced_text, {
+    className: `traceabilitying`,
+    acrossElements: true,
+  })
+}
+
+const currentTraceabilityIndex = ref(0)
+
+const handleNextTraceability = (data) => {
+  const arr = Array.from(document.getElementsByTagName('mark'))?.filter(
+    (el) => el.textContent === data.replaced_text,
+  )
+  if (currentTraceabilityIndex.value > arr?.length) {
+    ElMessage.warning('没有更多了')
+    return
+  }
+  currentTraceabilityIndex.value += 1
+  // 元素滚动到当前视口
+  arr[currentTraceabilityIndex.value]?.scrollIntoView()
+}
+const handlePreTraceability = (data) => {
+  if (currentTraceabilityIndex.value < 0) {
+    ElMessage.warning('没有更多了')
+    return
+  }
+  const arr = Array.from(document.getElementsByTagName('mark'))?.filter(
+    (el) => el.textContent === data.replaced_text,
+  )
+  currentTraceabilityIndex.value -= 1
+  arr[currentTraceabilityIndex.value]?.scrollIntoView()
+}
 </script>
 <template>
   <div class="w-full h-full flex flex-col">
-    <el-table class="flex-1" :data="result" @filter-change="handleFliterChange">
-      <el-table-column type="index" :index="indexMethod" label="序号" width="55px" />
-      <el-table-column property="replaced_text" width="200px">
-        <template #header>
-          <span>实体名</span>
-          <el-input
-            v-model="entityKeyword"
-            size="small"
-            class="!w-65px m-l-4px"
-            placeholder="搜索实体"
-          />
-        </template>
-      </el-table-column>
-      <el-table-column
-        property="type"
-        label="类型"
-        :filters="typeList"
-        :filter-multiple="false"
-        :filter-method="filterHandler"
-      >
-      </el-table-column>
-      <el-table-column property="start_index" label="溯源">
-        <template #default="{ row }">
-          <div class="flex flex-wrap max-h-80px overflow-y-auto">
-            <el-button
-              type="text"
-              v-for="(item, index) in row?.entityList"
-              :key="item.entity_id"
-              @click="handleClickEntity(item, index)"
+    <el-form ref="formInstance" :model="form" class="!flex-1 overflow-hidden">
+      <el-table class="!h-100%" :data="form.result" @filter-change="handleFliterChange">
+        <el-table-column type="index" :index="indexMethod" label="序号" width="55px">
+          <template #default="{ row, $index }">
+            <div class="flex items-center gap-8px">
+              <el-icon class="cursor-pointer" @click="handleDelete(row)"><Delete /></el-icon>
+              {{ $index + 1 }}
+            </div>
+          </template>
+        </el-table-column>
+        <el-table-column property="replaced_text" width="200px">
+          <template #header>
+            <span>实体名</span>
+            <el-input
+              v-model="entityKeyword"
+              size="small"
+              class="!w-65px m-l-4px"
+              placeholder="搜索实体"
+            />
+          </template>
+          <template #default="{ row, $index }">
+            <el-form-item
+              :prop="'result.' + $index + '.replaced_text'"
+              :rules="{
+                validator: (rule, value, callback) => checkEntityName(rule, value, callback, row),
+                trigger: 'blur',
+              }"
+              class="!m-b-14px !m-t-14px"
             >
-              {{ index + 1 }}
-            </el-button>
+              <div v-if="row.entity_id" class="flex items-center gap-4px">
+                <el-icon
+                  v-show="row.isTraceability"
+                  class="cursor-pointer"
+                  @click="handlePreTraceability(row)"
+                  ><ArrowLeftBold
+                /></el-icon>
+                <el-link @click="handleTraceability(row)">{{ row.replaced_text }}</el-link>
+                <el-icon
+                  v-show="row.isTraceability"
+                  class="cursor-pointer"
+                  @click="handleNextTraceability(row)"
+                  ><ArrowRightBold
+                /></el-icon>
+              </div>
+              <el-input
+                v-else
+                v-model.trim="row.replaced_text"
+                placeholder="请输入实体名"
+                @change="() => updateType(row)"
+              />
+            </el-form-item>
+          </template>
+        </el-table-column>
+        <el-table-column
+          property="type"
+          label="类型"
+          :filters="typeList"
+          :filter-multiple="false"
+          :filter-method="filterHandler"
+        >
+          <template #default="{ row, $index }">
+            <el-form-item
+              :prop="'result.' + $index + '.type'"
+              :rules="{
+                required: true,
+                message: '类型为必选项',
+                trigger: 'blur',
+              }"
+              class="!m-b-14px !m-t-14px"
+            >
+              <el-select v-model="row.type" placeholder="请选择" @change="() => updateType(row)">
+                <el-option
+                  v-for="item in typeList"
+                  :key="item.value"
+                  :label="item.text"
+                  :value="item.value"
+                >
+                </el-option>
+              </el-select>
+            </el-form-item>
+          </template>
+        </el-table-column>
+        <template #append>
+          <div class="flex p-b-4px">
+            <el-button class="w-full" @click="handleAdd">新增</el-button>
+            <el-button class="w-full" @click="handleSave">保存</el-button>
           </div>
         </template>
-      </el-table-column>
-    </el-table>
+      </el-table>
+    </el-form>
     <div class="flex items-center justify-between">
       <el-pagination
         v-model:current-page="pageStore.current"
@@ -216,3 +424,8 @@ const handleTableExcelExport = async () => {
     </div>
   </div>
 </template>
+<style>
+.traceabilitying {
+  border: 1px solid var(--el-color-primary) !important;
+}
+</style>

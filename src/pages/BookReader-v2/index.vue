@@ -1,24 +1,22 @@
-<script setup>
-import { ElMessage } from 'element-plus'
+<script lang="ts" setup>
+import AppApi from '@/api/app'
 import { ref, provide } from 'vue'
-import axios from 'axios'
+import type { BookInfo, DocumentTree } from '@/api/types'
 import 'splitpanes/dist/splitpanes.css'
 import LeftSidebar from '@/components/LeftSidebar.vue'
 import UploadFile from '@/pages/BookReader/components/UploadFile.vue'
 import DocTag from '@/pages/BookReader/components/DocTag.vue'
 import MainWrap from './components/MainWrap.vue'
 
-const currentSelectDocId = ref()
+const currentSelectDocId = ref<number>()
 const showChatter = ref(true)
-const book = ref({
-  document_trees: []
-})
-const documentTrees = ref([])
+const book = ref<BookInfo>({})
+const documentTrees = ref<DocumentTree[]>([])
 const document = ref({})
 const checkedFiles = ref([])
 
-const docId = ref(0)
-const bookIdentify = ref('')
+const docId = ref<number>(0)
+const bookIdentify = ref<string>()
 const uploadDialogVisible = ref(false)
 const docTreeVisible = ref(false)
 const isShowSide = ref(true)
@@ -27,18 +25,15 @@ const getBook = async () => {
   if (!bookIdentify.value) {
     return
   }
-  let params = {
-    identify: bookIdentify.value
-  }
   try {
-    const bookResponse = await axios.get(`/api/book/${bookIdentify.value}`, { params })
-    if (bookResponse.data.errcode !== 0) {
-      ElMessage.warning(bookResponse.data.message)
-    } else {
-      book.value = bookResponse.data.data || {}
-      documentTrees.value = bookResponse.data.data.document_trees || []
-      currentSelectDocId.value = bookResponse.data.data?.document_trees[0]?.id || ''
+    const params = {
+      identify: bookIdentify.value,
     }
+    const { data } = await AppApi.getBook(params)
+    book.value = data.data || {};
+    documentTrees.value = data.data.document_trees || []
+    currentSelectDocId.value = data.data.document_trees?.[0]?.id
+    console.log(data)
   } catch (error) {
     console.log(error)
   }
@@ -46,7 +41,7 @@ const getBook = async () => {
 
 const requestData = async () => {
   bookIdentify.value = window.location.pathname.split('/')[2]
-  docId.value = window.location.pathname.split('/')[3]
+  docId.value = Number(window.location.pathname.split('/')[3])
   await getBook()
 }
 
@@ -67,7 +62,6 @@ function deleteDocId(docIdTmp) {
   console.log(`deleteDocId docId is:${docIdTmp}`)
   book.value.document_trees = book.value.document_trees.filter((item) => item.id !== docIdTmp)
 }
-
 
 provide('currentSelectDocId', currentSelectDocId)
 </script>
@@ -122,9 +116,8 @@ provide('currentSelectDocId', currentSelectDocId)
             :name="item.id"
             v-for="item in book.document_trees"
             :key="item.id"
-            lazy
           >
-            <main-wrap :book="book" :bookIdentify="bookIdentify" />
+            <main-wrap :book="book" :bookIdentify="bookIdentify" :doc-id="item.id" />
           </el-tab-pane>
         </el-tabs>
       </el-main>
