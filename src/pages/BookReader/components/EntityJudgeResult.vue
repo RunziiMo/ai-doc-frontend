@@ -297,21 +297,20 @@ const handleNextTraceability = (data) => {
     (el) => el.textContent === data.replaced_text,
   )
   if (currentTraceabilityIndex.value > arr?.length) {
-    ElMessage.warning('没有更多了')
-    return
+    currentTraceabilityIndex.value = 0
   }
   currentTraceabilityIndex.value += 1
   // 元素滚动到当前视口
   arr[currentTraceabilityIndex.value]?.scrollIntoView()
 }
 const handlePreTraceability = (data) => {
-  if (currentTraceabilityIndex.value < 0) {
-    ElMessage.warning('没有更多了')
-    return
-  }
   const arr = Array.from(document.getElementsByTagName('mark'))?.filter(
     (el) => el.textContent === data.replaced_text,
   )
+  if (currentTraceabilityIndex.value < 0) {
+    currentTraceabilityIndex.value = arr.length - 1
+  }
+ 
   currentTraceabilityIndex.value -= 1
   arr[currentTraceabilityIndex.value]?.scrollIntoView()
 }
