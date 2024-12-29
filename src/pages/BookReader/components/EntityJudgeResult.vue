@@ -262,6 +262,11 @@ const checkEntityName = (_rule: any, value: any, callback: any, data: Entity) =>
         callback(new Error('该实体已存在，请重新输入'))
         return
       }
+      const ind = entityList.value?.findIndex((item) => item.replaced_text.includes(value))
+      if (ind !== -1) {
+        callback(new Error('该实体是已经存在实体的子字符串，请重新输入'))
+        return
+      }
       const text = document.getElementById(
         `file-render-container-${props.document.doc_id}`,
       ).textContent
@@ -276,12 +281,9 @@ const checkEntityName = (_rule: any, value: any, callback: any, data: Entity) =>
 }
 
 const handleTraceability = (data) => {
-  if (!!data.isTraceability) return
-  data.isTraceability = true
-  const instance = new Mark(document.getElementById(`file-render-container-${props.document.doc_id}`))
-  instance.unmark({
-    className: `entity-${data.entity_id}`,
-  })
+  const instance = new Mark(
+    document.getElementById(`file-render-container-${props.document.doc_id}`),
+  )
   instance.mark(data.replaced_text, {
     className: `traceabilitying`,
     acrossElements: true,
@@ -332,7 +334,7 @@ const handlePreTraceability = (data) => {
             <el-input
               v-model="entityKeyword"
               size="small"
-              class="!w-65px m-l-4px"
+              class="!w-100px m-l-4px"
               placeholder="搜索实体"
             />
           </template>
@@ -346,20 +348,15 @@ const handlePreTraceability = (data) => {
               class="!m-b-14px !m-t-14px"
             >
               <div v-if="row.entity_id" class="flex items-center gap-4px">
-                <el-icon
-                  v-show="row.isTraceability"
-                  class="cursor-pointer"
-                  @click="handlePreTraceability(row)"
+                <el-icon class="cursor-pointer" @click="handlePreTraceability(row)"
                   ><ArrowLeftBold
                 /></el-icon>
                 <el-link @click="handleTraceability(row)">{{ row.replaced_text }}</el-link>
-                <el-icon
-                  v-show="row.isTraceability"
-                  class="cursor-pointer"
-                  @click="handleNextTraceability(row)"
+                <el-icon class="cursor-pointer" @click="handleNextTraceability(row)"
                   ><ArrowRightBold
                 /></el-icon>
               </div>
+
               <el-input
                 v-else
                 v-model.trim="row.replaced_text"
@@ -386,23 +383,23 @@ const handlePreTraceability = (data) => {
               }"
               class="!m-b-14px !m-t-14px"
             >
-              <el-select v-model="row.type" placeholder="请选择" @change="() => updateType(row)">
-                <el-option
-                  v-for="item in typeList"
-                  :key="item.value"
-                  :label="item.text"
-                  :value="item.value"
-                >
-                </el-option>
-              </el-select>
+              <div class="flex w-100% gap-4px">
+                <el-select v-model="row.type" placeholder="请选择" @change="() => updateType(row)">
+                  <el-option
+                    v-for="item in typeList"
+                    :key="item.value"
+                    :label="item.text"
+                    :value="item.value"
+                  >
+                  </el-option>
+                </el-select>
+                <el-button v-if="!row.entity_id" class="w-50px" @click="handleSave">保存</el-button>
+              </div>
             </el-form-item>
           </template>
         </el-table-column>
         <template #append>
-          <div class="flex p-b-4px">
-            <el-button class="w-full" @click="handleAdd">新增</el-button>
-            <el-button class="w-full" @click="handleSave">保存</el-button>
-          </div>
+          <el-button class="w-full" @click="handleAdd">新增</el-button>
         </template>
       </el-table>
     </el-form>
