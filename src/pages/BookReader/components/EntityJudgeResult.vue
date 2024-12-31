@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { inject, reactive, ref, watch, type Ref } from 'vue'
+import { inject, reactive, ref, watch, nextTick, type Ref, onMounted } from 'vue'
 import autoTable from 'jspdf-autotable'
 import jsPDF from 'jspdf'
 import Mark from 'mark.js'
@@ -211,6 +211,10 @@ const handleDelete = async (row: Partial<Entity & { entityList: Entity[] }>) => 
   //   (pageStore.current - 1) * pageStore.pageSize,
   //   pageStore.current * pageStore.pageSize,
   // )
+  const instance = new Mark(
+    document.getElementById(`file-render-container-${props.document.doc_id}`),
+  )
+  instance.unmark()
   props.markEntitys(entityList.value)
   ElMessage.success('ok')
 }
@@ -280,39 +284,66 @@ const checkEntityName = (_rule: any, value: any, callback: any, data: Entity) =>
   }
 }
 
+const isTraceability = ref(false)
 const handleTraceability = (data) => {
   const instance = new Mark(
     document.getElementById(`file-render-container-${props.document.doc_id}`),
   )
-  instance.mark(data.replaced_text, {
-    className: `traceabilitying`,
-    acrossElements: true,
-  })
+  if (!isTraceability.value) {
+    instance.mark(data.replaced_text, {
+      className: `traceabilitying`,
+      acrossElements: true,
+      done() {
+        isTraceability.value = true
+      },
+    })
+  } else {
+    instance.unmark({
+      className: `traceabilitying`,
+      done() {
+        isTraceability.value = false
+      },
+    })
+  }
 }
 
 const currentTraceabilityIndex = ref(0)
 
+let markDoms = null
 const handleNextTraceability = (data) => {
-  const arr = Array.from(document.getElementsByTagName('mark'))?.filter(
-    (el) => el.textContent === data.replaced_text,
-  )
-  if (currentTraceabilityIndex.value > arr?.length) {
+  if (!markDoms) {
+    markDoms = Array.from(
+      document
+        .getElementById(`file-render-container-${props.document.doc_id}`)
+        .getElementsByTagName('mark'),
+    )?.filter((el) => el.textContent === data.replaced_text)
+  }
+  if (currentTraceabilityIndex.value > markDoms?.length) {
     currentTraceabilityIndex.value = 0
   }
-  currentTraceabilityIndex.value += 1
   // 元素滚动到当前视口
-  arr[currentTraceabilityIndex.value]?.scrollIntoView()
+  markDoms[currentTraceabilityIndex.value]?.scrollIntoView({
+    behavior: 'smooth',
+  })
+  currentTraceabilityIndex.value += 1
 }
 const handlePreTraceability = (data) => {
-  const arr = Array.from(document.getElementsByTagName('mark'))?.filter(
-    (el) => el.textContent === data.replaced_text,
-  )
-  if (currentTraceabilityIndex.value < 0) {
-    currentTraceabilityIndex.value = arr.length - 1
+  if (!markDoms) {
+    markDoms = Array.from(
+      document
+        .getElementById(`file-render-container-${props.document.doc_id}`)
+        .getElementsByTagName('mark'),
+    )?.filter((el) => el.textContent === data.replaced_text)
   }
- 
+
+  if (currentTraceabilityIndex.value < 0) {
+    currentTraceabilityIndex.value = markDoms.length - 1
+  }
+
+  markDoms[currentTraceabilityIndex.value]?.scrollIntoView({
+    behavior: 'smooth',
+  })
   currentTraceabilityIndex.value -= 1
-  arr[currentTraceabilityIndex.value]?.scrollIntoView()
 }
 </script>
 <template>
@@ -327,13 +358,13 @@ const handlePreTraceability = (data) => {
             </div>
           </template>
         </el-table-column>
-        <el-table-column property="replaced_text" width="200px">
+        <el-table-column property="replaced_text" width="322px">
           <template #header>
             <span>实体名</span>
             <el-input
               v-model="entityKeyword"
               size="small"
-              class="!w-100px m-l-4px"
+              class="!w-252px m-l-4px"
               placeholder="搜索实体"
             />
           </template>
@@ -347,11 +378,15 @@ const handlePreTraceability = (data) => {
               class="!m-b-14px !m-t-14px"
             >
               <div v-if="row.entity_id" class="flex items-center gap-4px">
-                <el-icon class="cursor-pointer" @click="handlePreTraceability(row)"
+                <el-icon class="cursor-pointer select-none" @click="handlePreTraceability(row)"
                   ><ArrowLeftBold
                 /></el-icon>
-                <el-link @click="handleTraceability(row)">{{ row.replaced_text }}</el-link>
-                <el-icon class="cursor-pointer" @click="handleNextTraceability(row)"
+                <span
+                  class="underline underline-offset-4 select-none"
+                  @click="handleTraceability(row)"
+                  >{{ row.replaced_text }}</span
+                >
+                <el-icon class="cursor-pointer select-none" @click="handleNextTraceability(row)"
                   ><ArrowRightBold
                 /></el-icon>
               </div>

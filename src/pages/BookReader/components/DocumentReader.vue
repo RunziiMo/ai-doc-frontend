@@ -177,7 +177,6 @@ markEntitys.value = async (entitys) => {
         if (currentDomEntitys.length === 0) return
 
         const instance = new Mark(el)
-        instance.unmark()
         handelMark(instance, currentDomEntitys)
         observer.unobserve(el)
       }
