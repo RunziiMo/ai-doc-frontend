@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { inject, reactive, ref, watch, nextTick, type Ref, onMounted } from 'vue'
+import { inject, reactive, ref, watch, type Ref } from 'vue'
 import autoTable from 'jspdf-autotable'
 import jsPDF from 'jspdf'
 import Mark from 'mark.js'
