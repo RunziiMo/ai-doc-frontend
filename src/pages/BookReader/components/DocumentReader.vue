@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed, watch, nextTick, reactive } from 'vue'
+import { ref, computed, watch, reactive, inject, type Ref } from 'vue'
 import { useMouseInElement } from '@vueuse/core'
 import { ElMessageBox, ElScrollbar } from 'element-plus'
 import 'splitpanes/dist/splitpanes.css'
@@ -9,53 +9,56 @@ import Mark from 'mark.js'
 import { getSelectedTextInfos } from '@/utils/text'
 import { ElMessage } from 'element-plus'
 import PdfView from './PdfView.vue'
+import useTypes from './use-types'
+import type { Entity } from '@/api/types'
 
 const props = defineProps({
   bookIdentify: {
     type: String,
-    required: true
+    required: true,
   },
   document: {
     type: Object,
-    required: true
+    default: () => ({}),
+    required: true,
   },
   searchString: {
     type: String,
-    required: true
+    required: true,
   },
   traceability: {
     type: Object,
-    required: true
+    required: true,
   },
-  book: {  
+  book: {
     type: Object,
     required: true,
   },
 })
 
-
+const currentSelectDocId = inject<Ref<number>>('currentSelectDocId')
 
 const emit = defineEmits(['fileRenderFinished', 'refreshEntity'])
 
 const isPdf = computed(() => {
-  return props.document.identify?.endsWith('.pdf')
+  return props.document?.identify?.endsWith('.pdf')
 })
 
 const addPopover = ref({
   visible: false,
   top: 0,
-  left: 0
+  left: 0,
 })
 
 const loadDocument = async (bookIdentify, docId) => {
   const url = `/api/book/${bookIdentify}/download/${docId}`
   let response = await axios.get(url, {
-    responseType: 'blob' // 设置响应类型为 blob
+    responseType: 'blob', // 设置响应类型为 blob
   })
   const docxOptions = Object.assign(defaultOptions, {
     inWrapper: false,
     ignoreWidth: true,
-    experimental: true
+    experimental: true,
   })
   await renderAsync(response.data, docContainer.value, null, docxOptions).finally(() => {
     handleRendered()
@@ -67,21 +70,21 @@ watch(
   (newValue) => {
     if (isPdf.value) return
     loadDocument(props.bookIdentify, newValue.doc_id)
-  }
+  },
 )
 
 watch(
   () => props.searchString,
   (newValue) => {
     scrollToText(newValue)
-  }
+  },
 )
 
 watch(
   () => props.traceability,
   (newValue) => {
     scrollToText(newValue.entityName, newValue.entityIndex)
-  }
+  },
 )
 const docContainer = ref<HTMLDivElement>(null)
 
@@ -91,86 +94,35 @@ const editEntitysModel = reactive({
   type: '',
   replaced_text: '',
   confidence: '',
-  entity_id: '',
+  entity_id: 0,
   start_index: 0,
-  end_index: 0
+  end_index: 0,
 })
 
 const editPopover = ref({
   visible: false,
   top: 0,
-  left: 0
+  left: 0,
+})
+
+watch(currentSelectDocId, () => {
+  addPopover.value.visible = false
+  editPopover.value.visible = false
 })
 
 const disabledEditEntity = ref(true)
 
 const markEntitys = defineModel('markEntitys', {
   type: Function,
-  default: () => {}
+  default: () => {},
 })
 
-const filetype = computed(() => {
-  return props.book.item_name
-})
-
-// 股东协议 类型
-const shareholdersAgreementType = [
-  "人名", "地址", "时间", "组织", "金额", "数字", "品牌", "身份证号",
-  "电子邮件地址",
-]
-// 行政文书 类型
-const administrativeDocumentsType = [
-  "参与集中的经营者名称", "企业性质", " 统一社会信用代码",
-  "申报人", "合并方", "收购方", "被收购方", "股权出让方", "被收购方的原有股东",
-  "合营方", "全球范围主要业务", "中国境内主要业务", "最终控制人"
-]
-
-const typeNames = [...shareholdersAgreementType, ...administrativeDocumentsType]
-
-const typesMps = {
-  'legal_admin': administrativeDocumentsType,
-  'shareholder_agreement': shareholdersAgreementType,
-}
-
-const typeList = computed(() => {
-  return typesMps[props.book.item_name]?.map(el => ({text: el, value: el})) || []
-})
-
-const darkerLightColors = [
-    "rgb(238, 232, 170)", // 浅棕色
-    "rgb(216, 255, 191)", // 浅黄绿色
-    "rgb(192, 250, 255)", // 浅青色带灰
-    "rgb(153, 255, 255)", // 浅天蓝色带灰
-    "rgb(136, 255, 165)", // 浅绿蓝色
-    "rgb(255, 235, 189)", // 浅橙色带黄
-    "rgb(255, 204, 188)", // 浅粉红色带橙
-    "rgb(255, 192, 203)", // 浅紫红色
-    "rgb(255, 182, 107)", // 浅橙色带棕
-    "rgb(245, 245, 215)", // 浅米黄色带灰
-    "rgb(204, 255, 229)", // 浅青绿色带灰
-    "rgb(173, 216, 230)", // 浅蓝紫色
-    "rgb(153, 204, 255)", // 浅蓝色带灰
-    "rgb(136, 189, 255)", // 浅天蓝色带深灰
-    "rgb(238, 238, 204)", // 浅黄色带灰
-    "rgb(230, 230, 173)", // 浅黄绿色带灰
-    "rgb(217, 217, 181)", // 浅棕色带灰
-    "rgb(204, 255, 204)", // 浅青绿色带白
-    "rgb(189, 255, 189)", // 浅绿色带白
-    "rgb(173, 255, 173)", // 浅绿色更深
-    "rgb(224, 255, 224)", // 浅绿色带白更亮
-    "rgb(211, 238, 211)"  // 浅黄绿色带白更亮
-];
-
-
-const colors = {};
-typeNames.forEach((el, index) => {
-    colors[el] = darkerLightColors[index]
- })
+const { typeList, colors } = useTypes(props.book.item_name)
 
 const handelMark = (instance, entitys) => {
   const options = (data) => ({
     acrossElements: true,
-    className: 'text-selected',
+    className: `text-selected entity-${data.entity_id}`,
     each: (element) => {
       element.style.setProperty('--background-color', colors[data.type])
       element.setAttribute('id', data.entity_id)
@@ -182,25 +134,25 @@ const handelMark = (instance, entitys) => {
         editPopover.value.visible = true
       }
     },
-    done: async function () {}
+    done: async function () {},
   })
- 
-  const num = entitys.length;
+
+  const num = entitys.length
   let operationIndex = 0
   function performDOMOperations() {
-    const operationsPerFrame = 5; // 每次执行5个标记操作作为一个分片
-    const endIndex = Math.min(operationIndex + operationsPerFrame, num);
+    const operationsPerFrame = 5 // 每次执行5个标记操作作为一个分片
+    const endIndex = Math.min(operationIndex + operationsPerFrame, num)
     for (let i = operationIndex; i < endIndex; i++) {
       const el = entitys[i]
       instance.mark(el.replaced_text, options(el))
     }
-    operationIndex = endIndex;
+    operationIndex = endIndex
     if (operationIndex < num) {
-      requestAnimationFrame(performDOMOperations);
+      requestAnimationFrame(performDOMOperations)
     }
   }
 
-  requestAnimationFrame(performDOMOperations);
+  requestAnimationFrame(performDOMOperations)
   // entitys?.forEach((el) => {
   //   const texts = el.window_text.split(el.replaced_text)
   //   const regexStr = `(?<=${texts[0]})${el.replaced_text}(?=${texts[1]})`
@@ -214,15 +166,17 @@ markEntitys.value = async (entitys) => {
     entries.forEach((entry) => {
       if (entry.isIntersecting) {
         const el = entry.target
-       
+
         const textContent = el.textContent
-        const currentDomEntitys = entitys
-        .filter((el, index) => textContent.includes(el.replaced_text) && index === entitys.findIndex((el2) => el2.replaced_text === el.replaced_text))
+        const currentDomEntitys = entitys.filter(
+          (el, index) =>
+            textContent.includes(el.replaced_text) &&
+            index === entitys.findIndex((el2) => el2.replaced_text === el.replaced_text),
+        )
         // 在这里进行标记操作
-        if(currentDomEntitys.length === 0) return
-        
+        if (currentDomEntitys.length === 0) return
+
         const instance = new Mark(el)
-        instance.unmark()
         handelMark(instance, currentDomEntitys)
         observer.unobserve(el)
       }
@@ -233,7 +187,6 @@ markEntitys.value = async (entitys) => {
       observer.observe(element)
     })
   })
-
 }
 
 const { x: mouseX, y: mouseY, isOutside } = useMouseInElement(docContainer.value)
@@ -245,7 +198,7 @@ const addEntitysModel = reactive({
   start_index: 0,
   end_index: 0,
   window_text: '',
-  replaced_text: ''
+  replaced_text: '',
 })
 
 const selectedTextInfos = ref([])
@@ -259,7 +212,7 @@ const handleMouseUp = () => {
       addPopover.value = {
         visible: true,
         top: mouseY.value,
-        left: mouseX.value
+        left: mouseX.value,
       }
       addEntitysModel.replaced_text = selectedText
       selectedTextInfos.value = getSelectedTextInfos(selectedText, docContainer.value.innerText)
@@ -270,36 +223,32 @@ const handleMouseUp = () => {
   }
 }
 
-const entityList = defineModel('entityList', {
-  type: Array,
-  default: () => []
-})
+const entityList = inject<Ref<Array<Entity>>>('entityList')
+const getEntityList = inject<Function>('getEntityList')
 
+// const getEntityListByApi = async () => {
+//   const { data } = await axios.get(`/api/document/${props.document?.doc_id}/entity`)
+//   if (data.errcode !== 0) {
+//     entityList.value = []
+//   } else {
+//     entityList.value = data.data.page.List || []
+//     await nextTick() // 等待DOM更新
+//     markEntitys.value(entityList.value)
+//   }
+// }
 
-
-const getEntityListByApi = async () => {
-  const { data } = await axios.get(`/api/document/${props.document?.doc_id}/entity`)
-  if (data.errcode !== 0) {
-    entityList.value = []
-  } else {
-    entityList.value = data.data.page.List || []
-    await nextTick() // 等待DOM更新
-    markEntitys.value(entityList.value)
-  }
-}
-
-const getEntityList = async (data) => {
-  if (data.errcode !== 0) {
-    entityList.value = []
-  } else {
-    entityList.value = data.data.page.List || []
-    await nextTick() // 等待DOM更新
-    markEntitys.value?.(entityList.value)
-  }
-}
+// const getEntityList = async (data) => {
+//   if (data.errcode !== 0) {
+//     entityList.value = []
+//   } else {
+//     entityList.value = data.data.page.List || []
+//     await nextTick() // 等待DOM更新
+//     markEntitys.value?.(entityList.value)
+//   }
+// }
 
 const handleRendered = async () => {
-  await getEntityListByApi()
+  await getEntityList()
   if (entityList.value.length !== 0) {
     markEntitys.value?.(entityList.value)
   }
@@ -312,7 +261,7 @@ const scrollToText = async (searchString, index = 0) => {
   // await nextTick() // 等待DOM更新
   const elements = docContainer.value.getElementsByTagName('mark') // 假设被高亮的文本被<mark>标签包裹
   const targetMarks = Array.from(elements).filter(
-    (el) => searchString.startsWith(el.textContent) && el.parentElement.tagName !== 'MARK'
+    (el) => searchString.startsWith(el.textContent) && el.parentElement.tagName !== 'MARK',
   )
   let firstElement = targetMarks?.[index]
   if (elements.length > 0) {
@@ -320,7 +269,7 @@ const scrollToText = async (searchString, index = 0) => {
       firstElement.scrollIntoView({ behavior: 'smooth' })
       markIns.mark(searchString, {
         acrossElements: true,
-        className: 'text-scroll-selected'
+        className: 'text-scroll-selected',
       })
     }
     // 如果使用<el-scrollbar>，则可能需要使用其API来滚动
@@ -353,12 +302,13 @@ const handleEdit = async () => {
   const form = objToFormData(editEntitysModel)
   const response = await axios.put(
     `/api/document/${props.document?.doc_id}/entity/${editEntitysModel.entity_id}`,
-    form
+    form,
   )
   const { errcode, message } = response.data
   if (errcode === 0) {
     ElMessage.success(message)
-    getEntityListByApi()
+    await getEntityList()
+    markEntitys.value?.(entityList.value)
     editPopover.value.visible = false
   } else {
     // 表单提交失败，处理错误
@@ -381,24 +331,25 @@ const handleDelete = async () => {
       {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
-        type: 'warning'
-      }
+        type: 'warning',
+      },
     )
   }
 
   await ElMessageBox.confirm('确定要删除吗?', 'Warning', {
     confirmButtonText: '确定',
     cancelButtonText: '取消',
-    type: 'warning'
+    type: 'warning',
   })
 
   const response = await axios.delete(
-    `/api/document/${props.document?.doc_id}/entity?&type=${entityInfo.type}&text=${encodeURIComponent(entityInfo.replaced_text)}`
+    `/api/document/${props.document?.doc_id}/entity?&type=${entityInfo.type}&text=${encodeURIComponent(entityInfo.replaced_text)}`,
   )
   const { errcode, message } = response.data
   if (errcode === 0) {
     ElMessage.success(message)
     getEntityList(response.data)
+    markEntitys.value?.(entityList.value)
     editPopover.value.visible = false
   } else {
     // 表单提交失败，处理错误
@@ -414,18 +365,19 @@ const handleAdd = async () => {
       {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
-        type: 'warning'
-      }
+        type: 'warning',
+      },
     )
   }
   const response = await axios.post(
     `/api/document/${props.document?.doc_id}/entity`,
-    addEntitysModel
+    addEntitysModel,
   )
   const { errcode, message } = response.data
   if (errcode === 0) {
     ElMessage.success(message)
     getEntityList(response.data)
+    markEntitys.value?.(entityList.value)
     addPopover.value.visible = false
   } else {
     // 表单提交失败，处理错误
@@ -439,7 +391,12 @@ const handleAdd = async () => {
     v-if="isPdf"
     @scroll="() => ((addPopover.visible = false), (editPopover.visible = false))"
   >
-    <div ref="docContainer" class="wh-full" @mouseup.stop="handleMouseUp">
+    <div
+      ref="docContainer"
+      :id="`file-render-container-${document?.doc_id}`"
+      class="wh-full"
+      @mouseup.stop="handleMouseUp"
+    >
       <PdfView :url="url" @rendered="handleRendered" />
     </div>
   </el-scrollbar>
@@ -447,7 +404,12 @@ const handleAdd = async () => {
     v-else-if="isDocx"
     @scroll="() => ((addPopover.visible = false), (editPopover.visible = false))"
   >
-    <div ref="docContainer" @mouseup.stop="handleMouseUp" />
+    <div
+      ref="docContainer"
+      :id="`file-render-container-${document?.doc_id}`"
+      class="wh-full"
+      @mouseup.stop="handleMouseUp"
+    />
   </el-scrollbar>
   <el-empty
     v-else-if="document.markdown !== undefined && document.markdown === ''"
@@ -605,7 +567,7 @@ const handleAdd = async () => {
   left: 0;
 }
 </style>
-<style>
+<style scoped>
 .add-popover,
 .edit-popover {
   position: absolute;

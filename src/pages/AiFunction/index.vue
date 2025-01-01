@@ -405,6 +405,6 @@ const testPrompt = async () => {
 }
 </script>
 
-<style>
+<style scoped>
 </style>
   

@@ -43,7 +43,7 @@ const dialogFormVisible = computed({
     },
 });
 
-const formLabelWidth = '140px';
+// const formLabelWidth = '140px';
 
 const form = reactive({
   name: '',

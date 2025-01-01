@@ -7,116 +7,110 @@
       @anonymous-processing="docNameEntityRecognition"
       @request-entity-result="$emit('requestEntityResult')"
     />
-    <splitpanes class="flex-1" horizontal>
-      <pane v-if="!isRetract && entityList.length > 0">
-        <EntityJudgeResult
-          v-loading="entityTableLoading"
-          :document="document"
-          :entity-list="entityList"
-          @traceability="(data) => $emit('traceability', data)"
-          @retract="$emit('retract')"
-        />
-      </pane>
-      <pane>
-        <div class="w-full h-full flex flex-col">
-          <div
-            class="flex-1 hide-scrobar flex flex-col items-stretch overflow-y-scroll mb-3"
-            ref="scrollContainer"
-            style="scrollbar-width: none; -ms-overflow-style: none"
-          >
-            <ChatMessage
-              v-for="m in messages"
-              :message="m"
-              :export="exportMode"
-              @text-selected="(text) => $emit('textSelected', text)"
-              @deleted-message="handleDeleteMessage"
-              @switch-export="(id) => switchExport(id)"
-              @update-response-success="updateMessege"
-              @get-message="(val) => $emit('getMessage', val)"
+    <div style="height: calc(100% - 40px)">
+      <splitpanes horizontal class="w-100% h-100%">
+        <pane v-if="!isRetract && entityList.length > 0">
+          <EntityJudgeResult
+            v-loading="entityTableLoading"
+            :document="document"
+            :markEntitys="markEntitys"
+            :book="book"
+            :entity-list="entityList"
+            @traceability="(data) => $emit('traceability', data)"
+            @retract="$emit('retract')"
+          />
+        </pane>
+        <pane>
+          <div class="w-full h-full flex flex-col">
+            <div
+              class="flex-1 hide-scrobar flex flex-col items-stretch overflow-y-scroll mb-3"
+              ref="scrollContainer"
+              style="scrollbar-width: none; -ms-overflow-style: none"
             >
-            </ChatMessage>
-            <div ref="viewAnchor" />
-          </div>
-          <div v-if="!exportMode" class="self-stretch flex mb-3 justify-between">
-            <el-autocomplete
-              class="flex-1 inline-input"
-              v-model="prompt"
-              @select="customizeChat"
-              :fetch-suggestions="querySearch"
-              :highlight-first-item="true"
-              :trigger-on-focus="false"
-              :fit-input-width="true"
-              clearable
-              placeholder="输入 / 选择或者直接提问"
-              :disabled="entityRecognitionLoading"
-            >
-              <template #default="{ item }">
-                <div class="flex justify-between">
-                  <div class="flex flex-col">
-                    <el-text class="self-start">{{ item.template_name }}</el-text>
+              <ChatMessage
+                v-for="m in messages"
+                :message="m"
+                :export="exportMode"
+                @text-selected="(text) => $emit('textSelected', text)"
+                @deleted-message="handleDeleteMessage"
+                @switch-export="(id) => switchExport(id)"
+                @update-response-success="updateMessege"
+                @get-message="(val) => $emit('getMessage', val)"
+              >
+              </ChatMessage>
+              <div ref="viewAnchor" />
+            </div>
+            <div v-if="!exportMode" class="self-stretch flex mb-3 justify-between">
+              <el-autocomplete
+                class="flex-1 inline-input"
+                v-model="prompt"
+                @select="customizeChat"
+                :fetch-suggestions="querySearch"
+                :highlight-first-item="true"
+                :trigger-on-focus="false"
+                :fit-input-width="true"
+                clearable
+                placeholder="输入 / 选择或者直接提问"
+                :disabled="entityRecognitionLoading"
+              >
+                <template #default="{ item }">
+                  <div class="flex justify-between">
+                    <div class="flex flex-col">
+                      <el-text class="self-start">{{ item.template_name }}</el-text>
+                    </div>
+                    <el-text truncated>{{ item.template }}</el-text>
+                    <div class="flex items-center slef-end">
+                      <el-text>
+                        作者：{{ item.author }}
+                        <el-icon class="el-input__icon">
+                          <StarFilled />
+                        </el-icon>
+                        {{ item.agree_count }}
+                      </el-text>
+                    </div>
                   </div>
-                  <el-text truncated>{{ item.template }}</el-text>
-                  <div class="flex items-center slef-end">
-                    <el-text>
-                      作者：{{ item.author }}
-                      <el-icon class="el-input__icon">
-                        <StarFilled />
-                      </el-icon>
-                      {{ item.agree_count }}
-                    </el-text>
-                  </div>
-                </div>
-              </template>
-            </el-autocomplete>
-            <el-button
-              @click="docAnalyzes(prompt)"
-              :loading="loading"
-              class="ml-3"
-              type="success"
-              :disabled="entityRecognitionLoading"
-              :icon="Promotion"
+                </template>
+              </el-autocomplete>
+              <el-button
+                @click="docAnalyzes(prompt)"
+                :loading="loading"
+                class="ml-3"
+                type="success"
+                :disabled="entityRecognitionLoading"
+                :icon="Promotion"
+              />
+            </div>
+            <div v-else class="self-stretch flex mb-3 justify-between items-center">
+              <el-checkbox
+                class="self-center"
+                v-model="checkAll"
+                :indeterminate="isIndeterminate"
+                @change="handleCheckAllChange"
+              >
+                全部选中
+              </el-checkbox>
+              <el-button @click="switchExport" class="w-30">取消</el-button>
+              <el-button @click="showExportDialog = true" class="w-30" type="primary"
+                >导出</el-button
+              >
+            </div>
+            <ExportDialog
+              v-model:showDialog="showExportDialog"
+              :document="document"
+              :messages="messages"
             />
           </div>
-          <div v-else class="self-stretch flex mb-3 justify-between items-center">
-            <el-checkbox
-              class="self-center"
-              v-model="checkAll"
-              :indeterminate="isIndeterminate"
-              @change="handleCheckAllChange"
-            >
-              全部选中
-            </el-checkbox>
-            <el-button @click="switchExport" class="w-30">取消</el-button>
-            <el-button @click="showExportDialog = true" class="w-30" type="primary">导出</el-button>
-          </div>
-          <ExportDialog
-            v-model:showDialog="showExportDialog"
-            :document="document"
-            :messages="messages"
-          />
-        </div>
-      </pane>
-    </splitpanes>
+        </pane>
+      </splitpanes>
+    </div>
   </div>
 </template>
 
 <script lang="ts" setup>
-import {
-  reactive,
-  h,
-  ref,
-  computed,
-  watch,
-  onMounted,
-  onUnmounted,
-  nextTick,
-  provide,
-  inject
-} from 'vue'
+import { h, ref, watch, onMounted, onUnmounted, nextTick, provide, inject, type Ref } from 'vue'
 import { isProxy, toRaw } from 'vue'
-import { ElMessage, ElMessageBox } from 'element-plus'
+import { ElMessage, ElMessageBox, ElOption, ElSelect } from 'element-plus'
 import { Promotion } from '@element-plus/icons-vue'
-import { Edit } from '@element-plus/icons-vue'
 import axios from 'axios'
 import ExportDialog from './ExportDialog.vue'
 import DocumentOperate from './DocumentOperate.vue'
@@ -125,38 +119,50 @@ import EntityJudgeResult from './EntityJudgeResult.vue'
 
 const entityList = defineModel('entityList', {
   type: Array,
-  default: []
+  default: [],
 })
-
+const currentSelectDocId = inject<Ref<number>>('currentSelectDocId')
 const props = defineProps({
   bookIdentify: {
     type: String,
-    required: true
+    required: true,
+  },
+  book: {
+    type: Object,
+    required: true,
   },
   document: {
     type: Object,
-    required: true
+    required: true,
   },
   functions: {
     type: Array,
-    required: true
+    required: true,
   },
   checkedFiles: {
     type: Array,
-    required: true
+    required: true,
   },
   documents: {
     type: Array,
-    required: true
+    required: true,
   },
   entityTableLoading: {
     type: Boolean,
-    required: true
+    required: true,
   },
   isRetract: {
     type: Boolean,
-    required: true
-  }
+    required: true,
+  },
+  docId: {
+    type: Number,
+    required: true,
+  },
+  markEntitys: {
+    type: Function,
+    required: true,
+  },
 })
 
 const emit = defineEmits([
@@ -165,16 +171,10 @@ const emit = defineEmits([
   'getMessage',
   'traceability',
   'requestEntityResult',
-  'retract'
+  'retract',
 ])
-
-let intervalId
-onMounted(async () => {
-  if (props.document.doc_id) {
-    messages.value = await loadChatMessages(props.document.doc_id)
-  }
-  scrollToBottom()
-  intervalId = setInterval(async () => {
+const startInterval = () => {
+  const intervalId = setInterval(async () => {
     if (loading.value) {
       return
     }
@@ -184,7 +184,7 @@ onMounted(async () => {
       const updatedMessages = await loadChatMessages(props.document.doc_id)
       updatedMessages.forEach((updatedMessage) => {
         const index = messages.value.findIndex(
-          (message) => message.message_id === updatedMessage.message_id
+          (message) => message.message_id === updatedMessage.message_id,
         )
         if (index !== -1 && messages.value[index].approved === 0) {
           messages.value[index] = updatedMessage
@@ -192,6 +192,34 @@ onMounted(async () => {
       })
     }
   }, 3000) // 每 3 秒请求一次
+  return intervalId
+}
+let intervalId = startInterval()
+
+const initInterval = (val) => {
+  if (val === props.docId) {
+    stopInterval()
+    intervalId = startInterval()
+  } else {
+    stopInterval()
+  }
+}
+const stopInterval = () => {
+  clearInterval(intervalId)
+  intervalId = null
+}
+
+initInterval(currentSelectDocId.value)
+
+watch(currentSelectDocId, (val) => {
+  initInterval(val)
+})
+
+onMounted(async () => {
+  if (props.document?.doc_id) {
+    messages.value = await loadChatMessages(props.document.doc_id)
+  }
+  scrollToBottom()
 })
 onUnmounted(() => {
   clearInterval(intervalId)
@@ -201,10 +229,8 @@ const prompt = ref('')
 const loading = ref(false)
 const entityRecognitionLoading = ref(false)
 
-
 const showExportDialog = ref(false)
 const exportMode = ref(false)
-const checkedExport = ref(false)
 const checkAll = ref(false)
 const isIndeterminate = ref(false)
 const checkedMessages = ref([])
@@ -235,10 +261,10 @@ const switchExport = (id) => {
 const messages = ref([])
 watch(
   () => messages,
-  async (newValue, oldValue) => {
+  () => {
     scrollToBottom()
   },
-  { deep: true }
+  { deep: true },
 )
 const scrollContainer = ref<HTMLDivElement>()
 
@@ -260,7 +286,7 @@ const querySearch = async (queryString: string, cb: any) => {
   cb(functions)
 }
 const createFilter = (queryString: string) => {
-  return (item: Object) => {
+  return (item: any) => {
     return (
       item.template_name.toLowerCase().indexOf(queryString.toLowerCase()) !== -1 ||
       item.template.toLowerCase().indexOf(queryString.toLowerCase()) !== -1
@@ -271,7 +297,7 @@ const createFilter = (queryString: string) => {
 const loadChatMessages = async (documentId) => {
   const params = {
     doc_id: documentId,
-    page: -1
+    page: -1,
   }
   let response = await axios.get('/api/aigc/messages', { params })
   if (response.data.errcode !== 0) {
@@ -297,19 +323,19 @@ const docNameEntityRecognition = async () => {
 watch(
   () => props.document,
   async (newValue, oldValue) => {
-    if(newValue.doc_id !== oldValue.doc_id) {
-      entityRecognitionLoading.value = false;
+    if (newValue?.doc_id !== oldValue?.doc_id) {
+      entityRecognitionLoading.value = false
     }
     messages.value = await loadChatMessages(newValue.doc_id)
-  }
+  },
 )
 
 const checkRequestParam = async (prompt, options) => {
   const selectedOption = ref(null)
   if (options !== undefined && options.length > 0) {
-    options = options.map((option, index) => ({
+    options = options.map((option) => ({
       value: option,
-      label: option
+      label: option,
     }))
     return new Promise((resolve, reject) => {
       ElMessageBox({
@@ -325,21 +351,21 @@ const checkRequestParam = async (prompt, options) => {
                 selectedOption.value = val
               },
               style: {
-                width: '200px' // 设置宽度为 100%
-              }
+                width: '200px', // 设置宽度为 100%
+              },
             },
             options.map((option) =>
               h(ElOption, {
                 key: option.value,
                 label: option.label,
-                value: option.value
-              })
-            )
+                value: option.value,
+              }),
+            ),
           ),
         confirmButtonText: 'OK',
         cancelButtonText: 'Cancel',
         showCancelButton: true,
-        beforeClose: (action, instance, done) => {
+        beforeClose: (action, _instance, done) => {
           if (action === 'confirm') {
             console.log('Selected option:', selectedOption.value)
             resolve(selectedOption.value)
@@ -347,13 +373,13 @@ const checkRequestParam = async (prompt, options) => {
             reject(new Error('User cancelled the operation'))
           }
           done()
-        }
+        },
       })
     })
   } else {
     return ElMessageBox.prompt(prompt, '必填参数', {
       confirmButtonText: '确认',
-      cancelButtonText: '取消'
+      cancelButtonText: '取消',
     })
   }
 }
@@ -374,13 +400,13 @@ const customizeChat = async (event) => {
     doc_id: props.document.doc_id,
     role: '',
     law: '',
-    function_id: func.id
+    function_id: func.id,
   }
   // 必填利益方参数
   if (func.template.includes('{{ role }}') && (params.role || params.role === '')) {
     try {
-      const value = await checkRequestParam('请输入利益方')
-      params.role = value.value
+      const value = await checkRequestParam('请输入利益方', {})
+      params.role = (value as any).value
     } catch (error) {
       ElMessage.warning('请求取消')
       return
@@ -395,20 +421,20 @@ const customizeChat = async (event) => {
       }
       const data = response.data.data
       const value = await checkRequestParam('请输入参考法律', data)
-      params.law = value
+      params.law = value as string;
     } catch (error) {
       ElMessage.warning('请求取消')
       return
     }
   }
   const filteredParams = Object.fromEntries(
-    Object.entries(params).filter(([_, v]) => v != null && v !== '')
+    Object.entries(params).filter(([_, v]) => v != null && v !== ''),
   )
   console.log(filteredParams)
   const queryString = new URLSearchParams(filteredParams).toString()
   const url = `/aigc/customize_chat?${queryString}`
 
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const eventSource = new EventSource(url)
     eventSource.onmessage = (event) => {
       messages.value[messages.value.length - 1].response += event.data
@@ -424,10 +450,10 @@ const customizeChat = async (event) => {
       ElMessage.warning(event.data)
       messages.value[messages.value.length - 1].approved = 1
     })
-    eventSource.onerror = (event) => {
+    eventSource.onerror = () => {
       eventSource.close()
       loading.value = false
-      resolve()
+      resolve(void 0)
     }
   })
 }
@@ -450,8 +476,8 @@ const docAnalyzes = (promptName) => {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning',
-        dangerouslyUseHTMLString: true
-      }
+        dangerouslyUseHTMLString: true,
+      },
     ).then(async () => {
       props.checkedFiles?.forEach(async (el) => {
         await docAnalyze(el)
@@ -473,10 +499,10 @@ const docAnalyze = async (promptName, docId = props.document.doc_id) => {
     book_identify: props.bookIdentify,
     doc_id: docId,
     prompt: promptName,
-    action: props.functions.includes(promptName) ? 'analyze' : 'chat'
+    action: props.functions.includes(promptName) ? 'analyze' : 'chat',
   }
   const filteredParams = Object.fromEntries(
-    Object.entries(params).filter(([_, v]) => v != null && v !== '')
+    Object.entries(params).filter(([_, v]) => v != null && v !== ''),
   )
   const queryString = new URLSearchParams(filteredParams).toString()
   const url = `/aigc/chat?${queryString}`
@@ -495,7 +521,7 @@ const docAnalyze = async (promptName, docId = props.document.doc_id) => {
     ElMessage.warning(event.data)
     messages.value[messages.value.length - 1].approved = 1
   })
-  eventSource.onerror = (event) => {
+  eventSource.onerror = () => {
     eventSource.close()
     loading.value = false
     prompt.value = ''
@@ -539,16 +565,16 @@ const customizeChatbySelectFunction = async (event, docId = props.document.doc_i
     doc_id: docId,
     role: func.role,
     law: func.law,
-    function_id: func.id
+    function_id: func.id,
   }
   const filteredParams = Object.fromEntries(
-    Object.entries(params).filter(([_, v]) => v != null && v !== '')
+    Object.entries(params).filter(([_, v]) => v != null && v !== ''),
   )
   console.log(filteredParams)
   const queryString = new URLSearchParams(filteredParams).toString()
   const url = `/aigc/customize_chat?${queryString}`
 
-  return new Promise((resolve, reject) => {
+  return new Promise((resolve) => {
     const eventSource = new EventSource(url)
     eventSource.onmessage = (event) => {
       messages.value[messages.value.length - 1].response += event.data
@@ -566,10 +592,10 @@ const customizeChatbySelectFunction = async (event, docId = props.document.doc_i
         messages.value[messages.value.length - 1].approved = 1
       }
     })
-    eventSource.onerror = (event) => {
+    eventSource.onerror = () => {
       eventSource.close()
       loading.value = false
-      resolve()
+      resolve(void 0)
     }
   })
 }
@@ -580,7 +606,7 @@ const handleAiRequest = async (funes) => {
       const value = await ElMessageBox.confirm('是否确认文档无需脱敏处理？', 'Warning', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
-        type: 'warning'
+        type: 'warning',
       })
       if (value !== 'confirm') {
         return
@@ -594,8 +620,8 @@ const handleAiRequest = async (funes) => {
         {
           confirmButtonText: '确定',
           cancelButtonText: '取消',
-          type: 'warning'
-        }
+          type: 'warning',
+        },
       )
       if (value !== 'confirm') {
         return
@@ -625,8 +651,8 @@ const handleAiRequest = async (funes) => {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
         type: 'warning',
-        dangerouslyUseHTMLString: true
-      }
+        dangerouslyUseHTMLString: true,
+      },
     ).then(async () => {
       try {
         for (const item of funes) {
@@ -649,7 +675,7 @@ const handleAiRequest = async (funes) => {
 }
 </script>
 
-<style>
+<style scoped>
 .scroll-content {
   flex-grow: 1;
   overflow-y: auto;

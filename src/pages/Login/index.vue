@@ -32,7 +32,7 @@ function setFindSecretStatus() {
 }
 </script>
 
-<style>
+<style scoped>
 
 </style>
   

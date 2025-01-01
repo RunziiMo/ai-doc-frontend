@@ -77,7 +77,7 @@ const handleConfirm = async() => {
   emit('aiPreRequest', selectedFunstions.value)
 }
 
-const checkLaw = (row, rule, value, callback) => {
+const checkLaw = (row, _rule, value, callback) => {
   const isSelect = selectedFunstions.value.findIndex(el => el.id === row.id) !== -1
   if (isSelect && !value) {
     callback(new Error('参考法律为必选项'));
@@ -87,7 +87,7 @@ const checkLaw = (row, rule, value, callback) => {
 
 }
 
-const checkRole =(row, rule, value, callback) => {
+const checkRole =(row, _rule, value, callback) => {
   const isSelect = selectedFunstions.value.findIndex(el => el.id === row.id) !== -1
   if (isSelect && !value) {
     callback(new Error('利益方为必填项'));

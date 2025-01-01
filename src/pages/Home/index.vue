@@ -100,7 +100,7 @@ async function fetchInitialData() {
     }
 }
 </script>
-<style>
+<style scoped>
 .doc-list {
     display: flex;
     /* justify-content: center; */

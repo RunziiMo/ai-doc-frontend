@@ -1,20 +1,22 @@
-<script>
-import { ArrowDown } from '@element-plus/icons-vue'
-import { ref, watch, inject } from 'vue'
+<script lang="ts">
+import type { PropType } from 'vue'
+import type { BookInfo } from '@/api/types'
 import { ElMessage, ElMessageBox } from 'element-plus'
 import axios from 'axios'
 
 export default {
   data() {
     return {
-      showDialog: false
+      showDialog: false,
     }
   },
   props: {
     modelValue: Boolean,
-    book: Object,
+    book: {
+      type: Object as PropType<BookInfo>,
+    },
     document: Object,
-    model: Object
+    model: Object,
   },
   emits: ['update:modelValue', 'hideSide'],
   computed: {
@@ -24,15 +26,15 @@ export default {
       },
       set(value) {
         this.$emit('update:modelValue', value)
-      }
+      },
     },
     editable() {
       return false
       // return this.book.role_id === 0 || this.book.role_id === 1 || this.book.role_id === 2;
     },
     owner() {
-      return this.book.role_id === 0 || this.book.role_id === 1
-    }
+      return this.book?.role_id === 0 || this.book?.role_id === 1
+    },
   },
   methods: {
     onBack() {
@@ -42,31 +44,31 @@ export default {
       ElMessageBox.confirm('确定是否删除当前项目？', '删除', {
         confirmButtonText: '确定',
         cancelButtonText: '取消',
-        type: 'warning'
+        type: 'warning',
       }).then(async () => {
         // 调用删除项目Api
-        const formData = new FormData();
-        formData.append('identify', this.book.identify);
-        const response = await axios.post('/book/setting/delete', formData);
-        const data = response.data;
+        const formData = new FormData()
+        formData.append('identify', this.book.identify)
+        const response = await axios.post('/book/setting/delete', formData)
+        const data = response.data
         if (data.errcode !== 0) {
-            ElMessage({
-                message: data.message,
-                type: 'warning',
-            });
+          ElMessage({
+            message: data.message,
+            type: 'warning',
+          })
         } else {
-            ElMessage({
-                message: "删除项目成功",
-                type: 'success',
-            });
+          ElMessage({
+            message: '删除项目成功',
+            type: 'success',
+          })
         }
-        this.$router.push('/');
+        this.$router.push('/')
       })
     },
     handleClickExpand() {
-     this.$emit('hideSide')
-    }
-  }
+      this.$emit('hideSide')
+    },
+  },
 }
 </script>
 
@@ -76,7 +78,7 @@ export default {
       <div class="flex items-center">
         <el-icon class="mr-2" @click="handleClickExpand"><Expand /></el-icon>
         <el-divider direction="vertical" />
-        <span class="text-large font-600 mr-3"> {{ book.book_name }} </span>
+        <span class="text-large font-600 mr-3"> {{ (book as any)?.book_name }} </span>
         <span class="text-sm mr-2" style="color: var(--el-text-color-regular)">
           {{ document.doc_name }}
         </span>
@@ -84,15 +86,15 @@ export default {
     </template>
     <template #extra>
       <div class="flex items-center">
-        <el-switch
-          v-model="value"
-          active-text="问答"
-          inactive-text="全屏"
-        />
+        <el-switch v-model="value" active-text="问答" inactive-text="全屏" />
         <el-link href="/" :underline="false"><el-button>首页</el-button></el-link>
-        <el-link v-if="editable" :href="`/api/${book.identify}/edit/`" :underline="false"><el-button type="danger">编辑</el-button></el-link>
+        <el-link v-if="editable" :href="`/api/${(book as any)?.identify}/edit/`" :underline="false"
+          ><el-button type="danger">编辑</el-button></el-link
+        >
         <!-- <el-link v-if="owner" :href="`/book/${book.identify}/users`" :underline="false"><el-button type="success">成员</el-button></el-link> -->
-        <el-link v-if="owner" :href="`/book/${book.identify}/setting`" :underline="false"><el-button type="primary">设置</el-button></el-link>
+        <el-link v-if="owner" :href="`/book/${(book as any)?.identify}/setting`" :underline="false"
+          ><el-button type="primary">设置</el-button></el-link
+        >
         <!-- <el-link href="javascript:window.print();" :underline="false"><el-button>打印</el-button></el-link> -->
         <!-- <el-button v-if="book.privately_owned === 0 && book.is_enable_share" @click="showDialog = true" type="success">分享</el-button> -->
         <!-- <el-dropdown v-if="book.is_download">
@@ -140,38 +142,38 @@ export default {
 
 <style scoped>
 @media print {
-  .el-page-header {  
-    display: none;  
+  .el-page-header {
+    display: none;
   }
 }
 .el-page-header {
   width: 100%;
 }
-.el-switch+.el-link {
+.el-switch + .el-link {
   margin-left: 12px;
 }
-.el-switch+a {
+.el-switch + a {
   margin-left: 12px;
 }
-a+.el-link {
+a + .el-link {
   margin-left: 12px;
 }
 .el-link.el-link {
   margin-left: 12px;
 }
-.el-button+.el-link {
+.el-button + .el-link {
   margin-left: 12px;
 }
-.el-link+.el-button {
+.el-link + .el-button {
   margin-left: 12px;
 }
-.el-link+.el-link {
+.el-link + .el-link {
   margin-left: 12px;
 }
-.el-link+.el-dropdown {
+.el-link + .el-dropdown {
   margin-left: 12px;
 }
-.el-button+.el-dropdown {
+.el-button + .el-dropdown {
   margin-left: 12px;
 }
 </style>

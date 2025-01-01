@@ -63,7 +63,7 @@
   </el-form>
 </template>
 <script lang="ts" setup>
-import { ref, reactive, computed, nextTick } from 'vue'
+import { ref, reactive, computed } from 'vue'
 import axios from 'axios'
 import { marked } from 'marked'
 import { ElMessage, ElMessageBox } from 'element-plus'
@@ -115,7 +115,7 @@ const rules = {
       trigger: 'change'
     },
     {
-      validator: (rule, value, callback) => {
+      validator: (_rule, value, callback) => {
         console.log(value)
         if (value.length > 0) {
           const acceptTypes = [
@@ -187,7 +187,7 @@ const uploadFile = async (file) => {
     // TODO extract file to markdown
     const markdown = `# ${fileName}\nThis is a simple Markdown file saying ${fileName}.\n`;
     formData.append('markdown', markdown);
-    formData.append('html', marked(markdown));
+    formData.append('html', marked(markdown) as string);
     formData.append('version', response.data.data.version);
     response = await axios.post(`/api/${form.identify}/content/${document.doc_id}`, formData)
     if (response.data.errcode !== 0) {
@@ -219,7 +219,7 @@ const uploadFiles = async() => {
       formData.append('book_name', form.book_name)
       formData.append('identify', form.identify)
       formData.append('description', form.description)
-      formData.append('privately_owned', form.privately_owned)
+      formData.append('privately_owned', form.privately_owned as any)
       formData.append('comment_status', 'open')
 
       const response = await axios.post('/book/create ', formData) // 替换为实际的API地址
@@ -251,8 +251,8 @@ const uploadFiles = async() => {
 }
 
 // 假设的文件上传前的处理逻辑
-async function beforeRemove(file, fileList) {
-  return new Promise((resolve, reject) => {
+async function beforeRemove(file) {
+  return new Promise((resolve) => {
     ElMessageBox.confirm(`确定移除 ${file.name}？`)
       .then(() => {
         resolve(true)

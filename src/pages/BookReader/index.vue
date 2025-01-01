@@ -247,7 +247,7 @@ const handletRaceability = (data) => {
   </el-container>
 </template>
 
-<style>
+<style scoped>
 @media print {
   .el-aside {
     display: none;
