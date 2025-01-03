@@ -91,7 +91,8 @@ const docContainer = ref<HTMLDivElement>(null)
 const scrollToText = async (searchString) => {
   new Mark(docContainer.value).unmark().mark(searchString, {
     acrossElements: true,
-    accuracy: 'partially'
+    separateWordSearch: false,
+    diacritics: false,
   })
   await nextTick() // 等待DOM更新
   const elements = docContainer.value.querySelectorAll('mark') // 假设被高亮的文本被<mark>标签包裹

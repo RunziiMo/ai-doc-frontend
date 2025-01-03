@@ -85,8 +85,11 @@ const filterHandler = (value: any, row: { [x: string]: any }, column: { [x: stri
   return row[property] === value
 }
 
-const handleFliterChange = () => {
-  // pageStore.total = result.value.length
+const handleFliterChange = (newFilters: any) => {
+  form.result = data.value
+    .filter((item: any) => item.type === newFilters.type[0])
+    ?.slice((pageStore.current - 1) * pageStore.pageSize, pageStore.current * pageStore.pageSize)
+  pageStore.total = form.result.length
 }
 
 const handleCurrentChange = (val: number) => {
@@ -284,24 +287,38 @@ const checkEntityName = (_rule: any, value: any, callback: any, data: Entity) =>
   }
 }
 
-const isTraceability = ref(false)
+const traceabilityMarks = ref()
+
 const handleTraceability = (data) => {
   const instance = new Mark(
     document.getElementById(`file-render-container-${props.document.doc_id}`),
   )
-  if (!isTraceability.value) {
-    instance.mark(data.replaced_text, {
+  if (!data.isTraceability) {
+    instance.unmark({
       className: `traceabilitying`,
-      acrossElements: true,
       done() {
-        isTraceability.value = true
+        instance.mark(data.replaced_text, {
+          className: `traceabilitying`,
+          acrossElements: true,
+          separateWordSearch: false,
+          diacritics: false,
+          done() {
+            data.isTraceability = true
+            traceabilityMarks.value = Array.from(document.getElementsByClassName(`traceabilitying`))
+            if (traceabilityMarks.value.length > 0) {
+              traceabilityMarks.value[0].scrollIntoView({
+                behavior: 'smooth',
+              })
+            }
+          },
+        })
       },
     })
   } else {
     instance.unmark({
       className: `traceabilitying`,
       done() {
-        isTraceability.value = false
+        data.isTraceability = false
       },
     })
   }
@@ -309,133 +326,138 @@ const handleTraceability = (data) => {
 
 const currentTraceabilityIndex = ref(0)
 
-let markDoms = null
-const handleNextTraceability = (data) => {
-  if (!markDoms) {
-    markDoms = Array.from(
-      document
-        .getElementById(`file-render-container-${props.document.doc_id}`)
-        .getElementsByTagName('mark'),
-    )?.filter((el) => el.textContent === data.replaced_text)
-  }
-  if (currentTraceabilityIndex.value > markDoms?.length) {
+const handleNextTraceability = () => {
+  currentTraceabilityIndex.value += 1
+  if (currentTraceabilityIndex.value > traceabilityMarks.value?.length - 1) {
     currentTraceabilityIndex.value = 0
   }
   // 元素滚动到当前视口
-  markDoms[currentTraceabilityIndex.value]?.scrollIntoView({
+  traceabilityMarks.value[currentTraceabilityIndex.value]?.scrollIntoView({
     behavior: 'smooth',
   })
-  currentTraceabilityIndex.value += 1
 }
-const handlePreTraceability = (data) => {
-  if (!markDoms) {
-    markDoms = Array.from(
-      document
-        .getElementById(`file-render-container-${props.document.doc_id}`)
-        .getElementsByTagName('mark'),
-    )?.filter((el) => el.textContent === data.replaced_text)
-  }
-
+const handlePreTraceability = () => {
+  currentTraceabilityIndex.value -= 1
   if (currentTraceabilityIndex.value < 0) {
-    currentTraceabilityIndex.value = markDoms.length - 1
+    currentTraceabilityIndex.value = traceabilityMarks.value.length - 1
   }
-
-  markDoms[currentTraceabilityIndex.value]?.scrollIntoView({
+  traceabilityMarks.value[currentTraceabilityIndex.value]?.scrollIntoView({
     behavior: 'smooth',
   })
-  currentTraceabilityIndex.value -= 1
 }
 </script>
 <template>
   <div class="w-full h-full flex flex-col">
     <el-form ref="formInstance" :model="form" class="!flex-1 overflow-hidden">
-      <el-table class="!h-100%" :data="form.result" @filter-change="handleFliterChange">
-        <el-table-column type="index" :index="indexMethod" label="序号" width="55px">
-          <template #default="{ row, $index }">
-            <div class="flex items-center gap-8px">
-              <el-icon class="cursor-pointer" @click="handleDelete(row)"><Delete /></el-icon>
-              {{ $index + 1 }}
-            </div>
-          </template>
-        </el-table-column>
-        <el-table-column property="replaced_text" width="322px">
-          <template #header>
-            <span>实体名</span>
-            <el-input
-              v-model="entityKeyword"
-              size="small"
-              class="!w-252px m-l-4px"
-              placeholder="搜索实体"
-            />
-          </template>
-          <template #default="{ row, $index }">
-            <el-form-item
-              :prop="'result.' + $index + '.replaced_text'"
-              :rules="{
-                validator: (rule, value, callback) => checkEntityName(rule, value, callback, row),
-                trigger: 'blur',
-              }"
-              class="!m-b-14px !m-t-14px"
-            >
-              <div v-if="row.entity_id" class="flex items-center gap-4px">
-                <el-icon class="cursor-pointer select-none" @click="handlePreTraceability(row)"
-                  ><ArrowLeftBold
-                /></el-icon>
-                <span
-                  class="underline underline-offset-4 select-none"
-                  @click="handleTraceability(row)"
-                  >{{ row.replaced_text }}</span
+      <el-auto-resizer class="w-full">
+        <template #default="{ width }">
+          <el-table class="!h-100%" :data="form.result" @filter-change="handleFliterChange">
+            <el-table-column type="index" :index="indexMethod" label="序号" width="55px">
+              <template #default="{ row, $index }">
+                <div class="flex items-center gap-8px">
+                  <el-icon class="cursor-pointer" @click="handleDelete(row)"><Delete /></el-icon>
+                  {{ $index + 1 }}
+                </div>
+              </template>
+            </el-table-column>
+            <el-table-column property="replaced_text" :width="width / 2 - 55 + 'px'">
+              <template #header>
+                <div class="flex">
+                  <span>实体名</span>
+                  <el-input
+                    v-model="entityKeyword"
+                    size="small"
+                    class="m-l-4px flex-1"
+                    placeholder="搜索实体"
+                  />
+                </div>
+              </template>
+              <template #default="{ row, $index }">
+                <el-form-item
+                  :prop="'result.' + $index + '.replaced_text'"
+                  :rules="{
+                    validator: (rule, value, callback) =>
+                      checkEntityName(rule, value, callback, row),
+                    trigger: 'blur',
+                  }"
+                  class="!m-b-14px !m-t-14px"
                 >
-                <el-icon class="cursor-pointer select-none" @click="handleNextTraceability(row)"
-                  ><ArrowRightBold
-                /></el-icon>
-              </div>
+                  <div v-if="row.entity_id" class="flex items-center gap-4px">
+                    <el-icon
+                      v-if="row.isTraceability"
+                      class="cursor-pointer select-none"
+                      @click="handlePreTraceability()"
+                    >
+                      <ArrowLeftBold />
+                    </el-icon>
+                    <span
+                      class="underline underline-offset-4 select-none"
+                      @click="handleTraceability(row)"
+                      >{{ row.replaced_text }}</span
+                    >
+                    <el-icon
+                      v-if="row.isTraceability"
+                      class="cursor-pointer select-none"
+                      @click="handleNextTraceability()"
+                    >
+                      <ArrowRightBold />
+                    </el-icon>
+                  </div>
 
-              <el-input
-                v-else
-                v-model.trim="row.replaced_text"
-                placeholder="请输入实体名"
-                @change="() => updateType(row)"
-              />
-            </el-form-item>
-          </template>
-        </el-table-column>
-        <el-table-column
-          property="type"
-          label="类型"
-          :filters="typeList"
-          :filter-multiple="false"
-          :filter-method="filterHandler"
-        >
-          <template #default="{ row, $index }">
-            <el-form-item
-              :prop="'result.' + $index + '.type'"
-              :rules="{
-                required: true,
-                message: '类型为必选项',
-                trigger: 'blur',
-              }"
-              class="!m-b-14px !m-t-14px"
+                  <el-input
+                    v-else
+                    v-model.trim="row.replaced_text"
+                    placeholder="请输入实体名"
+                    @change="() => updateType(row)"
+                  />
+                </el-form-item>
+              </template>
+            </el-table-column>
+            <el-table-column
+              property="type"
+              column-key="type"
+              label="类型"
+              :filters="typeList"
+              :filter-multiple="false"
+              :filter-method="filterHandler"
             >
-              <div class="flex w-100% gap-4px">
-                <el-select v-model="row.type" placeholder="请选择" @change="() => updateType(row)">
-                  <el-option
-                    v-for="item in typeList"
-                    :key="item.value"
-                    :label="item.text"
-                    :value="item.value"
-                  >
-                  </el-option>
-                </el-select>
-                <el-button v-if="!row.entity_id" class="w-50px" @click="handleSave">保存</el-button>
-              </div>
-            </el-form-item>
-          </template>
-        </el-table-column>
-        <template #append>
-          <el-button class="w-full" @click="handleAdd">新增</el-button>
+              <template #default="{ row, $index }">
+                <el-form-item
+                  :prop="'result.' + $index + '.type'"
+                  :rules="{
+                    required: true,
+                    message: '类型为必选项',
+                    trigger: 'blur',
+                  }"
+                  class="!m-b-14px !m-t-14px"
+                >
+                  <div class="flex w-100% gap-4px">
+                    <el-select
+                      v-model="row.type"
+                      placeholder="请选择"
+                      @change="() => updateType(row)"
+                    >
+                      <el-option
+                        v-for="item in typeList"
+                        :key="item.value"
+                        :label="item.text"
+                        :value="item.value"
+                      >
+                      </el-option>
+                    </el-select>
+                    <el-button v-if="!row.entity_id" class="w-50px" @click="handleSave"
+                      >保存</el-button
+                    >
+                  </div>
+                </el-form-item>
+              </template>
+            </el-table-column>
+            <template #append>
+              <el-button class="w-full" @click="handleAdd">新增</el-button>
+            </template>
+          </el-table>
         </template>
-      </el-table>
+      </el-auto-resizer>
     </el-form>
     <div class="flex items-center justify-between">
       <el-pagination

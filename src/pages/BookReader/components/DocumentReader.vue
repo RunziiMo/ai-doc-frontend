@@ -122,6 +122,8 @@ const { typeList, colors } = useTypes(props.book.item_name)
 const handelMark = (instance, entitys) => {
   const options = (data) => ({
     acrossElements: true,
+    separateWordSearch: false,
+    diacritics: false,
     className: `text-selected entity-${data.entity_id}`,
     each: (element) => {
       element.style.setProperty('--background-color', colors[data.type])
