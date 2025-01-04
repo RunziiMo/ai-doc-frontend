@@ -6,7 +6,6 @@ import 'splitpanes/dist/splitpanes.css'
 import axios from 'axios'
 import { defaultOptions, renderAsync } from 'docx-preview'
 import Mark from 'mark.js'
-import { getSelectedTextInfos } from '@/utils/text'
 import { ElMessage } from 'element-plus'
 import PdfView from './PdfView.vue'
 import useTypes from './use-types'
@@ -163,23 +162,24 @@ const handelMark = (instance, entitys) => {
   // })
 }
 
-markEntitys.value = async (entitys) => {
+markEntitys.value = async () => {
   const observer = new IntersectionObserver((entries) => {
     entries.forEach((entry) => {
       if (entry.isIntersecting) {
         const el = entry.target
 
         const textContent = el.textContent
-        const currentDomEntitys = entitys.filter(
+        const currentDomEntitys = entityList.value.filter(
           (el, index) =>
             textContent.includes(el.replaced_text) &&
-            index === entitys.findIndex((el2) => el2.replaced_text === el.replaced_text),
+            index === entityList.value.findIndex((el2) => el2.replaced_text === el.replaced_text),
         )
         // 在这里进行标记操作
         if (currentDomEntitys.length === 0) return
 
         const instance = new Mark(el)
         handelMark(instance, currentDomEntitys)
+
         observer.unobserve(el)
       }
     })
@@ -203,8 +203,6 @@ const addEntitysModel = reactive({
   replaced_text: '',
 })
 
-const selectedTextInfos = ref([])
-
 const handleMouseUp = () => {
   const selection = window.getSelection()
   const selectedText = selection.toString()
@@ -217,7 +215,6 @@ const handleMouseUp = () => {
         left: mouseX.value,
       }
       addEntitysModel.replaced_text = selectedText
-      selectedTextInfos.value = getSelectedTextInfos(selectedText, docContainer.value.innerText)
     }
   }
   if (isAddPopoverOutside.value) {
@@ -252,7 +249,7 @@ const getEntityList = inject<Function>('getEntityList')
 const handleRendered = async () => {
   await getEntityList()
   if (entityList.value.length !== 0) {
-    markEntitys.value?.(entityList.value)
+    markEntitys.value?.()
   }
   emit('fileRenderFinished')
 }
@@ -310,8 +307,9 @@ const handleEdit = async () => {
   if (errcode === 0) {
     ElMessage.success(message)
     await getEntityList()
-    markEntitys.value?.(entityList.value)
+    markEntitys.value?.()
     editPopover.value.visible = false
+    disabledEditEntity.value = true
   } else {
     // 表单提交失败，处理错误
     ElMessage.warning(message)
@@ -350,8 +348,15 @@ const handleDelete = async () => {
   const { errcode, message } = response.data
   if (errcode === 0) {
     ElMessage.success(message)
-    getEntityList(response.data)
-    markEntitys.value?.(entityList.value)
+    await getEntityList()
+    const instance = new Mark(
+      document.getElementById(`file-render-container-${props.document.doc_id}`),
+    )
+    entityIds.forEach((el) => {
+      instance.unmark({
+        className: `entity-${el}`,
+      })
+    })
     editPopover.value.visible = false
   } else {
     // 表单提交失败，处理错误
@@ -360,9 +365,11 @@ const handleDelete = async () => {
 }
 
 const handleAdd = async () => {
-  if (selectedTextInfos.value.length > 1) {
+  const text = document.getElementById(`file-render-container-${props.document.doc_id}`).textContent
+  const num = text.match(new RegExp(addEntitysModel.replaced_text, 'g'))?.length
+  if (num > 1) {
     await ElMessageBox.confirm(
-      `当前文章共有${selectedTextInfos.value.length}个相同实体，确定后将全部添加，确定添加吗?`,
+      `当前文章共有${num}个相同实体，确定后将全部添加，确定添加吗?`,
       'Warning',
       {
         confirmButtonText: '确定',
@@ -378,13 +385,23 @@ const handleAdd = async () => {
   const { errcode, message } = response.data
   if (errcode === 0) {
     ElMessage.success(message)
-    getEntityList(response.data)
-    markEntitys.value?.(entityList.value)
+    await getEntityList()
+    markEntitys.value?.()
     addPopover.value.visible = false
   } else {
     // 表单提交失败，处理错误
     ElMessage.warning(message)
   }
+}
+
+const handleCancle = () => {
+  const type = entityList.value.find((el) => el.entity_id === editEntitysModel.entity_id).type
+  Object.assign(editEntitysModel, {
+    ...editEntitysModel,
+    type,
+  })
+  editPopover.value.visible = false
+  disabledEditEntity.value = true
 }
 </script>
 
@@ -493,34 +510,36 @@ const handleAdd = async () => {
         </el-form-item> -->
       </el-form>
       <div class="flex w-100% m-t-8px">
-        <el-button
-          v-if="disabledEditEntity"
-          class="flex-1"
-          type="primary"
-          size="small"
-          @click="disabledEditEntity = false"
-          @mouseenter.prevent
-          @mouseleave.prevent
-        >
-          编辑
-        </el-button>
+        <template v-if="disabledEditEntity">
+          <el-button
+            class="flex-1"
+            type="primary"
+            size="small"
+            @click="disabledEditEntity = false"
+            @mouseenter.prevent
+            @mouseleave.prevent
+          >
+            编辑
+          </el-button>
+          <el-button
+            class="flex-1"
+            size="small"
+            @click="handleDelete"
+            @mouseenter.prevent
+            @mouseleave.prevent
+          >
+            删除
+          </el-button>
+        </template>
+
         <template v-else>
           <el-button class="flex-1" type="primary" size="small" @click="handleEdit">
             确定
           </el-button>
-          <el-button class="flex-1" type="primary" size="small" @click="disabledEditEntity = true">
+          <el-button class="flex-1" type="primary" size="small" @click="handleCancle">
             取消
           </el-button>
         </template>
-
-        <el-button
-          class="flex-1"
-          size="small"
-          @click="handleDelete"
-          @mouseenter.prevent
-          @mouseleave.prevent
-          >删除</el-button
-        >
       </div>
     </div>
   </Teleport>

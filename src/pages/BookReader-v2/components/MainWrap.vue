@@ -96,7 +96,7 @@ const markEntitys = ref()
 const handleEntityResults = async (entitys) => {
   if (entitys.length !== 0) {
     await nextTick()
-    markEntitys.value(entitys)
+    markEntitys.value()
   } else {
     ElMessage.warning('暂无可标记的实体')
   }
