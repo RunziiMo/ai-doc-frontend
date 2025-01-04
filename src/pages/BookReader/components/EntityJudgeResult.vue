@@ -386,12 +386,13 @@ const handlePreTraceability = () => {
                       'select-none': true,
                       'visible-hidden': !row.isTraceability,
                     }"
+                    :size="18"
                     @click="handlePreTraceability()"
                   >
                     <CaretLeft />
                   </el-icon>
                   <span
-                    class="underline underline-offset-4 select-none"
+                    class="underline underline-offset-4 select-none c-#409eff font-bold"
                     @click="handleTraceability(row)"
                   >
                     {{ row.replaced_text }}
@@ -402,6 +403,7 @@ const handlePreTraceability = () => {
                       'select-none': true,
                       'visible-hidden': !row.isTraceability,
                     }"
+                    :size="18"
                     @click="handleNextTraceability()"
                   >
                     <CaretRight />
@@ -520,6 +522,6 @@ const handlePreTraceability = () => {
 </style>
 <style>
 .traceabilitying {
-  border: 1px solid var(--el-color-primary) !important;
+  border: 4px solid var(--el-color-danger) !important;
 }
 </style>
