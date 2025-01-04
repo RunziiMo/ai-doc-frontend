@@ -36,6 +36,12 @@ const checkedFiles = ref([])
 const documentInfo = ref<DocumentInfo>()
 const isRetract = ref(false)
 const entityTableLoading = ref(true)
+// 是否进行的匿名实体识别
+const isEntityRecognition = ref(false)
+
+const setEntityRecognitionStore = (val) => {
+  isEntityRecognition.value = val
+}
 
 const fileName = computed(() => {
   try {
@@ -104,6 +110,8 @@ const handleEntityResults = async (entitys) => {
 
 provide('entityList', entityList)
 provide('getEntityList', getEntityList)
+provide('isEntityRecognition', isEntityRecognition)
+provide('setEntityRecognitionStore', setEntityRecognitionStore)
 </script>
 <template>
   <splitpanes

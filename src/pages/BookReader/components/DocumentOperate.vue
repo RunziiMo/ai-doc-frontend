@@ -1,15 +1,15 @@
 <script lang="ts" setup>
 import { ref } from 'vue'
 import axios from 'axios'
-import { ElMessage } from 'element-plus';
+import { ElMessage } from 'element-plus'
 
 const entityList = defineModel('entityList', {
   type: Array,
-  default: () => []
+  default: () => [],
 })
 const entityRecognitionLoad = defineModel('entityRecognitionLoading', {
   type: Boolean,
-  default: false
+  default: false,
 })
 
 const popoverVisible = ref(false)
@@ -26,13 +26,15 @@ const fetchFunctions = async (query: string) => {
   const response = await axios.get('/api/ai/function')
   if (response.data.errcode !== 0) {
     ElMessage.warning(response.data.message)
-    return;
+    return
   }
   const data = response.data.data
   if (query) {
     functions.value = data.page.List.filter((item) => {
-      return (item.template_name.toLowerCase().indexOf(query.toLowerCase()) !== -1) ||
-        (item.template.toLowerCase().indexOf(query.toLowerCase()) !== -1)
+      return (
+        item.template_name.toLowerCase().indexOf(query.toLowerCase()) !== -1 ||
+        item.template.toLowerCase().indexOf(query.toLowerCase()) !== -1
+      )
     })
   } else {
     functions.value = data.page.List
@@ -48,7 +50,7 @@ const fetchLaws = async () => {
     ElMessage.warning(response.data.message)
     return
   }
-  lawsOptions.value = response.data.data.map(el => ({label: el, value: el}))
+  lawsOptions.value = response.data.data.map((el) => ({ label: el, value: el }))
 }
 
 const handleFunctions = () => {
@@ -60,7 +62,7 @@ const handleFunctions = () => {
 const selectedFunstions = ref([])
 
 const handleSelectionChange = (arr) => {
-  selectedFunstions.value = arr;
+  selectedFunstions.value = arr
 }
 
 const showlaw = (func) => {
@@ -71,30 +73,28 @@ const showRole = (func) => {
   return func.template.includes('{{ role }}')
 }
 
-const handleConfirm = async() => {
-  await formInstance.value.validate();
-  popoverVisible.value = false; 
+const handleConfirm = async () => {
+  await formInstance.value.validate()
+  popoverVisible.value = false
   emit('aiPreRequest', selectedFunstions.value)
 }
 
 const checkLaw = (row, _rule, value, callback) => {
-  const isSelect = selectedFunstions.value.findIndex(el => el.id === row.id) !== -1
+  const isSelect = selectedFunstions.value.findIndex((el) => el.id === row.id) !== -1
   if (isSelect && !value) {
-    callback(new Error('参考法律为必选项'));
+    callback(new Error('参考法律为必选项'))
   } else {
-    callback();
+    callback()
   }
-
 }
 
-const checkRole =(row, _rule, value, callback) => {
-  const isSelect = selectedFunstions.value.findIndex(el => el.id === row.id) !== -1
+const checkRole = (row, _rule, value, callback) => {
+  const isSelect = selectedFunstions.value.findIndex((el) => el.id === row.id) !== -1
   if (isSelect && !value) {
-    callback(new Error('利益方为必填项'));
+    callback(new Error('利益方为必填项'))
   } else {
-    callback();
+    callback()
   }
-
 }
 </script>
 
@@ -106,10 +106,10 @@ const checkRole =(row, _rule, value, callback) => {
       :loading="entityRecognitionLoad"
       @click="$emit('anonymousProcessing')"
     >
-      实体识别
+      实体名称识别
     </el-button>
     <el-button class="flex-1" v-else @click="$emit('requestEntityResult')"> 实体信息 </el-button>
-    
+
     <el-popover
       :visible="popoverVisible"
       placement="bottom"
@@ -117,7 +117,7 @@ const checkRole =(row, _rule, value, callback) => {
       width="580"
       trigger="click"
       :popper-options="{
-          modifiers: [
+        modifiers: [
           {
             name: 'offset',
             options: {
@@ -127,14 +127,21 @@ const checkRole =(row, _rule, value, callback) => {
         ],
       }"
     >
-    <el-form :model="{ functions }" ref="formInstance">
-        <el-table ref="aiTableRef" :height="470" :data="functions" v-loading="loading" row-key="id" @selection-change="handleSelectionChange">
+      <el-form :model="{ functions }" ref="formInstance">
+        <el-table
+          ref="aiTableRef"
+          :height="470"
+          :data="functions"
+          v-loading="loading"
+          row-key="id"
+          @selection-change="handleSelectionChange"
+        >
           <el-table-column type="selection" width="55" />
           <el-table-column property="template_name" label="能力" />
           <el-table-column label="参考法律">
             <template #default="{ row, $index }">
               <el-form-item
-                v-if="showlaw(row)" 
+                v-if="showlaw(row)"
                 :prop="`functions.${$index}.law`"
                 :rules="{
                   validator: (rule, value, callback) => checkLaw(row, rule, value, callback),
@@ -142,8 +149,12 @@ const checkRole =(row, _rule, value, callback) => {
                 }"
                 class="!m-b-14px !m-t-14px"
               >
-                <el-select v-model="row.law" placeholder="默认参考文档" >
-                  <el-option v-for="option in lawsOptions" :label="option.label" :value="option.value" />
+                <el-select v-model="row.law" placeholder="默认参考文档">
+                  <el-option
+                    v-for="option in lawsOptions"
+                    :label="option.label"
+                    :value="option.value"
+                  />
                 </el-select>
               </el-form-item>
             </template>
@@ -151,7 +162,7 @@ const checkRole =(row, _rule, value, callback) => {
           <el-table-column label="利益方">
             <template #default="{ row, $index }">
               <el-form-item
-                v-if="showRole(row)" 
+                v-if="showRole(row)"
                 :prop="`functions.${$index}.role`"
                 :rules="{
                   validator: (rule, value, callback) => checkRole(row, rule, value, callback),
@@ -166,20 +177,15 @@ const checkRole =(row, _rule, value, callback) => {
         </el-table>
         <div class="flex items-center justify-center p-t-16px">
           <el-button @click="popoverVisible = false" class="w-120px">取消</el-button>
-          <el-button type="primary" class="w-120px" @click="handleConfirm">
-            确认
-          </el-button>
+          <el-button type="primary" class="w-120px" @click="handleConfirm"> 确认 </el-button>
         </div>
       </el-form>
       <template #reference>
-        <el-button
-          @click="handleFunctions"
-          class="flex-1" :disabled="entityRecognitionLoad">
+        <el-button @click="handleFunctions" class="flex-1" :disabled="entityRecognitionLoad">
           AI批量问答
         </el-button>
       </template>
     </el-popover>
-  
   </div>
 </template>
 <style scoped>

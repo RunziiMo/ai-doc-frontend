@@ -235,6 +235,8 @@ const checkAll = ref(false)
 const isIndeterminate = ref(false)
 const checkedMessages = ref([])
 
+const setEntityRecognitionStore = inject<Function>('setEntityRecognitionStore')
+
 const checkMessage = (message_id) => {
   if (checkedMessages.value.includes(message_id)) {
     checkedMessages.value = checkedMessages.value.filter((id) => id !== message_id)
@@ -318,6 +320,7 @@ const docNameEntityRecognition = async () => {
   entityList.value = data.data?.page?.List || []
   emit('entityResults', data.data?.page?.List || [])
   entityRecognitionLoading.value = false
+  setEntityRecognitionStore?.(true)
 }
 
 watch(
@@ -570,7 +573,6 @@ const customizeChatbySelectFunction = async (event, docId = props.document.doc_i
   const filteredParams = Object.fromEntries(
     Object.entries(params).filter(([_, v]) => v != null && v !== ''),
   )
-  console.log(filteredParams)
   const queryString = new URLSearchParams(filteredParams).toString()
   const url = `/aigc/customize_chat?${queryString}`
 
