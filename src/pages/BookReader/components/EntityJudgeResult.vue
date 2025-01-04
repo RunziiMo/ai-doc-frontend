@@ -83,10 +83,6 @@ clonedEntityList()
 watch(entityList, () => {
   clonedEntityList()
 })
-const filterHandler = (value: any, row: { [x: string]: any }, column: { [x: string]: any }) => {
-  const property = column['property']
-  return row[property] === value
-}
 
 const handleFliterChange = (newFilters: any) => {
   if (!newFilters.type[0]) {
@@ -424,7 +420,6 @@ const handlePreTraceability = () => {
               label="类型"
               :filters="typeList"
               :filter-multiple="false"
-              :filter-method="filterHandler"
             >
               <template #default="{ row }">
                 <el-select
