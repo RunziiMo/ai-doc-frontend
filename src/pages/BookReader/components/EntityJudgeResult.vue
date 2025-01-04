@@ -38,8 +38,11 @@ const entityKeyword = ref('')
 const { typeList } = useTypes(props.book.item_name)
 
 const form = reactive({
-  result: [],
+  type: '',
+  replaced_text: '',
 })
+
+const result = ref()
 
 watch(entityKeyword, () => {
   const searchResult = data.value.filter(
@@ -49,14 +52,14 @@ watch(entityKeyword, () => {
   )
   pageStore.current = 1
   pageStore.total = searchResult.length
-  form.result = searchResult?.slice(
+  result.value = searchResult?.slice(
     (pageStore.current - 1) * pageStore.pageSize,
     pageStore.current * pageStore.pageSize,
   )
 })
 
 const clonedEntityList = () => {
-  form.result = []
+  result.value = []
   data.value = []
   entityList.value?.forEach((el: any) => {
     const i = data.value.findIndex((item) => item.replaced_text === el.replaced_text)
@@ -68,7 +71,7 @@ const clonedEntityList = () => {
     }
   })
   pageStore.total = data.value.length
-  form.result = data.value?.slice(
+  result.value = data.value?.slice(
     (pageStore.current - 1) * pageStore.pageSize,
     pageStore.current * pageStore.pageSize,
   )
@@ -86,15 +89,23 @@ const filterHandler = (value: any, row: { [x: string]: any }, column: { [x: stri
 }
 
 const handleFliterChange = (newFilters: any) => {
-  form.result = data.value
-    .filter((item: any) => item.type === newFilters.type[0])
-    ?.slice((pageStore.current - 1) * pageStore.pageSize, pageStore.current * pageStore.pageSize)
-  pageStore.total = form.result.length
+  if (!newFilters.type[0]) {
+    result.value = data.value?.slice(
+      (pageStore.current - 1) * pageStore.pageSize,
+      pageStore.current * pageStore.pageSize,
+    )
+    pageStore.total = data.value.length
+  } else {
+    result.value = data.value
+      .filter((item: any) => item.type === newFilters.type[0])
+      ?.slice((pageStore.current - 1) * pageStore.pageSize, pageStore.current * pageStore.pageSize)
+    pageStore.total = result.value.length
+  }
 }
 
 const handleCurrentChange = (val: number) => {
   pageStore.current = val
-  form.result = data.value?.slice(
+  result.value = data.value?.slice(
     (pageStore.current - 1) * pageStore.pageSize,
     pageStore.current * pageStore.pageSize,
   )
@@ -175,13 +186,14 @@ const updateType = async (data: Partial<Entity>) => {
   props.markEntitys(entityList.value)
   ElMessage.success('ok')
 }
-
+const isAddBtn = ref(true)
 const handleDelete = async (row: Partial<Entity & { entityList: Entity[] }>) => {
   if (!row.entity_id) {
-    const index = form.result.findIndex((item) => item.replaced_text === row.replaced_text)
-    if (index !== -1) {
-      form.result.splice(index, 1)
-    }
+    Object.assign(form, {
+      type: '',
+      replaced_text: '',
+    })
+    isAddBtn.value = true
     return
   }
   const num = row?.entityList?.length
@@ -205,40 +217,26 @@ const handleDelete = async (row: Partial<Entity & { entityList: Entity[] }>) => 
 
   await EntityApi.delete(row)
   await getEntityList?.()
-  // const index = data.value.findIndex((item) => item.replaced_text === row.replaced_text)
-  // if (index !== -1) {
-  //   data.value.splice(index, 1)
-  // }
-  // pageStore.total = data.value.length
-  // form.result = data.value?.slice(
-  //   (pageStore.current - 1) * pageStore.pageSize,
-  //   pageStore.current * pageStore.pageSize,
-  // )
   const instance = new Mark(
     document.getElementById(`file-render-container-${props.document.doc_id}`),
   )
-  instance.unmark()
-  props.markEntitys(entityList.value)
+  row?.entityList.forEach((el) => {
+    instance.unmark({
+      className: `entity-${el.entity_id}`,
+    })
+  })
+
   ElMessage.success('ok')
 }
+
 const handleAdd = () => {
-  const num = form.result.filter((item) => !item.entity_id)?.length
-  if (num > 0) {
-    ElMessage.warning('请先保存')
-    return
-  }
-  form.result.push({
-    replaced_text: '',
-    type: '',
-    entityList: [],
-  })
+  isAddBtn.value = false
 }
 
 const handleSave = async () => {
   await formInstance.value?.validate()
-  const entity = form.result.find((item) => !item.entity_id)
   const text = document.getElementById(`file-render-container-${props.document.doc_id}`).textContent
-  const num = text.match(new RegExp(entity.replaced_text, 'g'))?.length
+  const num = text.match(new RegExp(form.replaced_text, 'g'))?.length
   await ElMessageBox.confirm(
     `当前文章共有${num}个相同实体，确定后将全部添加，确定添加吗?`,
     'Warning',
@@ -249,7 +247,7 @@ const handleSave = async () => {
     },
   )
   await EntityApi.add({
-    ...entity,
+    ...form,
     document_id: props.document.doc_id,
     confidence: 1,
     window_text: '',
@@ -257,6 +255,11 @@ const handleSave = async () => {
   await getEntityList?.()
   props.markEntitys(entityList.value)
   ElMessage.success('ok')
+  Object.assign(form, {
+    type: '',
+    replaced_text: '',
+  })
+  isAddBtn.value = true
 }
 
 const checkEntityName = (_rule: any, value: any, callback: any, data: Entity) => {
@@ -348,10 +351,10 @@ const handlePreTraceability = () => {
 </script>
 <template>
   <div class="w-full h-full flex flex-col">
-    <el-form ref="formInstance" :model="form" class="!flex-1 overflow-hidden">
-      <el-auto-resizer class="w-full">
+    <div class="flex-col flex-1 overflow-hidden position-relative">
+      <el-auto-resizer class="flex-1 w-full">
         <template #default="{ width }">
-          <el-table class="!h-100%" :data="form.result" @filter-change="handleFliterChange">
+          <el-table class="!h-100%" :data="result" @filter-change="handleFliterChange">
             <el-table-column type="index" :index="indexMethod" label="序号" width="55px">
               <template #default="{ row, $index }">
                 <div class="flex items-center gap-8px">
@@ -372,45 +375,42 @@ const handlePreTraceability = () => {
                   />
                 </div>
               </template>
-              <template #default="{ row, $index }">
-                <el-form-item
-                  :prop="'result.' + $index + '.replaced_text'"
-                  :rules="{
-                    validator: (rule, value, callback) =>
-                      checkEntityName(rule, value, callback, row),
-                    trigger: 'blur',
-                  }"
-                  class="!m-b-14px !m-t-14px"
-                >
-                  <div v-if="row.entity_id" class="flex items-center gap-4px">
-                    <el-icon
-                      v-if="row.isTraceability"
-                      class="cursor-pointer select-none"
-                      @click="handlePreTraceability()"
-                    >
-                      <ArrowLeftBold />
-                    </el-icon>
-                    <span
-                      class="underline underline-offset-4 select-none"
-                      @click="handleTraceability(row)"
-                      >{{ row.replaced_text }}</span
-                    >
-                    <el-icon
-                      v-if="row.isTraceability"
-                      class="cursor-pointer select-none"
-                      @click="handleNextTraceability()"
-                    >
-                      <ArrowRightBold />
-                    </el-icon>
-                  </div>
+              <template #default="{ row }">
+                <div v-if="row.entity_id" class="flex items-center gap-4px">
+                  <el-icon
+                    :class="{
+                      'cursor-pointer': true,
+                      'select-none': true,
+                      'visible-hidden': !row.isTraceability,
+                    }"
+                    @click="handlePreTraceability()"
+                  >
+                    <CaretLeft />
+                  </el-icon>
+                  <span
+                    class="underline underline-offset-4 select-none"
+                    @click="handleTraceability(row)"
+                  >
+                    {{ row.replaced_text }}
+                  </span>
+                  <el-icon
+                    :class="{
+                      'cursor-pointer': true,
+                      'select-none': true,
+                      'visible-hidden': !row.isTraceability,
+                    }"
+                    @click="handleNextTraceability()"
+                  >
+                    <CaretRight />
+                  </el-icon>
+                </div>
 
-                  <el-input
-                    v-else
-                    v-model.trim="row.replaced_text"
-                    placeholder="请输入实体名"
-                    @change="() => updateType(row)"
-                  />
-                </el-form-item>
+                <el-input
+                  v-else
+                  :model-value="row.replaced_text"
+                  placeholder="请输入实体名"
+                  @change="() => updateType(row)"
+                />
               </template>
             </el-table-column>
             <el-table-column
@@ -421,44 +421,74 @@ const handlePreTraceability = () => {
               :filter-multiple="false"
               :filter-method="filterHandler"
             >
-              <template #default="{ row, $index }">
-                <el-form-item
-                  :prop="'result.' + $index + '.type'"
-                  :rules="{
-                    required: true,
-                    message: '类型为必选项',
-                    trigger: 'blur',
-                  }"
-                  class="!m-b-14px !m-t-14px"
+              <template #default="{ row }">
+                <el-select
+                  :model-value="row.type"
+                  placeholder="请选择"
+                  @change="() => updateType(row)"
                 >
-                  <div class="flex w-100% gap-4px">
-                    <el-select
-                      v-model="row.type"
-                      placeholder="请选择"
-                      @change="() => updateType(row)"
-                    >
-                      <el-option
-                        v-for="item in typeList"
-                        :key="item.value"
-                        :label="item.text"
-                        :value="item.value"
-                      >
-                      </el-option>
-                    </el-select>
-                    <el-button v-if="!row.entity_id" class="w-50px" @click="handleSave"
-                      >保存</el-button
-                    >
-                  </div>
-                </el-form-item>
+                  <el-option
+                    v-for="item in typeList"
+                    :key="item.value"
+                    :label="item.text"
+                    :value="item.value"
+                  >
+                  </el-option>
+                </el-select>
               </template>
             </el-table-column>
-            <template #append>
-              <el-button class="w-full" @click="handleAdd">新增</el-button>
-            </template>
           </el-table>
         </template>
       </el-auto-resizer>
-    </el-form>
+      <el-form
+        ref="formInstance"
+        :model="form"
+        class="position-absolute !w-100% flex z-10 pos-bottom-0px items-center bg-#fff"
+      >
+        <template v-if="!isAddBtn">
+          <div class="flex-1 flex">
+            <div class="w-55px flex p-l-12px items-center">
+              <el-icon class="cursor-pointer" @click="handleDelete(form)"><Delete /></el-icon>
+            </div>
+            <el-form-item
+              class="m-b-14px m-t-18px"
+              prop="replaced_text"
+              :rules="{
+                validator: checkEntityName,
+                trigger: 'blur',
+              }"
+            >
+              <el-input v-model.trim="form.replaced_text" placeholder="请输入实体名" />
+            </el-form-item>
+          </div>
+          <div class="flex-1 flex gap-4px p-l-22px items-center">
+            <el-form-item
+              prop="type"
+              class="flex-1 m-b-14px m-t-18px"
+              :rules="{
+                required: true,
+                message: '类型为必选项',
+                trigger: 'blur',
+              }"
+            >
+              <el-select v-model="form.type" class="!w-100%" placeholder="请选择">
+                <el-option
+                  v-for="item in typeList"
+                  :key="item.value"
+                  :label="item.text"
+                  :value="item.value"
+                >
+                </el-option>
+              </el-select>
+            </el-form-item>
+            <el-button class="w-50px" @click="handleSave"> 保存 </el-button>
+          </div>
+        </template>
+
+        <el-button v-else class="w-full" @click="handleAdd">新增</el-button>
+      </el-form>
+    </div>
+
     <div class="flex items-center justify-between">
       <el-pagination
         v-model:current-page="pageStore.current"
@@ -477,6 +507,14 @@ const handlePreTraceability = () => {
     </div>
   </div>
 </template>
+<style scoped>
+.visible-hidden {
+  visibility: hidden;
+}
+:deep(.el-scrollbar__view) {
+  padding-bottom: 40px !important;
+}
+</style>
 <style>
 .traceabilitying {
   border: 1px solid var(--el-color-primary) !important;
