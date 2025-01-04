@@ -192,7 +192,8 @@ const handleDelete = async (row: Partial<Entity & { entityList: Entity[] }>) => 
     isAddBtn.value = true
     return
   }
-  const num = row?.entityList?.length
+  const text = document.getElementById(`file-render-container-${props.document.doc_id}`).textContent
+  const num = text.match(new RegExp(row.replaced_text, 'g'))?.length
   if (num > 1) {
     await ElMessageBox.confirm(
       `当前文章共有${num}个相同实体，确定后将全部删除，确定删除吗?`,
@@ -219,6 +220,11 @@ const handleDelete = async (row: Partial<Entity & { entityList: Entity[] }>) => 
   row?.entityList.forEach((el) => {
     instance.unmark({
       className: `entity-${el.entity_id}`,
+      done() {
+        instance.unmark({
+          className: 'traceabilitying',
+        })
+      },
     })
   })
 
@@ -303,7 +309,9 @@ const handleTraceability = (data) => {
           diacritics: false,
           done() {
             data.isTraceability = true
-            traceabilityMarks.value = Array.from(document.getElementsByClassName(`traceabilitying`)).filter(el => {
+            traceabilityMarks.value = Array.from(
+              document.getElementsByClassName(`traceabilitying`),
+            ).filter((el) => {
               return data.replaced_text.startsWith(el.textContent)
             })
             console.log(traceabilityMarks.value)

@@ -202,8 +202,15 @@ const addEntitysModel = reactive({
   window_text: '',
   replaced_text: '',
 })
+const isEntityRecognition = inject<Ref<boolean>>('isEntityRecognition')
+const entityList = inject<Ref<Array<Entity>>>('entityList')
+const getEntityList = inject<Function>('getEntityList')
 
 const handleMouseUp = () => {
+  if (!isEntityRecognition.value && entityList.value?.length === 0) {
+    ElMessage.warning('请先完成实体名称识别！')
+    return
+  }
   const selection = window.getSelection()
   const selectedText = selection.toString()
   if (selectedText) {
@@ -221,9 +228,6 @@ const handleMouseUp = () => {
     addPopover.value.visible = false
   }
 }
-
-const entityList = inject<Ref<Array<Entity>>>('entityList')
-const getEntityList = inject<Function>('getEntityList')
 
 // const getEntityListByApi = async () => {
 //   const { data } = await axios.get(`/api/document/${props.document?.doc_id}/entity`)
@@ -319,14 +323,16 @@ const handleDelete = async () => {
   const entityInfo = entityList.value.find((el) => {
     return el.entity_id === editEntitysModel.entity_id
   })
+  const text = document.getElementById(`file-render-container-${props.document.doc_id}`).textContent
+  const num = text.match(new RegExp(editEntitysModel.replaced_text, 'g'))?.length
   const entityIds = entityList.value
     .filter((el) => {
       return el.replaced_text === entityInfo.replaced_text
     })
     .map((el) => el.entity_id)
-  if (entityIds.length > 1) {
+  if (num > 1) {
     await ElMessageBox.confirm(
-      `当前文章共有${entityIds.length}个相同实体，确定后将全部删除，确定删除吗?`,
+      `当前文章共有${num}个相同实体，确定后将全部删除，确定删除吗?`,
       'Warning',
       {
         confirmButtonText: '确定',
@@ -355,6 +361,11 @@ const handleDelete = async () => {
     entityIds.forEach((el) => {
       instance.unmark({
         className: `entity-${el}`,
+        done() {
+          instance.unmark({
+            className: 'traceabilitying',
+          })
+        },
       })
     })
     editPopover.value.visible = false
