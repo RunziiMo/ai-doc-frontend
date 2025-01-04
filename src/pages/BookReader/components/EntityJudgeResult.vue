@@ -307,7 +307,10 @@ const handleTraceability = (data) => {
           diacritics: false,
           done() {
             data.isTraceability = true
-            traceabilityMarks.value = Array.from(document.getElementsByClassName(`traceabilitying`))
+            traceabilityMarks.value = Array.from(document.getElementsByClassName(`traceabilitying`)).filter(el => {
+              return data.replaced_text.startsWith(el.textContent)
+            })
+            console.log(traceabilityMarks.value)
             if (traceabilityMarks.value.length > 0) {
               traceabilityMarks.value[0].scrollIntoView({
                 behavior: 'smooth',
