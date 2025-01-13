@@ -1,5 +1,5 @@
 <script lang="ts" setup>
-import { ref, computed, nextTick, provide, type PropType } from 'vue'
+import { ref, computed, nextTick, provide, type PropType, inject, watch, type Ref } from 'vue'
 import { Splitpanes, Pane } from 'splitpanes'
 import { ElMessage } from 'element-plus'
 import type { BookInfo } from '@/api/types'
@@ -107,6 +107,13 @@ const handleEntityResults = async (entitys) => {
     ElMessage.warning('暂无可标记的实体')
   }
 }
+
+const currentSelectDocId = inject<Ref<number>>('currentSelectDocId')
+watch(currentSelectDocId, (val) => {
+  if (val === props.docId) {
+    loadDoc()
+  }
+})
 
 provide('entityList', entityList)
 provide('getEntityList', getEntityList)

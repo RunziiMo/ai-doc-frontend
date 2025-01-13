@@ -1,7 +1,6 @@
 <script lang="ts" setup>
 import { ref, computed, watch, reactive, inject, type Ref } from 'vue'
-import { useMouseInElement } from '@vueuse/core'
-import { ElMessageBox, ElScrollbar } from 'element-plus'
+import { ElMessageBox, ElScrollbar, type FormInstance } from 'element-plus'
 import 'splitpanes/dist/splitpanes.css'
 import axios from 'axios'
 import { defaultOptions, renderAsync } from 'docx-preview'
@@ -88,6 +87,8 @@ watch(
 const docContainer = ref<HTMLDivElement>(null)
 
 const addPopoverRef = ref()
+const editPopoverRef = ref()
+const fileContainerRef = ref()
 
 const editEntitysModel = reactive({
   type: '',
@@ -133,7 +134,16 @@ const handelMark = (instance, entitys) => {
         editPopover.value.top = bottom
         editPopover.value.left = left
         editPopover.value.visible = true
+        addPopover.value.visible = false
       }
+      element.addEventListener(
+        'mouseup',
+        function (event) {
+          event.stopPropagation()
+          event.preventDefault()
+        },
+        false,
+      )
     },
     done: async function () {},
   })
@@ -191,9 +201,6 @@ markEntitys.value = async () => {
   })
 }
 
-const { x: mouseX, y: mouseY, isOutside } = useMouseInElement(docContainer.value)
-const { isOutside: isAddPopoverOutside } = useMouseInElement(addPopoverRef.value)
-
 const addEntitysModel = reactive({
   type: '',
   confidence: 1,
@@ -206,27 +213,56 @@ const isEntityRecognition = inject<Ref<boolean>>('isEntityRecognition')
 const entityList = inject<Ref<Array<Entity>>>('entityList')
 const getEntityList = inject<Function>('getEntityList')
 
-const handleMouseUp = () => {
+const handleMouseUp = (event) => {
   if (!isEntityRecognition.value && entityList.value?.length === 0) {
     ElMessage.warning('请先完成实体名称识别！')
     return
   }
   const selection = window.getSelection()
+  const nextSibling = selection.anchorNode.nextSibling
+  const previousSibling = selection.anchorNode.previousSibling
+
   const selectedText = selection.toString()
-  if (selectedText) {
-    if (!isOutside.value) {
-      editPopover.value.visible = false
-      addPopover.value = {
-        visible: true,
-        top: mouseY.value,
-        left: mouseX.value,
-      }
-      addEntitysModel.replaced_text = selectedText
+  if (nextSibling?.nodeName === 'MARK') {
+    const markStartChar = nextSibling.textContent.charAt(0)
+    console.log(markStartChar)
+    if (selectedText.includes(markStartChar)) {
+      ElMessage.warning('禁止标记交叉的实体')
+      return
     }
   }
-  if (isAddPopoverOutside.value) {
-    addPopover.value.visible = false
+  if (previousSibling?.nodeName === 'MARK') {
+    const markEndChar = previousSibling.textContent.charAt(previousSibling.textContent.length - 1)
+    if (selectedText.includes(markEndChar)) {
+      ElMessage.warning('禁止标记交叉的实体')
+      return
+    }
   }
+  var x = event.clientX
+  var y = event.clientY
+
+  if (selectedText) {
+    editPopover.value.visible = false
+    addPopover.value = {
+      visible: true,
+      top: y,
+      left: x,
+    }
+    addEntitysModel.replaced_text = selectedText
+  }
+}
+
+const handleAddPopoverOut = () => {
+  addPopover.value.visible = false
+}
+
+const handleEditPopoverOut = () => {
+  editPopover.value.visible = false
+}
+
+const handleMouseLeave = () => {
+  // editPopover.value.visible = false
+  // addPopover.value.visible = false
 }
 
 // const getEntityListByApi = async () => {
@@ -323,24 +359,24 @@ const handleDelete = async () => {
   const entityInfo = entityList.value.find((el) => {
     return el.entity_id === editEntitysModel.entity_id
   })
-  const text = document.getElementById(`file-render-container-${props.document.doc_id}`).textContent
-  const num = text.match(new RegExp(editEntitysModel.replaced_text, 'g'))?.length
+  // const text = document.getElementById(`file-render-container-${props.document.doc_id}`).textContent
+  // const num = text.match(new RegExp(editEntitysModel.replaced_text, 'g'))?.length
   const entityIds = entityList.value
     .filter((el) => {
       return el.replaced_text === entityInfo.replaced_text
     })
     .map((el) => el.entity_id)
-  if (num > 1) {
-    await ElMessageBox.confirm(
-      `当前文章共有${num}个相同实体，确定后将全部删除，确定删除吗?`,
-      'Warning',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning',
-      },
-    )
-  }
+  // if (num > 1) {
+  //   await ElMessageBox.confirm(
+  //     `当前文章共有${num}个相同实体，确定后将全部删除，确定删除吗?`,
+  //     'Warning',
+  //     {
+  //       confirmButtonText: '确定',
+  //       cancelButtonText: '取消',
+  //       type: 'warning',
+  //     },
+  //   )
+  // }
 
   await ElMessageBox.confirm('确定要删除吗?', 'Warning', {
     confirmButtonText: '确定',
@@ -374,21 +410,25 @@ const handleDelete = async () => {
     ElMessage.warning(message)
   }
 }
-
+const addFormInstance = ref<FormInstance>()
 const handleAdd = async () => {
-  const text = document.getElementById(`file-render-container-${props.document.doc_id}`).textContent
-  const num = text.match(new RegExp(addEntitysModel.replaced_text, 'g'))?.length
-  if (num > 1) {
-    await ElMessageBox.confirm(
-      `当前文章共有${num}个相同实体，确定后将全部添加，确定添加吗?`,
-      'Warning',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning',
-      },
-    )
+  if(!addEntitysModel.type) {
+    ElMessage.warning("请选择一个具体的实体类型")
+    return;
   }
+  // const text = document.getElementById(`file-render-container-${props.document.doc_id}`).textContent
+  // const num = text.match(new RegExp(addEntitysModel.replaced_text, 'g'))?.length
+  // if (num > 1) {
+  //   await ElMessageBox.confirm(
+  //     `当前文章共有${num}个相同实体，确定后将全部添加，确定添加吗?`,
+  //     'Warning',
+  //     {
+  //       confirmButtonText: '确定',
+  //       cancelButtonText: '取消',
+  //       type: 'warning',
+  //     },
+  //   )
+  // }
   const response = await axios.post(
     `/api/document/${props.document?.doc_id}/entity`,
     addEntitysModel,
@@ -417,61 +457,63 @@ const handleCancle = () => {
 </script>
 
 <template>
-  <el-scrollbar
-    v-if="isPdf"
-    @scroll="() => ((addPopover.visible = false), (editPopover.visible = false))"
+  <div
+    ref="fileContainerRef"
+    class="document-reader-wrapper"
+    @mouseup.stop="handleMouseUp"
+    @mouseleave.stop="handleMouseLeave"
   >
-    <div
-      ref="docContainer"
-      :id="`file-render-container-${document?.doc_id}`"
-      class="wh-full"
-      @mouseup.stop="handleMouseUp"
+    <el-scrollbar
+      v-if="isPdf"
+      @scroll="() => ((addPopover.visible = false), (editPopover.visible = false))"
     >
-      <PdfView :url="url" @rendered="handleRendered" />
-    </div>
-  </el-scrollbar>
-  <el-scrollbar
-    v-else-if="isDocx"
-    @scroll="() => ((addPopover.visible = false), (editPopover.visible = false))"
-  >
-    <div
-      ref="docContainer"
-      :id="`file-render-container-${document?.doc_id}`"
-      class="wh-full"
-      @mouseup.stop="handleMouseUp"
-    />
-  </el-scrollbar>
-  <el-empty
-    v-else-if="document.markdown !== undefined && document.markdown === ''"
-    description="空白文档"
-  >
-  </el-empty>
-  <el-skeleton v-else :rows="20" animated />
-  <Teleport v-if="addPopover.visible" to="body">
-    <div
-      ref="addPopoverRef"
-      class="add-popover"
-      :style="{ top: addPopover.top + 'px', left: addPopover.left + 'px' }"
-      @mouseup.stop
+      <div ref="docContainer" :id="`file-render-container-${document?.doc_id}`" class="wh-full">
+        <PdfView :url="url" @rendered="handleRendered" />
+      </div>
+    </el-scrollbar>
+    <el-scrollbar
+      v-else-if="isDocx"
+      @scroll="() => ((addPopover.visible = false), (editPopover.visible = false))"
     >
-      <el-form :model="addEntitysModel" class="flex gap-10px w-100%" inline>
-        <el-form-item class="!m-r-0 !m-b-0 !w-100%" label="类别">
-          <el-select
-            placeholder="type"
-            size="small"
-            class="!w-100%"
-            :teleported="false"
-            v-model="addEntitysModel.type"
+      <div ref="docContainer" :id="`file-render-container-${document?.doc_id}`" class="wh-full" />
+    </el-scrollbar>
+    <el-empty
+      v-else-if="document.markdown !== undefined && document.markdown === ''"
+      description="空白文档"
+    >
+    </el-empty>
+    <el-skeleton v-else :rows="20" animated />
+    <Teleport to="body">
+      <div
+        v-if="addPopover.visible"
+        v-click-outside="handleAddPopoverOut"
+        ref="addPopoverRef"
+        class="add-popover"
+        :style="{ top: addPopover.top + 'px', left: addPopover.left + 'px' }"
+        @mouseup.stop
+      >
+        <el-form ref="addFormInstance" :model="addEntitysModel" class="flex gap-10px w-100%" inline>
+          <el-form-item
+            class="!m-r-0 !m-b-0 !w-100%"
+            prop="type"
+            label="类别"
           >
-            <el-option
-              v-for="item in typeList"
-              :key="item.value"
-              :label="item.text"
-              :value="item.value"
-            />
-          </el-select>
-        </el-form-item>
-        <!-- <el-form-item class="!m-r-0 !m-b-0" label="置信度">
+            <el-select
+              placeholder="type"
+              size="small"
+              class="!w-100%"
+              :teleported="false"
+              v-model="addEntitysModel.type"
+            >
+              <el-option
+                v-for="item in typeList"
+                :key="item.value"
+                :label="item.text"
+                :value="item.value"
+              />
+            </el-select>
+          </el-form-item>
+          <!-- <el-form-item class="!m-r-0 !m-b-0" label="置信度">
           <el-input
             v-model="addEntitysModel.confidence"
             size="small"
@@ -480,37 +522,42 @@ const handleCancle = () => {
             placeholder="置信度"
           />
         </el-form-item> -->
-      </el-form>
-      <div class="flex w-100% m-t-8px">
-        <el-button class="flex-1" type="primary" size="small" @click="handleAdd"> 确定 </el-button>
+        </el-form>
+        <div class="flex w-100% m-t-8px">
+          <el-button class="flex-1" type="primary" size="small" @click="handleAdd">
+            确定
+          </el-button>
+        </div>
       </div>
-    </div>
-  </Teleport>
-  <Teleport v-if="editPopover.visible" to="body">
-    <div
-      class="edit-popover"
-      :style="{ top: editPopover.top + 'px', left: editPopover.left + 'px' }"
-      @mouseup.stop
-    >
-      <el-form :model="editEntitysModel" class="flex gap-10px w-100%" inline>
-        <el-form-item class="!m-r-0 !m-b-0 !w-100%" label="类别">
-          <el-select
-            placeholder="type"
-            size="small"
-            class="!w-100%"
-            :teleported="false"
-            :disabled="disabledEditEntity"
-            v-model="editEntitysModel.type"
-          >
-            <el-option
-              v-for="item in typeList"
-              :key="item.value"
-              :label="item.text"
-              :value="item.value"
-            />
-          </el-select>
-        </el-form-item>
-        <!-- <el-form-item class="!m-r-0 !m-b-0" label="置信度">
+    </Teleport>
+    <Teleport to="body">
+      <div
+        v-if="editPopover.visible"
+        v-click-outside="handleEditPopoverOut"
+        ref="editPopoverRef"
+        class="edit-popover"
+        :style="{ top: editPopover.top + 'px', left: editPopover.left + 'px' }"
+        @mouseup.stop
+      >
+        <el-form :model="editEntitysModel" class="flex gap-10px w-100%" inline>
+          <el-form-item class="!m-r-0 !m-b-0 !w-100%" label="类别">
+            <el-select
+              placeholder="type"
+              size="small"
+              class="!w-100%"
+              :teleported="false"
+              :disabled="disabledEditEntity"
+              v-model="editEntitysModel.type"
+            >
+              <el-option
+                v-for="item in typeList"
+                :key="item.value"
+                :label="item.text"
+                :value="item.value"
+              />
+            </el-select>
+          </el-form-item>
+          <!-- <el-form-item class="!m-r-0 !m-b-0" label="置信度">
           <el-input
             v-model="editEntitysModel.confidence"
             size="small"
@@ -519,44 +566,49 @@ const handleCancle = () => {
             placeholder="置信度"
           />
         </el-form-item> -->
-      </el-form>
-      <div class="flex w-100% m-t-8px">
-        <template v-if="disabledEditEntity">
-          <el-button
-            class="flex-1"
-            type="primary"
-            size="small"
-            @click="disabledEditEntity = false"
-            @mouseenter.prevent
-            @mouseleave.prevent
-          >
-            编辑
-          </el-button>
-          <el-button
-            class="flex-1"
-            size="small"
-            @click="handleDelete"
-            @mouseenter.prevent
-            @mouseleave.prevent
-          >
-            删除
-          </el-button>
-        </template>
+        </el-form>
+        <div class="flex w-100% m-t-8px">
+          <template v-if="disabledEditEntity">
+            <el-button
+              class="flex-1"
+              type="primary"
+              size="small"
+              @click="disabledEditEntity = false"
+              @mouseenter.prevent
+              @mouseleave.prevent
+            >
+              编辑
+            </el-button>
+            <el-button
+              class="flex-1"
+              size="small"
+              @click="handleDelete"
+              @mouseenter.prevent
+              @mouseleave.prevent
+            >
+              删除
+            </el-button>
+          </template>
 
-        <template v-else>
-          <el-button class="flex-1" type="primary" size="small" @click="handleEdit">
-            确定
-          </el-button>
-          <el-button class="flex-1" type="primary" size="small" @click="handleCancle">
-            取消
-          </el-button>
-        </template>
+          <template v-else>
+            <el-button class="flex-1" type="primary" size="small" @click="handleEdit">
+              确定
+            </el-button>
+            <el-button class="flex-1" type="primary" size="small" @click="handleCancle">
+              取消
+            </el-button>
+          </template>
+        </div>
       </div>
-    </div>
-  </Teleport>
+    </Teleport>
+  </div>
 </template>
 
 <style scoped>
+.document-reader-wrapper {
+  position: relative;
+  z-index: 0;
+}
 .scroll-content {
   flex-grow: 1;
   overflow-y: auto;
