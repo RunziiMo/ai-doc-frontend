@@ -8,6 +8,7 @@ import 'virtual:uno.css'
 import '@/api/interceptor'
 import router from './router'
 import App from './App.vue'
+import directives from './directives'
 
 const renderer = {
   text(text) {
@@ -37,5 +38,6 @@ app.use(ElementPlus, {
 for (const [key, component] of Object.entries(ElementPlusIconsVue)) {
   app.component(key, component)
 }
+app.use(directives)
 app.use(router)
 app.mount('#app')

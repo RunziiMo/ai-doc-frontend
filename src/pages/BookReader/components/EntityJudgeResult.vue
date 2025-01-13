@@ -85,6 +85,7 @@ watch(entityList, () => {
 })
 
 const handleFliterChange = (newFilters: any) => {
+  pageStore.current = 1;
   if (!newFilters.type[0]) {
     result.value = data.value?.slice(
       (pageStore.current - 1) * pageStore.pageSize,
@@ -192,19 +193,19 @@ const handleDelete = async (row: Partial<Entity & { entityList: Entity[] }>) => 
     isAddBtn.value = true
     return
   }
-  const text = document.getElementById(`file-render-container-${props.document.doc_id}`).textContent
-  const num = text.match(new RegExp(row.replaced_text, 'g'))?.length
-  if (num > 1) {
-    await ElMessageBox.confirm(
-      `当前文章共有${num}个相同实体，确定后将全部删除，确定删除吗?`,
-      'Warning',
-      {
-        confirmButtonText: '确定',
-        cancelButtonText: '取消',
-        type: 'warning',
-      },
-    )
-  }
+  // const text = document.getElementById(`file-render-container-${props.document.doc_id}`).textContent
+  // const num = text.match(new RegExp(row.replaced_text, 'g'))?.length
+  // if (num > 1) {
+  //   await ElMessageBox.confirm(
+  //     `当前文章共有${num}个相同实体，确定后将全部删除，确定删除吗?`,
+  //     'Warning',
+  //     {
+  //       confirmButtonText: '确定',
+  //       cancelButtonText: '取消',
+  //       type: 'warning',
+  //     },
+  //   )
+  // }
 
   await ElMessageBox.confirm('确定要删除吗?', 'Warning', {
     confirmButtonText: '确定',
@@ -237,17 +238,17 @@ const handleAdd = () => {
 
 const handleSave = async () => {
   await formInstance.value?.validate()
-  const text = document.getElementById(`file-render-container-${props.document.doc_id}`).textContent
-  const num = text.match(new RegExp(form.replaced_text, 'g'))?.length
-  await ElMessageBox.confirm(
-    `当前文章共有${num}个相同实体，确定后将全部添加，确定添加吗?`,
-    'Warning',
-    {
-      confirmButtonText: '确定',
-      cancelButtonText: '取消',
-      type: 'warning',
-    },
-  )
+  // const text = document.getElementById(`file-render-container-${props.document.doc_id}`).textContent
+  // const num = text.match(new RegExp(form.replaced_text, 'g'))?.length
+  // await ElMessageBox.confirm(
+  //   `当前文章共有${num}个相同实体，确定后将全部添加，确定添加吗?`,
+  //   'Warning',
+  //   {
+  //     confirmButtonText: '确定',
+  //     cancelButtonText: '取消',
+  //     type: 'warning',
+  //   },
+  // )
   await EntityApi.add({
     ...form,
     document_id: props.document.doc_id,
@@ -294,6 +295,7 @@ const checkEntityName = (_rule: any, value: any, callback: any, data: Entity) =>
 
 const traceabilityMarks = ref()
 
+const currentTraceabilityEntityId = ref()
 const handleTraceability = (data) => {
   const instance = new Mark(
     document.getElementById(`file-render-container-${props.document.doc_id}`),
@@ -309,6 +311,8 @@ const handleTraceability = (data) => {
           diacritics: false,
           done() {
             data.isTraceability = true
+            currentTraceabilityEntityId.value = data.entity_id;
+            console.log(currentTraceabilityEntityId.value,"====currentTraceabilityEntityId")
             traceabilityMarks.value = Array.from(
               document.getElementsByClassName(`traceabilitying`),
             ).filter((el) => {
@@ -388,7 +392,7 @@ const handlePreTraceability = () => {
                     :class="{
                       'cursor-pointer': true,
                       'select-none': true,
-                      'visible-hidden': !row.isTraceability,
+                      'visible-hidden': !row.isTraceability || currentTraceabilityEntityId !== row.entity_id,
                     }"
                     :size="18"
                     @click="handlePreTraceability()"
@@ -405,7 +409,7 @@ const handlePreTraceability = () => {
                     :class="{
                       'cursor-pointer': true,
                       'select-none': true,
-                      'visible-hidden': !row.isTraceability,
+                      'visible-hidden': !row.isTraceability || currentTraceabilityEntityId !== row.entity_id,
                     }"
                     :size="18"
                     @click="handleNextTraceability()"
@@ -431,7 +435,7 @@ const handlePreTraceability = () => {
             >
               <template #default="{ row }">
                 <el-select
-                  :model-value="row.type"
+                  v-model="row.type"
                   placeholder="请选择"
                   @change="() => updateType(row)"
                 >
